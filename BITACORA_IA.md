@@ -58,7 +58,8 @@ Pikachu (`/api/pokemons/25`) con `totalEstadisticas = 320` y unos 110 movimiento
 
 | B.17 · Paginación en `/movimientos` y `/rutas`; `sort` inválido → 400 también en consultas `@Query`; B.23 verificada (1025 importados, 0 fallidos) | `68f8aa1` |
 | B.16 · F8 filtros combinados en `GET /pokemons` (`PokemonFiltros` con `Specification`) | `af3898a` |
-| B.24 · Orden por defecto `idPokedex` en las listas de Pokémon (hallado al probar F8: el catálogo empezaba en pikachu) | (este commit) |
+| B.24 · Orden por defecto `idPokedex` en las listas de Pokémon (hallado al probar F8: el catálogo empezaba en pikachu) | `ab7a2d4` |
+| B.15 · F7 cadena evolutiva: tabla `evolucion` llenada al importar y `GET /pokemons/{id}/evoluciones` | (este commit) |
 
 ### Errores del agente y cómo se corrigieron
 | Problema | Cómo se detectó | Corrección |

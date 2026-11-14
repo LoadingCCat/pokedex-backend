@@ -1,10 +1,12 @@
 package com.pokedex.service;
 
+import com.pokedex.entity.Evolucion;
 import com.pokedex.entity.Movimiento;
 import com.pokedex.entity.Pokemon;
 import com.pokedex.entity.Ruta;
 import com.pokedex.entity.Tipo;
 import com.pokedex.exception.ConflictException;
+import com.pokedex.repository.EvolucionRepository;
 import com.pokedex.repository.MovimientoRepository;
 import com.pokedex.repository.PokemonRepository;
 import com.pokedex.repository.RutaRepository;
@@ -133,21 +135,28 @@ public class PokemonService {
         final Set<String> movimientosFallidos = new HashSet<>();               // no se reintentan
         int movimientosCreados = 0;
         int movimientosExistentes = 0;
+
+        // Cadenas evolutivas: varios Pokémon comparten la misma cadena
+        final Set<String> cadenasGuardadas = new HashSet<>();        // URL de la cadena
+        final Set<String> cadenasFallidas = new HashSet<>();         // URL de la cadena
+        final Map<String, String> objetosPorUrl = new HashMap<>();   // URL del objeto -> nombre en español
     }
 
     private final PokemonRepository pokemonRepository;
     private final TipoRepository tipoRepository;
     private final MovimientoRepository movimientoRepository;
     private final RutaRepository rutaRepository;
+    private final EvolucionRepository evolucionRepository;
     private final RestTemplate restTemplate;
 
     public PokemonService(PokemonRepository pokemonRepository, TipoRepository tipoRepository,
                           MovimientoRepository movimientoRepository, RutaRepository rutaRepository,
-                          RestTemplate restTemplate) {
+                          EvolucionRepository evolucionRepository, RestTemplate restTemplate) {
         this.pokemonRepository = pokemonRepository;
         this.tipoRepository = tipoRepository;
         this.movimientoRepository = movimientoRepository;
         this.rutaRepository = rutaRepository;
+        this.evolucionRepository = evolucionRepository;
         this.restTemplate = restTemplate;
     }
 
@@ -172,6 +181,8 @@ public class PokemonService {
             resultados.add(new ResultadoImportacion("rutas", cache.creadas, cache.existentes, cache.fallidas));
             resultados.add(new ResultadoImportacion("movimientos-aprendidos", cache.movimientosCreados,
                     cache.movimientosExistentes, cache.movimientosFallidos.size()));
+            resultados.add(new ResultadoImportacion("cadenas-evolutivas", cache.cadenasGuardadas.size(),
+                    0, cache.cadenasFallidas.size()));
             resultados.add(importarMovimientosMasivo(totalMovimientos));
             return resultados;
         } finally {
@@ -271,6 +282,9 @@ public class PokemonService {
         definirObtencion(pokemon, especie, encuentros);
 
         pokemonRepository.save(pokemon);
+
+        // Parte opcional: si la cadena falla, el Pokémon queda importado igual
+        importarCadenaEvolutiva(especie, cache);
     }
 
     private List<Tipo> obtenerTipos(Map<String, Object> datos) {
@@ -614,6 +628,229 @@ public class PokemonService {
     }
 
     // =====================================================================
+    // CADENAS EVOLUTIVAS (/evolution-chain/{id})
+    // =====================================================================
+
+    /** Métodos de evolución poco comunes de la PokeAPI (los habituales se tratan aparte). */
+    private static final Map<String, String> METODOS_DE_EVOLUCION = Map.ofEntries(
+        Map.entry("shed", "Al evolucionar Nincada, con un hueco libre en el equipo y una Poké Ball"),
+        Map.entry("spin", "Girando sobre sí mismo"),
+        Map.entry("tower-of-darkness", "Completando la Torre de las Sombras"),
+        Map.entry("tower-of-waters", "Completando la Torre de las Aguas"),
+        Map.entry("three-critical-hits", "Con tres golpes críticos en un mismo combate"),
+        Map.entry("take-damage", "Tras recibir daño en combate"),
+        Map.entry("agile-style-move", "Usando un movimiento en estilo rápido"),
+        Map.entry("strong-style-move", "Usando un movimiento en estilo fuerte"),
+        Map.entry("recoil-damage", "Tras recibir daño de retroceso"),
+        Map.entry("use-move", "Usando un movimiento"),
+        Map.entry("three-defeated-bisharp", "Tras derrotar a tres Bisharp líderes"),
+        Map.entry("gimmighoul-coins", "Con 999 monedas de Gimmighoul")
+    );
+
+    /**
+     * Guarda la cadena evolutiva de la especie (todas sus etapas), una sola vez por importación.
+     * No lanza excepciones: si falla, se registra y se conserva lo que hubiera en la BD.
+     */
+    private void importarCadenaEvolutiva(Map<String, Object> especie, CacheImportacion cache) {
+        String url = especie != null ? (String) mapa(especie.get("evolution_chain")).get("url") : null;
+        if (url == null || cache.cadenasGuardadas.contains(url)) {
+            return;
+        }
+        try {
+            Map<String, Object> cadena = getJson(url);
+            if (cadena == null || !(cadena.get("id") instanceof Number idCadena)) {
+                throw new IllegalStateException("La PokeAPI no devolvió la cadena");
+            }
+            guardarEtapa(mapa(cadena.get("chain")), null, idCadena.intValue(), cache);
+            cache.cadenasGuardadas.add(url);
+            cache.cadenasFallidas.remove(url);
+        } catch (Exception e) {
+            cache.cadenasFallidas.add(url);
+            log.warn("No se pudo obtener la cadena evolutiva {}: {}", url, e.getMessage());
+        }
+    }
+
+    /** Guarda una etapa de la cadena y, de forma recursiva, las etapas a las que evoluciona. */
+    private void guardarEtapa(Map<String, Object> nodo, Integer idPreEvolucion, int idCadena,
+                              CacheImportacion cache) {
+        Map<String, Object> especie = mapa(nodo.get("species"));
+        Integer idPokedex = idDeUrl((String) especie.get("url"));
+        String nombre = (String) especie.get("name");
+        if (idPokedex == null || nombre == null) {
+            return;
+        }
+        Evolucion etapa = evolucionRepository.findById(idPokedex).orElseGet(Evolucion::new);
+        etapa.setIdPokedex(idPokedex);
+        etapa.setNombre(nombre);
+        etapa.setIdCadena(idCadena);
+        etapa.setIdPreEvolucion(idPreEvolucion);
+        etapa.setCondicion(idPreEvolucion == null
+                ? null
+                : describirCondicion(lista(nodo.get("evolution_details")), cache));
+        evolucionRepository.save(etapa);
+
+        for (Map<String, Object> siguiente : lista(nodo.get("evolves_to"))) {
+            guardarEtapa(siguiente, idPokedex, idCadena, cache);
+        }
+    }
+
+    /**
+     * Texto en español de cómo se llega a una etapa. La PokeAPI repite la condición por cada
+     * juego y lista una por cada lugar: se quitan las repetidas y los lugares de una misma
+     * forma se agrupan ("Subiendo de nivel en Bosque Vetusto / Pinwheel Forest o Usando Piedra Hoja").
+     */
+    private String describirCondicion(List<Map<String, Object>> detalles, CacheImportacion cache) {
+        Map<String, Set<String>> lugaresPorForma = new java.util.LinkedHashMap<>();
+        for (Map<String, Object> detalle : detalles) {
+            Set<String> lugares = lugaresPorForma.computeIfAbsent(
+                    describirDetalle(detalle, cache), k -> new LinkedHashSet<>());
+            Map<String, Object> lugar = mapa(detalle.get("location"));
+            if (lugar.get("name") != null) {
+                lugares.add(nombreDeLugarDeEvolucion(lugar));
+            }
+        }
+        if (lugaresPorForma.isEmpty()) {
+            return "Sin datos en la PokeAPI";
+        }
+        List<String> formas = new ArrayList<>();
+        for (Map.Entry<String, Set<String>> forma : lugaresPorForma.entrySet()) {
+            formas.add(forma.getValue().isEmpty()
+                    ? forma.getKey()
+                    : forma.getKey() + " en " + String.join(" / ", forma.getValue()));
+        }
+        return String.join(" o ", formas);
+    }
+
+    /** Una entrada de "evolution_details" (sin el lugar, que se agrupa aparte). */
+    private String describirDetalle(Map<String, Object> detalle, CacheImportacion cache) {
+        String metodo = (String) mapa(detalle.get("trigger")).get("name");
+        Integer nivel = entero(detalle.get("min_level"));
+        List<String> partes = new ArrayList<>();
+
+        switch (metodo != null ? metodo : "") {
+            case "level-up" -> partes.add(nivel != null ? "Nivel " + nivel : "Subiendo de nivel");
+            case "trade" -> partes.add("Por intercambio");
+            case "use-item" -> {
+                Map<String, Object> objeto = mapa(detalle.get("item"));
+                partes.add(objeto.get("name") != null ? "Usando " + nombreDeObjeto(objeto, cache) : "Usando un objeto");
+            }
+            default -> {
+                partes.add(METODOS_DE_EVOLUCION.getOrDefault(metodo, "Método especial"));
+                if (nivel != null) {
+                    partes.add("nivel " + nivel);
+                }
+            }
+        }
+
+        Map<String, Object> objetoEquipado = mapa(detalle.get("held_item"));
+        if (objetoEquipado.get("name") != null) {
+            partes.add("llevando " + nombreDeObjeto(objetoEquipado, cache));
+        }
+        if (entero(detalle.get("min_happiness")) != null) {
+            partes.add("con amistad alta");
+        }
+        if (entero(detalle.get("min_affection")) != null) {
+            partes.add("con afecto alto");
+        }
+        if (entero(detalle.get("min_beauty")) != null) {
+            partes.add("con belleza alta");
+        }
+        if (detalle.get("time_of_day") instanceof String momento) {
+            switch (momento) {
+                case "day" -> partes.add("de día");
+                case "night" -> partes.add("de noche");
+                case "dusk" -> partes.add("al atardecer");
+                default -> { } // "" = a cualquier hora
+            }
+        }
+        String movimiento = (String) mapa(detalle.get("known_move")).get("name");
+        if (movimiento != null) {
+            partes.add("conociendo " + nombreDeMovimiento(movimiento));
+        }
+        String tipoMovimiento = (String) mapa(detalle.get("known_move_type")).get("name");
+        if (tipoMovimiento != null) {
+            partes.add("conociendo un movimiento de tipo " + tipoMovimiento);
+        }
+        String movimientoUsado = (String) mapa(detalle.get("used_move")).get("name");
+        if (movimientoUsado != null) {
+            Integer veces = entero(detalle.get("min_move_count"));
+            partes.add("tras usar " + nombreDeMovimiento(movimientoUsado)
+                    + (veces != null ? " " + veces + " veces" : ""));
+        }
+        Integer genero = entero(detalle.get("gender"));
+        if (genero != null) {
+            partes.add(genero == 1 ? "solo hembras" : "solo machos");
+        }
+        Integer estadisticas = entero(detalle.get("relative_physical_stats"));
+        if (estadisticas != null) {
+            partes.add(estadisticas > 0 ? "con más ataque que defensa"
+                    : estadisticas < 0 ? "con más defensa que ataque" : "con ataque y defensa iguales");
+        }
+        String enEquipo = (String) mapa(detalle.get("party_species")).get("name");
+        if (enEquipo != null) {
+            partes.add("con " + capitalizar(enEquipo.replace('-', ' ')) + " en el equipo");
+        }
+        String tipoEnEquipo = (String) mapa(detalle.get("party_type")).get("name");
+        if (tipoEnEquipo != null) {
+            partes.add("con un Pokémon de tipo " + tipoEnEquipo + " en el equipo");
+        }
+        String aCambioDe = (String) mapa(detalle.get("trade_species")).get("name");
+        if (aCambioDe != null) {
+            partes.add("a cambio de " + capitalizar(aCambioDe.replace('-', ' ')));
+        }
+        if (Boolean.TRUE.equals(detalle.get("needs_overworld_rain"))) {
+            partes.add("con lluvia");
+        }
+        if (Boolean.TRUE.equals(detalle.get("turn_upside_down"))) {
+            partes.add("con la consola boca abajo");
+        }
+        return String.join(", ", partes);
+    }
+
+    /** Nombre en español del objeto (de /item/{id} -> names); se pide una sola vez por importación. */
+    private String nombreDeObjeto(Map<String, Object> objeto, CacheImportacion cache) {
+        String slug = (String) objeto.get("name");
+        String url = (String) objeto.get("url");
+        String respaldo = capitalizar(slug.replace('-', ' '));
+        if (url == null) {
+            return respaldo;
+        }
+        String enCache = cache.objetosPorUrl.get(url);
+        if (enCache != null) {
+            return enCache;
+        }
+        String nombre = respaldo;
+        try {
+            Map<String, Object> datos = getJson(url);
+            String traducido = datos != null ? nombreEnEspanol(datos.get("names")) : null;
+            if (traducido != null) {
+                nombre = traducido;
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo obtener el nombre del objeto {}: {}", slug, e.getMessage());
+        }
+        cache.objetosPorUrl.put(url, nombre);
+        return nombre;
+    }
+
+    /** nombreEs del movimiento si ya está en la BD; si no, el slug legible. */
+    private String nombreDeMovimiento(String slug) {
+        return movimientoRepository.findFirstByNombreIgnoreCase(slug)
+                .map(Movimiento::getNombreEs)
+                .orElse(capitalizar(slug.replace('-', ' ')));
+    }
+
+    /** Nombre de la Ruta si el lugar ya está importado; si no, el slug legible. */
+    private String nombreDeLugarDeEvolucion(Map<String, Object> lugar) {
+        Integer idLugar = idDeUrl((String) lugar.get("url"));
+        String respaldo = capitalizar(((String) lugar.get("name")).replace('-', ' '));
+        if (idLugar == null) {
+            return respaldo;
+        }
+        return rutaRepository.findByIdPokeapi(idLugar).map(Ruta::getNombre).orElse(respaldo);
+    }
+
+    // =====================================================================
     // MOVIMIENTOS
     // =====================================================================
 
@@ -725,6 +962,23 @@ public class PokemonService {
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> lista(Object valor) {
         return valor instanceof List ? (List<Map<String, Object>>) valor : List.of();
+    }
+
+    private static Integer entero(Object valor) {
+        return valor instanceof Number numero ? numero.intValue() : null;
+    }
+
+    /** Último número de una URL de la PokeAPI: ".../pokemon-species/133/" -> 133. */
+    private static Integer idDeUrl(String url) {
+        if (url == null) {
+            return null;
+        }
+        String[] partes = url.split("/");
+        try {
+            return Integer.valueOf(partes[partes.length - 1]);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     /** Convierte decímetros/hectogramos de la PokeAPI a metros/kilogramos. */

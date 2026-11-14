@@ -21,7 +21,7 @@ Este repositorio cubre el **backend**: una API REST estable que el frontend pued
 | F4 | Movimientos | Hecha |
 | F5 | Rutas y regiones | Hecha |
 | F6 | Nombres en español | Hecha |
-| F7 | Cadena evolutiva | Pendiente |
+| F7 | Cadena evolutiva | Hecha |
 | F8 | Filtros combinados | Hecha |
 
 ## Fuera del MVP

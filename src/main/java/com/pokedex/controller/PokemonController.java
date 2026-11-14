@@ -8,6 +8,8 @@ import com.pokedex.repository.MovimientoRepository;
 import com.pokedex.repository.PokemonFiltros;
 import com.pokedex.repository.PokemonRepository;
 import com.pokedex.repository.RutaRepository;
+import com.pokedex.service.EvolucionService;
+import com.pokedex.service.EvolucionService.EtapaEvolucion;
 import com.pokedex.service.PokemonService;
 import com.pokedex.service.PokemonService.ResultadoImportacion;
 import org.springframework.data.domain.Page;
@@ -30,13 +32,16 @@ public class PokemonController {
     private final RutaRepository rutaRepository;
     private final MovimientoRepository movimientoRepository;
     private final PokemonService pokemonService;
+    private final EvolucionService evolucionService;
 
     public PokemonController(PokemonRepository pokemonRepository, RutaRepository rutaRepository,
-                             MovimientoRepository movimientoRepository, PokemonService pokemonService) {
+                             MovimientoRepository movimientoRepository, PokemonService pokemonService,
+                             EvolucionService evolucionService) {
         this.pokemonRepository = pokemonRepository;
         this.rutaRepository = rutaRepository;
         this.movimientoRepository = movimientoRepository;
         this.pokemonService = pokemonService;
+        this.evolucionService = evolucionService;
     }
 
     // ---------------------------------------------------------------
@@ -124,6 +129,12 @@ public class PokemonController {
             throw new ResourceNotFoundException("Pokémon", id);
         }
         return movimientoRepository.buscarPorPokemon(id);
+    }
+
+    // GET /api/pokemons/{id}/evoluciones  -> cadena evolutiva completa, desde su etapa base
+    @GetMapping("/{id}/evoluciones")
+    public EtapaEvolucion obtenerEvoluciones(@PathVariable Integer id) {
+        return evolucionService.obtenerCadena(id);
     }
 
     // GET /api/pokemons/tipo/fire

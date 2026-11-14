@@ -58,7 +58,8 @@ com.pokedex/
 ├── entity/                     # Pokemon, Movimiento, Ruta, Tipo
 ├── exception/                  # GlobalExceptionHandler + BadRequest / ResourceNotFound / Conflict
 ├── repository/                 # Spring Data JPA
-└── service/PokemonService      # toda la importación desde la PokeAPI
+└── service/                    # PokemonService: toda la importación desde la PokeAPI
+                                # EvolucionService: arma el árbol de la cadena evolutiva desde la BD
 ```
 
 ## Modelo de datos (lo que no es obvio)
@@ -67,6 +68,7 @@ com.pokedex/
 - Relaciones `@ManyToMany` de `Pokemon`: `tipos` (tabla `pokemon_tipo`), `rutas` (`pokemon_ruta`) y `movimientos` (`pokemon_movimiento`). `movimientos` lleva `@JsonIgnore` porque son más de 100 por Pokémon; se exponen en `GET /api/pokemons/{id}/movimientos`.
 - **`Ruta`** = lugar real de los juegos, sacado de `/pokemon/{id}/encounters`. `idPokeapi` (único) identifica las importadas; las creadas con `POST /rutas` lo tienen en `null` (el controller lo fuerza).
 - **`Movimiento`**: `categoria` ∈ {Físico, Especial, Estado}; `esCompetitivo` lo calcula el servidor (`potencia > 80`). Antes de borrar uno hay que desvincularlo de `pokemon_movimiento` (`desvincularDePokemons`).
+- **`Evolucion`** (tabla `evolucion`): una fila por etapa de cada cadena (`idPokedex`, `idCadena`, `idPreEvolucion`, `condicion` en español ya armada). Sin clave foránea a `Pokemon`, porque una cadena puede incluir Pokémon no importados. Se llena al importar (`importarCadenaEvolutiva`, una vez por cadena) y se expone como árbol en `GET /api/pokemons/{id}/evoluciones`.
 - `tipoObtencion` se decide en `definirObtencion()` en este orden: Inicial → Singular → Fósil → Legendario → Regalo → Salvaje → Huevo → Evolución → Sin datos. Iniciales y fósiles son listas fijas en `PokemonService` (la PokeAPI no los marca).
 - `nombre` de Pokémon y movimientos es el slug en inglés de la PokeAPI (`thunder-punch`) y **no se cambia** (el frontend depende de él). `nombreEs` (nullable) es el nombre en español, sacado de `names` (idioma `es`, con respaldo en `en`). Las búsquedas por nombre miran ambos campos. Las rutas guardan directamente el nombre en español cuando existe. La descripción viene en español.
 

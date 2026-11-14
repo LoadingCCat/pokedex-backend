@@ -17,7 +17,7 @@ El frontend solo habla con nuestra API. La PokeAPI se consulta únicamente duran
 | Paquete | Responsabilidad |
 |---|---|
 | `controller/` | Endpoints REST. Validan la entrada y lanzan excepciones propias |
-| `service/` | `PokemonService`: toda la importación desde la PokeAPI |
+| `service/` | `PokemonService`: toda la importación desde la PokeAPI. `EvolucionService`: arma el árbol de la cadena evolutiva desde la BD |
 | `repository/` | Acceso a datos con Spring Data JPA |
 | `entity/` | Entidades JPA |
 | `exception/` | `GlobalExceptionHandler` y excepciones propias (400, 404, 409) |
@@ -32,6 +32,7 @@ Pokemon N──N Ruta         (pokemon_ruta)        lugares donde aparece en est
 Pokemon N──N Movimiento   (pokemon_movimiento)  movimientos que puede aprender
 ```
 
+- **Evolucion** (tabla `evolucion`): una fila por etapa de cada cadena evolutiva (`idPokedex`, `idCadena`, `idPreEvolucion`, `condicion`). No tiene clave foránea a `Pokemon`: una cadena puede incluir Pokémon no importados.
 - `Pokemon.idPokedex` es la clave primaria: el número oficial de la Pokédex Nacional (1–1025).
 - `Ruta.idPokeapi` identifica los lugares importados; es `null` en las rutas creadas a mano.
 - El esquema lo mantiene Hibernate (`ddl-auto=update`): agrega columnas y tablas, pero no borra ni renombra.

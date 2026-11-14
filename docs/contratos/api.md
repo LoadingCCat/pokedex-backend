@@ -27,6 +27,7 @@ Formato de una respuesta paginada (siempre igual):
 | GET | `/pokemons/obtencion/{tipo}` | Filtrar por forma de obtención (`inicial`, `legendario`, `fosil`, …; con o sin tilde) |
 | GET | `/pokemons/{id}` | Detalle (404 si no existe) |
 | GET | `/pokemons/{id}/movimientos` | Movimientos que puede aprender, ordenados por nombre (404 si el Pokémon no existe) |
+| GET | `/pokemons/{id}/evoluciones` | Cadena evolutiva completa a la que pertenece el Pokémon (404 si no existe); ver abajo |
 | GET/POST | `/pokemons/importar-rango?total=N&movimientos=M` | Importar desde PokeAPI |
 | GET/POST | `/pokemons/importar-todo` | Importación rápida (50 + 50) |
 
@@ -74,6 +75,32 @@ Ejemplo de Pokémon:
 `nombre` es el identificador de la PokeAPI (slug en inglés, no cambia); `nombreEs` es el nombre en español para mostrar (si la PokeAPI no lo tiene, el de inglés). `nombreEs` puede venir en `null` en registros importados antes de que existiera el campo: se llena al volver a importar.
 
 Las estadísticas son las base de la PokeAPI; `totalEstadisticas` es su suma (la calcula el servidor). Los movimientos no van en este JSON porque son muchos: se piden aparte en `/pokemons/{id}/movimientos`.
+
+### Cadena evolutiva — `GET /pokemons/{id}/evoluciones`
+Devuelve la cadena **completa**, como árbol, empezando por su etapa base: `/pokemons/1/evoluciones`, `/2/…` y `/3/…` responden lo mismo. No está paginada.
+
+```json
+{
+  "idPokedex": 1, "nombre": "bulbasaur", "nombreEs": "Bulbasaur",
+  "imagenUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/.../1.png",
+  "condicion": null,
+  "evoluciones": [
+    {
+      "idPokedex": 2, "nombre": "ivysaur", "nombreEs": "Ivysaur", "imagenUrl": "https://.../2.png",
+      "condicion": "Nivel 16",
+      "evoluciones": [
+        { "idPokedex": 3, "nombre": "venusaur", "nombreEs": "Venusaur", "imagenUrl": "https://.../3.png",
+          "condicion": "Nivel 32", "evoluciones": [] }
+      ]
+    }
+  ]
+}
+```
+- `evoluciones` son las etapas a las que evoluciona; siempre es un arreglo (vacío en la última etapa). Las ramas son varios elementos: Eevee tiene 8, ordenados por `idPokedex`.
+- `condicion` es cómo se llega a esa etapa, en español ("Nivel 16", "Usando Piedra Agua", "Por intercambio", "Subiendo de nivel, con amistad alta, de día"). Es `null` en la etapa base. Si hay varias formas, van unidas con " o ". Los nombres de lugares y de tipos pueden salir en inglés.
+- `nombreEs` e `imagenUrl` son `null` si el Pokémon de esa etapa no está importado; `idPokedex` y `nombre` vienen siempre.
+- Un Pokémon sin evoluciones (Tauros), o cuya cadena todavía no se ha importado, devuelve una sola etapa con `evoluciones: []`.
+- Las cadenas se guardan al importar: tras actualizar el backend hay que volver a importar para llenarlas.
 
 ## Movimientos — `/movimientos`
 Las listas son paginadas, con el mismo formato `{ content, page }` y los mismos parámetros que las de Pokémon (`?page=0&size=20&sort=nombre,asc`, máximo 200 por página). Si no se envía `sort`, se ordenan por `nombre`.
@@ -132,11 +159,12 @@ Siguen siendo arreglos JSON sin paginar: `/pokemons/{id}/movimientos`, `/rutas/r
     { "recurso": "pokemons", "importados": 151, "omitidos": 0, "fallidos": 0 },
     { "recurso": "rutas", "importados": 12, "omitidos": 190, "fallidos": 0 },
     { "recurso": "movimientos-aprendidos", "importados": 30, "omitidos": 420, "fallidos": 0 },
+    { "recurso": "cadenas-evolutivas", "importados": 78, "omitidos": 0, "fallidos": 0 },
     { "recurso": "movimientos", "importados": 0, "omitidos": 0, "fallidos": 0 }
   ]
 }
 ```
-En una importación, `importados` son los registros creados, `omitidos` los que ya existían y `fallidos` los que no se pudieron traer de la PokeAPI. En `pokemons`, `importados` también cuenta los que solo se actualizaron. Los números del ejemplo son ilustrativos.
+En una importación, `importados` son los registros creados, `omitidos` los que ya existían y `fallidos` los que no se pudieron traer de la PokeAPI. En `pokemons` y `cadenas-evolutivas`, `importados` también cuenta los que solo se actualizaron. Los números del ejemplo son ilustrativos.
 
 ## Errores
 
