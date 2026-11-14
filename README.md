@@ -24,6 +24,15 @@ Base URL: `http://localhost:8080/api`
 ### Pokémon — `/pokemons`
 Todas las listas son paginadas: `?page=0&size=20&sort=idPokedex,asc` (máximo 200 por página).
 
+Formato de una respuesta paginada (siempre igual):
+```json
+{
+  "content": [ { "idPokedex": 1, "nombre": "bulbasaur", "...": "..." } ],
+  "page": { "size": 20, "number": 0, "totalElements": 151, "totalPages": 8 }
+}
+```
+`page.number` empieza en 0. Un `sort` por un campo que no existe responde 400.
+
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET | `/pokemons` | Listado paginado |
