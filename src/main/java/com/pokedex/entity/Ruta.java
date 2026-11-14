@@ -28,6 +28,10 @@ public class Ruta {
     @Column(columnDefinition = "TEXT")
     private String descripcion;
 
+    // ID del lugar ("location") en la PokeAPI. Es null en las rutas creadas a mano con POST.
+    @Column(name = "id_pokeapi", unique = true)
+    private Integer idPokeapi;
+
     @ManyToMany(mappedBy = "rutas")
     @JsonIgnore
     private List<Pokemon> pokemons;

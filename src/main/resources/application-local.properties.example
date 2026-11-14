@@ -1,0 +1,7 @@
+# Copia este archivo como application-local.properties (en esta misma carpeta)
+# y pon tus credenciales de PostgreSQL. Ese archivo NO se sube a git.
+spring.datasource.username=postgres
+spring.datasource.password=tu_contraseña_de_postgres
+
+# Pon en true si quieres ver las consultas SQL en la consola
+spring.jpa.show-sql=false
