@@ -1,6 +1,8 @@
 package com.pokedex.repository;
 
 import com.pokedex.entity.Movimiento;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -18,16 +20,20 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Integer>
     // findFirst: si por algún motivo hubiera dos con el mismo nombre, no falla
     Optional<Movimiento> findFirstByNombreIgnoreCase(String nombre);
 
-    List<Movimiento> findByCategoriaIgnoreCase(String categoria);
+    Page<Movimiento> findByCategoriaIgnoreCase(String categoria, Pageable pageable);
 
-    List<Movimiento> findByEsCompetitivoTrue();
+    Page<Movimiento> findByEsCompetitivoTrue(Pageable pageable);
 
     // Busca en el nombre original (slug en inglés) y en el nombre en español
-    @Query("SELECT m FROM Movimiento m "
-         + "WHERE LOWER(m.nombre) LIKE LOWER(CONCAT('%', :nombre, '%')) "
-         + "OR LOWER(m.nombreEs) LIKE LOWER(CONCAT('%', :nombre, '%')) "
-         + "ORDER BY m.nombre")
-    List<Movimiento> buscarPorNombre(@Param("nombre") String nombre);
+    @Query(
+        value = "SELECT m FROM Movimiento m "
+              + "WHERE LOWER(m.nombre) LIKE LOWER(CONCAT('%', :nombre, '%')) "
+              + "OR LOWER(m.nombreEs) LIKE LOWER(CONCAT('%', :nombre, '%'))",
+        countQuery = "SELECT COUNT(m) FROM Movimiento m "
+              + "WHERE LOWER(m.nombre) LIKE LOWER(CONCAT('%', :nombre, '%')) "
+              + "OR LOWER(m.nombreEs) LIKE LOWER(CONCAT('%', :nombre, '%'))"
+    )
+    Page<Movimiento> buscarPorNombre(@Param("nombre") String nombre, Pageable pageable);
 
     // Movimientos que puede aprender un Pokémon, ordenados por nombre
     @Query("SELECT m FROM Pokemon p JOIN p.movimientos m WHERE p.idPokedex = :idPokedex ORDER BY m.nombre")

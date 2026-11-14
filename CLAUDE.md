@@ -4,7 +4,29 @@ API REST de la Pokédex+ (proyecto universitario en equipo). Este repositorio es
 
 - Java 21 · Spring Boot 4.1.2 · Spring Data JPA / Hibernate 7 · PostgreSQL · Maven (wrapper) · Lombok
 - Datos importados desde la PokeAPI (`https://pokeapi.co/api/v2`) con `RestTemplate`
-- Documentación del contrato para el frontend: `README.md` (mantenerlo al día)
+
+## Documentación (léela antes de cualquier cambio)
+
+El proyecto sigue Spec-Driven Development (SDD): primero el documento, después el código.
+
+- Qué es el producto y qué NO entra: @docs/producto.md
+- Stack, capas y modelo de datos: @docs/arquitectura.md
+- Contrato de la API para el frontend: @docs/contratos/api.md
+- Funcionalidades y criterios de aceptación: `docs/specs/` (una spec por funcionalidad, F1…)
+- Por qué se decidió cada cosa: `docs/decisiones.md`
+- Qué está hecho y qué sigue: `docs/tareas.md`
+- Prompts y errores del agente: `BITACORA_IA.md`
+- Procedimiento para agregar o cambiar endpoints: skill `nuevo-endpoint` (`.claude/skills/`)
+
+## Reglas de trabajo
+
+- Implementa **una** tarea de `docs/tareas.md` a la vez y márcala `[x]` al terminar.
+- No agregues funcionalidades que no tengan spec en `docs/specs/`. Si el alcance cambia, propón primero el cambio en los docs y espera aprobación.
+- Antes de un cambio importante, muestra un plan y espera aprobación.
+- No toques archivos que la tarea no requiera.
+- Al terminar: compila, prueba con `curl.exe` los criterios de aceptación de la spec, actualiza `docs/contratos/api.md` si cambió el contrato, y explica cómo probarlo.
+- Registra en `docs/decisiones.md` las decisiones técnicas y en `BITACORA_IA.md` los errores importantes del agente.
+- No hagas `git push` sin preguntar.
 
 ## Comandos (Windows, PowerShell, desde esta carpeta)
 
@@ -50,8 +72,8 @@ com.pokedex/
 
 ## Contrato de la API (el frontend depende de esto)
 
-- Base: `http://localhost:8080/api`. Si cambias un endpoint, un campo o un formato, **actualiza el README** y avisa que el frontend se ve afectado.
-- Listas de Pokémon paginadas con `?page=&size=&sort=` (por defecto 20, máximo 200). Formato fijo (`serialization-mode=via-dto`):
+- Base: `http://localhost:8080/api`. Si cambias un endpoint, un campo o un formato, **actualiza `docs/contratos/api.md`** en el mismo commit y avisa que el frontend se ve afectado. El README solo tiene la instalación y el índice de docs.
+- Listas de Pokémon, movimientos y rutas paginadas con `?page=&size=&sort=` (por defecto 20, máximo 200; movimientos y rutas se ordenan por `nombre` con `@SortDefault`, no `@PageableDefault`, que cambia el tamaño a 10). Siguen como arreglo: `/pokemons/{id}/movimientos`, `/rutas/regiones`, `/tipos`. Formato fijo (`serialization-mode=via-dto`):
   `{ "content": [...], "page": { "size", "number", "totalElements", "totalPages" } }`
 - Todos los errores salen de `GlobalExceptionHandler` con el mismo JSON: `{ timestamp, status, error, mensaje, path }`.
   - 400 `BadRequestException`, parámetros/JSON inválidos, `sort` por un campo inexistente
@@ -75,12 +97,10 @@ com.pokedex/
 - El JSON de la PokeAPI se lee como `Map`/`List` sin tipar: usa los helpers `getJson`, `getJsonList`, `mapa`, `lista`, y `@SuppressWarnings("unchecked")` a nivel de método.
 - Commits con mensajes cortos en español. Compilar (`.\mvnw.cmd clean compile`) y probar los endpoints afectados antes de hacer commit.
 
-## Pendiente / ideas
+## Pendiente
 
-- Búsqueda por nombre sin importar tildes (requiere la extensión `unaccent` de PostgreSQL).
-- Cadena evolutiva: `GET /pokemons/{id}/evoluciones`.
-- Filtros combinados (ej. `?tipo=fire&generacion=1`).
-- Paginación en `/movimientos` y `/rutas`.
-- Importación en segundo plano con endpoint de estado.
-- Tests que no dependan de PostgreSQL (`@WebMvcTest`, o H2/Testcontainers).
+La lista de pendientes vive en `docs/tareas.md` (sección "Back · pendiente"); las specs de lo que falta están en `docs/specs/` (F7 y F8).
+
+## Notas
+
 - Al reimportar, de los movimientos ya existentes solo se actualiza `nombreEs` (no `categoria` ni `potencia`, para no pisar cambios hechos con PUT); los Pokémon sí se actualizan completos.

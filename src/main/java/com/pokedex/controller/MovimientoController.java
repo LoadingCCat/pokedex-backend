@@ -4,11 +4,13 @@ import com.pokedex.entity.Movimiento;
 import com.pokedex.exception.BadRequestException;
 import com.pokedex.exception.ResourceNotFoundException;
 import com.pokedex.repository.MovimientoRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.SortDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Set;
 
 @RestController
@@ -23,10 +25,10 @@ public class MovimientoController {
         this.movimientoRepository = movimientoRepository;
     }
 
-    // GET /api/movimientos
+    // GET /api/movimientos?page=0&size=20&sort=nombre  (por defecto, ordenados por nombre)
     @GetMapping
-    public List<Movimiento> listarMovimientos() {
-        return movimientoRepository.findAll();
+    public Page<Movimiento> listarMovimientos(@SortDefault("nombre") Pageable pageable) {
+        return movimientoRepository.findAll(pageable);
     }
 
     // GET /api/movimientos/{id}
@@ -37,20 +39,25 @@ public class MovimientoController {
 
     // GET /api/movimientos/buscar?nombre=thunder
     @GetMapping("/buscar")
-    public List<Movimiento> buscarPorNombre(@RequestParam String nombre) {
-        return movimientoRepository.buscarPorNombre(nombre.trim());
+    public Page<Movimiento> buscarPorNombre(@RequestParam String nombre,
+                                            @SortDefault("nombre") Pageable pageable) {
+        if (nombre.isBlank()) {
+            throw new BadRequestException("El parámetro 'nombre' no puede estar vacío");
+        }
+        return movimientoRepository.buscarPorNombre(nombre.trim(), pageable);
     }
 
     // GET /api/movimientos/categoria/Especial
     @GetMapping("/categoria/{categoria}")
-    public List<Movimiento> listarPorCategoria(@PathVariable String categoria) {
-        return movimientoRepository.findByCategoriaIgnoreCase(categoria);
+    public Page<Movimiento> listarPorCategoria(@PathVariable String categoria,
+                                               @SortDefault("nombre") Pageable pageable) {
+        return movimientoRepository.findByCategoriaIgnoreCase(categoria, pageable);
     }
 
     // GET /api/movimientos/competitivos  -> potencia > 80
     @GetMapping("/competitivos")
-    public List<Movimiento> listarCompetitivos() {
-        return movimientoRepository.findByEsCompetitivoTrue();
+    public Page<Movimiento> listarCompetitivos(@SortDefault("nombre") Pageable pageable) {
+        return movimientoRepository.findByEsCompetitivoTrue(pageable);
     }
 
     // POST /api/movimientos

@@ -4,9 +4,10 @@ import com.pokedex.entity.Ruta;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface RutaRepository extends JpaRepository<Ruta, Integer> {
@@ -14,7 +15,7 @@ public interface RutaRepository extends JpaRepository<Ruta, Integer> {
     // Se compara nombre + región porque "Ruta 1" existe en Kanto, Teselia, Alola, Galar...
     boolean existsByNombreIgnoreCaseAndRegionIgnoreCase(String nombre, String region);
 
-    List<Ruta> findByRegionIgnoreCaseOrderByNombreAsc(String region);
+    Page<Ruta> findByRegionIgnoreCase(String region, Pageable pageable);
 
     Optional<Ruta> findByIdPokeapi(Integer idPokeapi);
 

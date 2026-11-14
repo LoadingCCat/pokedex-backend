@@ -5,6 +5,9 @@ import com.pokedex.exception.BadRequestException;
 import com.pokedex.exception.ResourceNotFoundException;
 import com.pokedex.repository.RutaRepository;
 import com.pokedex.service.PokemonService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.SortDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,10 +26,10 @@ public class RutaController {
         this.pokemonService = pokemonService;
     }
 
-    // GET /api/rutas
+    // GET /api/rutas?page=0&size=20&sort=nombre  (por defecto, ordenadas por nombre)
     @GetMapping
-    public List<Ruta> listarRutas() {
-        return rutaRepository.findAll();
+    public Page<Ruta> listarRutas(@SortDefault("nombre") Pageable pageable) {
+        return rutaRepository.findAll(pageable);
     }
 
     // GET /api/rutas/regiones  -> ["Kanto", "Johto", ...] (útil para llenar un <select>)
@@ -37,8 +40,8 @@ public class RutaController {
 
     // GET /api/rutas/region/kanto
     @GetMapping("/region/{region}")
-    public List<Ruta> listarPorRegion(@PathVariable String region) {
-        return rutaRepository.findByRegionIgnoreCaseOrderByNombreAsc(region);
+    public Page<Ruta> listarPorRegion(@PathVariable String region, @SortDefault("nombre") Pageable pageable) {
+        return rutaRepository.findByRegionIgnoreCase(region, pageable);
     }
 
     // GET /api/rutas/{id}

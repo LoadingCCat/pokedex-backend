@@ -97,6 +97,14 @@ public class GlobalExceptionHandler {
             return construir(HttpStatus.BAD_REQUEST, "Petición inválida",
                     "El parámetro 'sort' no es válido: " + ordenInvalido.getMessage(), request);
         }
+        // En las consultas con @Query el orden se agrega al JPQL y quien falla es Hibernate
+        // (UnknownPathException). Solo se trata como 400 si la petición traía ?sort=; sin él
+        // sería un error real de la consulta. No se usa su mensaje porque incluye el JPQL.
+        if (request.getParameter("sort") != null && buscarCausa(ex, "UnknownPathException") != null) {
+            return construir(HttpStatus.BAD_REQUEST, "Petición inválida",
+                    "El parámetro 'sort' no es válido: el campo '" + request.getParameter("sort").split(",")[0]
+                            + "' no existe", request);
+        }
 
         // El detalle real (que puede incluir SQL o datos internos) solo va al log del servidor
         log.error("Error no controlado en {}", request.getRequestURI(), ex);
