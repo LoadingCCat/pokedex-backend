@@ -22,7 +22,12 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Integer>
 
     List<Movimiento> findByEsCompetitivoTrue();
 
-    List<Movimiento> findByNombreContainingIgnoreCase(String nombre);
+    // Busca en el nombre original (slug en inglés) y en el nombre en español
+    @Query("SELECT m FROM Movimiento m "
+         + "WHERE LOWER(m.nombre) LIKE LOWER(CONCAT('%', :nombre, '%')) "
+         + "OR LOWER(m.nombreEs) LIKE LOWER(CONCAT('%', :nombre, '%')) "
+         + "ORDER BY m.nombre")
+    List<Movimiento> buscarPorNombre(@Param("nombre") String nombre);
 
     // Movimientos que puede aprender un Pokémon, ordenados por nombre
     @Query("SELECT m FROM Pokemon p JOIN p.movimientos m WHERE p.idPokedex = :idPokedex ORDER BY m.nombre")

@@ -53,7 +53,7 @@ public class PokemonController {
         if (nombre.isBlank()) {
             throw new BadRequestException("El parámetro 'nombre' no puede estar vacío");
         }
-        return pokemonRepository.findByNombreContainingIgnoreCase(nombre.trim(), pageable);
+        return pokemonRepository.buscarPorNombre(nombre.trim(), pageable);
     }
 
     // GET /api/pokemons/generacion/1

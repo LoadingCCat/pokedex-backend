@@ -9,7 +9,16 @@ import org.springframework.data.repository.query.Param;
 
 public interface PokemonRepository extends JpaRepository<Pokemon, Integer> {
 
-    Page<Pokemon> findByNombreContainingIgnoreCase(String nombre, Pageable pageable);
+    // Busca en el nombre original (slug en inglés) y en el nombre en español
+    @Query(
+        value = "SELECT p FROM Pokemon p "
+              + "WHERE LOWER(p.nombre) LIKE LOWER(CONCAT('%', :nombre, '%')) "
+              + "OR LOWER(p.nombreEs) LIKE LOWER(CONCAT('%', :nombre, '%'))",
+        countQuery = "SELECT COUNT(p) FROM Pokemon p "
+              + "WHERE LOWER(p.nombre) LIKE LOWER(CONCAT('%', :nombre, '%')) "
+              + "OR LOWER(p.nombreEs) LIKE LOWER(CONCAT('%', :nombre, '%'))"
+    )
+    Page<Pokemon> buscarPorNombre(@Param("nombre") String nombre, Pageable pageable);
 
     Page<Pokemon> findByGeneracion(Integer generacion, Pageable pageable);
 

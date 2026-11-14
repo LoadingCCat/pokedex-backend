@@ -20,6 +20,10 @@ public class Movimiento {
     @Column(nullable = false, length = 100)
     private String nombre;
 
+    // Nombre en español (de /move/{id} -> names). null hasta reimportar o si se creó a mano sin él
+    @Column(name = "nombre_es", length = 100)
+    private String nombreEs;
+
     @Column(nullable = false, length = 50)
     private String categoria;
 

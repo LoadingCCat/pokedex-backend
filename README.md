@@ -27,7 +27,7 @@ Todas las listas son paginadas: `?page=0&size=20&sort=idPokedex,asc` (máximo 20
 Formato de una respuesta paginada (siempre igual):
 ```json
 {
-  "content": [ { "idPokedex": 1, "nombre": "bulbasaur", "...": "..." } ],
+  "content": [ { "idPokedex": 1, "nombre": "bulbasaur", "nombreEs": "Bulbasaur", "...": "..." } ],
   "page": { "size": 20, "number": 0, "totalElements": 151, "totalPages": 8 }
 }
 ```
@@ -36,7 +36,7 @@ Formato de una respuesta paginada (siempre igual):
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET | `/pokemons` | Listado paginado |
-| GET | `/pokemons/buscar?nombre=pika` | Búsqueda por nombre (parcial, sin importar mayúsculas) |
+| GET | `/pokemons/buscar?nombre=pika` | Búsqueda por nombre (parcial, sin importar mayúsculas); busca en `nombre` y en `nombreEs` |
 | GET | `/pokemons/generacion/{1-9}` | Filtrar por generación |
 | GET | `/pokemons/tipo/{nombre}` | Filtrar por tipo (`fire`, `water`, …) |
 | GET | `/pokemons/region/{nombre}` | Pokémon nativos de la región **o** que aparecen en alguna de sus rutas (`kanto`, `johto`, `teselia`, …) |
@@ -52,6 +52,7 @@ Ejemplo de Pokémon:
 {
   "idPokedex": 25,
   "nombre": "pikachu",
+  "nombreEs": "Pikachu",
   "descripcion": "Cuando se enfada, descarga al instante la energía...",
   "generacion": 1,
   "region": "Kanto",
@@ -71,6 +72,8 @@ Ejemplo de Pokémon:
   "rutas": [{ "idRuta": 3, "nombre": "Bosque Verde", "region": "Kanto", "descripcion": "...", "idPokeapi": 321 }]
 }
 ```
+`nombre` es el identificador de la PokeAPI (slug en inglés, no cambia); `nombreEs` es el nombre en español para mostrar (si la PokeAPI no lo tiene, el de inglés). `nombreEs` puede venir en `null` en registros importados antes de que existiera el campo: se llena al volver a importar.
+
 Las estadísticas son las base de la PokeAPI; `totalEstadisticas` es su suma (la calcula el servidor). Los movimientos no van en este JSON porque son muchos: se piden aparte en `/pokemons/{id}/movimientos`.
 
 ### Movimientos — `/movimientos`
@@ -78,12 +81,18 @@ Las estadísticas son las base de la PokeAPI; `totalEstadisticas` es su suma (la
 |---|---|---|
 | GET | `/movimientos` | Listado completo |
 | GET | `/movimientos/{id}` | Detalle (404 si no existe) |
-| GET | `/movimientos/buscar?nombre=...` | Búsqueda por nombre |
+| GET | `/movimientos/buscar?nombre=...` | Búsqueda por nombre (parcial, sin importar mayúsculas); busca en `nombre` y en `nombreEs` (`trueno` encuentra `thunder-punch`) |
 | GET | `/movimientos/categoria/{Físico\|Especial\|Estado}` | Filtrar por categoría |
 | GET | `/movimientos/competitivos` | Movimientos con potencia > 80 |
-| POST | `/movimientos` | Crear (`nombre`, `categoria`, `potencia`) |
-| PUT | `/movimientos/{id}` | Actualizar |
+| POST | `/movimientos` | Crear (`nombre`, `categoria`, `potencia`; `nombreEs` opcional) |
+| PUT | `/movimientos/{id}` | Actualizar (si no se envía `nombreEs`, se conserva el que tenía) |
 | DELETE | `/movimientos/{id}` | Eliminar |
+
+Ejemplo de movimiento:
+```json
+{ "idMovimiento": 9, "nombre": "thunder-punch", "nombreEs": "Puño Trueno", "categoria": "Físico", "potencia": 75, "esCompetitivo": false }
+```
+`nombre` es el slug en inglés de la PokeAPI y `nombreEs` el nombre en español (o el de inglés si no hay traducción; `null` si el movimiento se creó a mano sin él o aún no se ha reimportado). Al reimportar, los movimientos que ya existen actualizan su `nombreEs`.
 
 `esCompetitivo` lo calcula el servidor: es `true` si la potencia es mayor a 80.
 

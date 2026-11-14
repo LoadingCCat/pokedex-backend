@@ -46,7 +46,7 @@ com.pokedex/
 - **`Ruta`** = lugar real de los juegos, sacado de `/pokemon/{id}/encounters`. `idPokeapi` (único) identifica las importadas; las creadas con `POST /rutas` lo tienen en `null` (el controller lo fuerza).
 - **`Movimiento`**: `categoria` ∈ {Físico, Especial, Estado}; `esCompetitivo` lo calcula el servidor (`potencia > 80`). Antes de borrar uno hay que desvincularlo de `pokemon_movimiento` (`desvincularDePokemons`).
 - `tipoObtencion` se decide en `definirObtencion()` en este orden: Inicial → Singular → Fósil → Legendario → Regalo → Salvaje → Huevo → Evolución → Sin datos. Iniciales y fósiles son listas fijas en `PokemonService` (la PokeAPI no los marca).
-- Los nombres de Pokémon, movimientos y muchas rutas están en formato slug/inglés (`thunder-punch`, "Viridian Forest"). La descripción sí viene en español.
+- `nombre` de Pokémon y movimientos es el slug en inglés de la PokeAPI (`thunder-punch`) y **no se cambia** (el frontend depende de él). `nombreEs` (nullable) es el nombre en español, sacado de `names` (idioma `es`, con respaldo en `en`). Las búsquedas por nombre miran ambos campos. Las rutas guardan directamente el nombre en español cuando existe. La descripción viene en español.
 
 ## Contrato de la API (el frontend depende de esto)
 
@@ -77,10 +77,10 @@ com.pokedex/
 
 ## Pendiente / ideas
 
-- Nombres en español para rutas y movimientos (la PokeAPI los tiene en `names`, idioma `es`).
+- Búsqueda por nombre sin importar tildes (requiere la extensión `unaccent` de PostgreSQL).
 - Cadena evolutiva: `GET /pokemons/{id}/evoluciones`.
 - Filtros combinados (ej. `?tipo=fire&generacion=1`).
 - Paginación en `/movimientos` y `/rutas`.
 - Importación en segundo plano con endpoint de estado.
 - Tests que no dependan de PostgreSQL (`@WebMvcTest`, o H2/Testcontainers).
-- Al reimportar, los movimientos ya existentes no se actualizan (los Pokémon sí).
+- Al reimportar, de los movimientos ya existentes solo se actualiza `nombreEs` (no `categoria` ni `potencia`, para no pisar cambios hechos con PUT); los Pokémon sí se actualizan completos.

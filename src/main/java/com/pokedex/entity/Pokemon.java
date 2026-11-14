@@ -21,6 +21,10 @@ public class Pokemon {
     @Column(nullable = false, length = 100)
     private String nombre;
 
+    // Nombre en español (de /pokemon-species/{id} -> names). null hasta reimportar
+    @Column(name = "nombre_es", length = 100)
+    private String nombreEs;
+
     @Column(columnDefinition = "TEXT")
     private String descripcion;
 

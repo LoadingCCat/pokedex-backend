@@ -38,7 +38,7 @@ public class MovimientoController {
     // GET /api/movimientos/buscar?nombre=thunder
     @GetMapping("/buscar")
     public List<Movimiento> buscarPorNombre(@RequestParam String nombre) {
-        return movimientoRepository.findByNombreContainingIgnoreCase(nombre.trim());
+        return movimientoRepository.buscarPorNombre(nombre.trim());
     }
 
     // GET /api/movimientos/categoria/Especial
@@ -73,6 +73,10 @@ public class MovimientoController {
         existente.setNombre(datos.getNombre());
         existente.setCategoria(datos.getCategoria());
         existente.setPotencia(datos.getPotencia());
+        // nombreEs es opcional: si no viene, se conserva el que ya tenía
+        if (datos.getNombreEs() != null) {
+            existente.setNombreEs(datos.getNombreEs());
+        }
         prepararCampos(existente);
         return movimientoRepository.save(existente);
     }
@@ -108,6 +112,10 @@ public class MovimientoController {
     /** Normaliza el texto y calcula esCompetitivo (true si la potencia es mayor a 80). */
     private void prepararCampos(Movimiento movimiento) {
         movimiento.setNombre(movimiento.getNombre().trim());
+        if (movimiento.getNombreEs() != null) {
+            String nombreEs = movimiento.getNombreEs().trim();
+            movimiento.setNombreEs(nombreEs.isEmpty() ? null : nombreEs);
+        }
         String categoria = movimiento.getCategoria().trim();
         movimiento.setCategoria(CATEGORIAS.stream()
                 .filter(c -> c.equalsIgnoreCase(categoria)).findFirst().orElse(categoria));
