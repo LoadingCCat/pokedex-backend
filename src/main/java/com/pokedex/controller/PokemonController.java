@@ -1,8 +1,10 @@
 package com.pokedex.controller;
 
+import com.pokedex.entity.Movimiento;
 import com.pokedex.entity.Pokemon;
 import com.pokedex.exception.BadRequestException;
 import com.pokedex.exception.ResourceNotFoundException;
+import com.pokedex.repository.MovimientoRepository;
 import com.pokedex.repository.PokemonRepository;
 import com.pokedex.repository.RutaRepository;
 import com.pokedex.service.PokemonService;
@@ -24,12 +26,14 @@ public class PokemonController {
 
     private final PokemonRepository pokemonRepository;
     private final RutaRepository rutaRepository;
+    private final MovimientoRepository movimientoRepository;
     private final PokemonService pokemonService;
 
     public PokemonController(PokemonRepository pokemonRepository, RutaRepository rutaRepository,
-                             PokemonService pokemonService) {
+                             MovimientoRepository movimientoRepository, PokemonService pokemonService) {
         this.pokemonRepository = pokemonRepository;
         this.rutaRepository = rutaRepository;
+        this.movimientoRepository = movimientoRepository;
         this.pokemonService = pokemonService;
     }
 
@@ -66,6 +70,15 @@ public class PokemonController {
     public Pokemon obtenerPorId(@PathVariable Integer id) {
         return pokemonRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pokémon", id));
+    }
+
+    // GET /api/pokemons/{id}/movimientos  -> movimientos que puede aprender, ordenados por nombre
+    @GetMapping("/{id}/movimientos")
+    public List<Movimiento> listarMovimientos(@PathVariable Integer id) {
+        if (!pokemonRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Pokémon", id);
+        }
+        return movimientoRepository.buscarPorPokemon(id);
     }
 
     // GET /api/pokemons/tipo/fire

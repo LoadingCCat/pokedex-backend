@@ -16,6 +16,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -116,15 +117,22 @@ public class PokemonService {
     public record ResultadoImportacion(String recurso, int importados, int omitidos, int fallidos) {}
 
     /**
-     * Memoria temporal durante una importación para no pedir dos veces el mismo
-     * lugar a la PokeAPI (muchos Pokémon comparten las mismas áreas).
+     * Memoria temporal durante una importación para no pedir dos veces lo mismo a la
+     * PokeAPI: muchos Pokémon comparten las mismas áreas y los mismos movimientos.
      */
-    private static class CacheRutas {
+    private static class CacheImportacion {
+        // Rutas
         final Map<String, Ruta> porArea = new HashMap<>();      // nombre del área -> Ruta
         final Map<String, Ruta> porLugar = new HashMap<>();     // URL del lugar   -> Ruta
         int creadas = 0;
         int existentes = 0;
         int fallidas = 0;
+
+        // Movimientos que aprenden los Pokémon
+        final Map<String, Movimiento> movimientosPorNombre = new HashMap<>(); // nombre -> Movimiento
+        final Set<String> movimientosFallidos = new HashSet<>();               // no se reintentan
+        int movimientosCreados = 0;
+        int movimientosExistentes = 0;
     }
 
     private final PokemonRepository pokemonRepository;
@@ -158,10 +166,12 @@ public class PokemonService {
         try {
             limpiarRutasDeEjemplo();
 
-            CacheRutas cache = new CacheRutas();
+            CacheImportacion cache = new CacheImportacion();
             List<ResultadoImportacion> resultados = new ArrayList<>();
             resultados.add(importarPokemonsMasivo(totalPokemon, cache));
             resultados.add(new ResultadoImportacion("rutas", cache.creadas, cache.existentes, cache.fallidas));
+            resultados.add(new ResultadoImportacion("movimientos-aprendidos", cache.movimientosCreados,
+                    cache.movimientosExistentes, cache.movimientosFallidos.size()));
             resultados.add(importarMovimientosMasivo(totalMovimientos));
             return resultados;
         } finally {
@@ -183,10 +193,10 @@ public class PokemonService {
     // =====================================================================
 
     public ResultadoImportacion importarPokemonsMasivo(int total) {
-        return importarPokemonsMasivo(total, new CacheRutas());
+        return importarPokemonsMasivo(total, new CacheImportacion());
     }
 
-    private ResultadoImportacion importarPokemonsMasivo(int total, CacheRutas cache) {
+    private ResultadoImportacion importarPokemonsMasivo(int total, CacheImportacion cache) {
         int importados = 0;
         int fallidos = 0;
 
@@ -206,7 +216,7 @@ public class PokemonService {
         return new ResultadoImportacion("pokemons", importados, 0, fallidos);
     }
 
-    private void importarPokemon(int id, CacheRutas cache) {
+    private void importarPokemon(int id, CacheImportacion cache) {
         Map<String, Object> datos = getJson(POKEAPI + "/pokemon/" + id);
         if (datos == null) {
             throw new IllegalStateException("La PokeAPI no devolvió datos");
@@ -233,6 +243,14 @@ public class PokemonService {
         pokemon.setAltura(decimal(datos.get("height"))); // PokeAPI: decímetros -> metros
         pokemon.setPeso(decimal(datos.get("weight")));   // PokeAPI: hectogramos -> kg
         pokemon.setTipos(obtenerTipos(datos));
+        asignarEstadisticas(pokemon, datos);
+
+        // Si los movimientos fallan, se conservan los que ya tenía (no se toca la lista)
+        try {
+            pokemon.setMovimientos(obtenerMovimientos(datos, cache));
+        } catch (Exception e) {
+            log.warn("No se pudieron obtener los movimientos del Pokémon ID {}: {}", id, e.getMessage());
+        }
 
         // Si los encuentros fallan, se conservan las rutas que ya tenía
         Encuentros encuentros;
@@ -261,6 +279,62 @@ public class PokemonService {
             tipos.add(tipo);
         }
         return new ArrayList<>(tipos);
+    }
+
+    /** Lee las 6 estadísticas base de "stats" (hp, attack, defense, special-attack, special-defense, speed). */
+    private void asignarEstadisticas(Pokemon pokemon, Map<String, Object> datos) {
+        for (Map<String, Object> entrada : lista(datos.get("stats"))) {
+            String nombre = (String) mapa(entrada.get("stat")).get("name");
+            Object valor = entrada.get("base_stat");
+            if (nombre == null || !(valor instanceof Number numero)) {
+                continue;
+            }
+            int base = numero.intValue();
+            switch (nombre) {
+                case "hp" -> pokemon.setPs(base);
+                case "attack" -> pokemon.setAtaque(base);
+                case "defense" -> pokemon.setDefensa(base);
+                case "special-attack" -> pokemon.setAtaqueEspecial(base);
+                case "special-defense" -> pokemon.setDefensaEspecial(base);
+                case "speed" -> pokemon.setVelocidad(base);
+                default -> { } // la PokeAPI no trae otras, pero se ignoran por si acaso
+            }
+        }
+    }
+
+    /**
+     * Movimientos que puede aprender el Pokémon (en cualquier juego), de "moves" en /pokemon/{id}.
+     * Los que no existen en la BD se descargan de /move/{id} una sola vez por importación.
+     */
+    private List<Movimiento> obtenerMovimientos(Map<String, Object> datos, CacheImportacion cache) {
+        Set<Movimiento> movimientos = new LinkedHashSet<>();
+        for (Map<String, Object> entrada : lista(datos.get("moves"))) {
+            Map<String, Object> move = mapa(entrada.get("move"));
+            String nombre = (String) move.get("name");
+            String url = (String) move.get("url");
+            if (nombre == null || url == null || cache.movimientosFallidos.contains(nombre)) {
+                continue;
+            }
+            Movimiento movimiento = cache.movimientosPorNombre.get(nombre);
+            if (movimiento == null) {
+                movimiento = movimientoRepository.findFirstByNombreIgnoreCase(nombre).orElse(null);
+                if (movimiento != null) {
+                    cache.movimientosExistentes++;
+                } else {
+                    try {
+                        movimiento = movimientoRepository.save(crearMovimiento(getJson(url)));
+                        cache.movimientosCreados++;
+                    } catch (Exception e) {
+                        cache.movimientosFallidos.add(nombre);
+                        log.warn("No se pudo obtener el movimiento {}: {}", nombre, e.getMessage());
+                        continue;
+                    }
+                }
+                cache.movimientosPorNombre.put(nombre, movimiento);
+            }
+            movimientos.add(movimiento);
+        }
+        return new ArrayList<>(movimientos);
     }
 
     /** Lee "generation-iv" desde species; si no hay datos, la calcula por el número de Pokédex. */
@@ -319,7 +393,7 @@ public class PokemonService {
      * Puede devolver una lista vacía: la PokeAPI no tiene encuentros de algunos Pokémon
      * (iniciales, legendarios de evento, y casi todos los de Galar y Paldea).
      */
-    private Encuentros obtenerEncuentros(int idPokedex, CacheRutas cache) {
+    private Encuentros obtenerEncuentros(int idPokedex, CacheImportacion cache) {
         Set<Ruta> rutas = new LinkedHashSet<>();
         Set<String> metodos = new LinkedHashSet<>();
         for (Map<String, Object> encuentro : getJsonList(POKEAPI + "/pokemon/" + idPokedex + "/encounters")) {
@@ -459,7 +533,7 @@ public class PokemonService {
     }
 
     /** Área -> lugar -> Ruta guardada en la BD (la crea si no existe). */
-    private Ruta resolverRutaDeArea(String urlArea, CacheRutas cache) {
+    private Ruta resolverRutaDeArea(String urlArea, CacheImportacion cache) {
         try {
             Map<String, Object> area = getJson(urlArea);
             String urlLugar = (String) mapa(area.get("location")).get("url");
@@ -549,18 +623,7 @@ public class PokemonService {
                     continue;
                 }
 
-                String claseDanio = datos.get("damage_class") != null
-                        ? (String) mapa(datos.get("damage_class")).get("name")
-                        : "physical";
-
-                Integer potencia = datos.get("power") != null ? ((Number) datos.get("power")).intValue() : 0;
-
-                Movimiento movimiento = new Movimiento();
-                movimiento.setNombre(nombre);
-                movimiento.setCategoria(traducirCategoria(claseDanio));
-                movimiento.setPotencia(potencia);
-                movimiento.setEsCompetitivo(potencia > 80);
-                movimientoRepository.save(movimiento);
+                movimientoRepository.save(crearMovimiento(datos));
                 importados++;
             } catch (Exception e) {
                 fallidos++;
@@ -569,6 +632,22 @@ public class PokemonService {
         }
         log.info("Movimientos importados: {} (ya existían: {}, fallidos: {})", importados, omitidos, fallidos);
         return new ResultadoImportacion("movimientos", importados, omitidos, fallidos);
+    }
+
+    /** Arma un Movimiento (sin guardarlo) a partir del JSON de /move/{id}. */
+    private Movimiento crearMovimiento(Map<String, Object> datos) {
+        if (datos == null || datos.get("name") == null) {
+            throw new IllegalStateException("La PokeAPI no devolvió datos del movimiento");
+        }
+        String claseDanio = (String) mapa(datos.get("damage_class")).get("name");
+        Integer potencia = datos.get("power") instanceof Number numero ? numero.intValue() : 0;
+
+        Movimiento movimiento = new Movimiento();
+        movimiento.setNombre((String) datos.get("name"));
+        movimiento.setCategoria(traducirCategoria(claseDanio != null ? claseDanio : "physical"));
+        movimiento.setPotencia(potencia);
+        movimiento.setEsCompetitivo(potencia > 80);
+        return movimiento;
     }
 
     private String traducirCategoria(String claseDanio) {

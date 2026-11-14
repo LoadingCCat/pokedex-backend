@@ -15,7 +15,7 @@ API REST de la Pokedex+ hecha con Java 21, Spring Boot 4.1.2, Maven y PostgreSQL
    http://localhost:8080/api/pokemons/importar-rango?total=151&movimientos=100
    ```
    Para todos los Pokémon usa `total=1025`. Se puede ejecutar varias veces: actualiza lo que ya existe y no duplica nada.
-   La primera vez tarda más (unos minutos para 151) porque también descarga los lugares donde aparece cada Pokémon.
+   La primera vez tarda más (unos minutos para 151) porque también descarga los lugares donde aparece cada Pokémon y los movimientos que aprende.
 
 ## Endpoints
 
@@ -43,6 +43,7 @@ Formato de una respuesta paginada (siempre igual):
 | GET | `/pokemons/ruta/{idRuta}` | Pokémon que aparecen en una ruta |
 | GET | `/pokemons/obtencion/{tipo}` | Filtrar por forma de obtención (`inicial`, `legendario`, `fosil`, …; con o sin tilde) |
 | GET | `/pokemons/{id}` | Detalle (404 si no existe) |
+| GET | `/pokemons/{id}/movimientos` | Movimientos que puede aprender, ordenados por nombre (404 si el Pokémon no existe) |
 | GET/POST | `/pokemons/importar-rango?total=N&movimientos=M` | Importar desde PokeAPI |
 | GET/POST | `/pokemons/importar-todo` | Importación rápida (50 + 50) |
 
@@ -59,10 +60,18 @@ Ejemplo de Pokémon:
   "imagenUrl": "https://raw.githubusercontent.com/PokeAPI/sprites/.../25.png",
   "altura": 0.4,
   "peso": 6.0,
+  "ps": 35,
+  "ataque": 55,
+  "defensa": 40,
+  "ataqueEspecial": 50,
+  "defensaEspecial": 50,
+  "velocidad": 90,
+  "totalEstadisticas": 320,
   "tipos": [{ "id": 1, "nombre": "electric" }],
   "rutas": [{ "idRuta": 3, "nombre": "Bosque Verde", "region": "Kanto", "descripcion": "...", "idPokeapi": 321 }]
 }
 ```
+Las estadísticas son las base de la PokeAPI; `totalEstadisticas` es su suma (la calcula el servidor). Los movimientos no van en este JSON porque son muchos: se piden aparte en `/pokemons/{id}/movimientos`.
 
 ### Movimientos — `/movimientos`
 | Método | Ruta | Descripción |

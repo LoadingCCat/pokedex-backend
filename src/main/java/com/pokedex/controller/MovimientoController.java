@@ -80,7 +80,10 @@ public class MovimientoController {
     // DELETE /api/movimientos/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarMovimiento(@PathVariable Integer id) {
-        movimientoRepository.delete(buscar(id));
+        Movimiento movimiento = buscar(id);
+        // Primero se quita de los Pokémon que lo aprenden; si no, la BD rechaza el borrado
+        movimientoRepository.desvincularDePokemons(id);
+        movimientoRepository.delete(movimiento);
         return ResponseEntity.noContent().build();
     }
 

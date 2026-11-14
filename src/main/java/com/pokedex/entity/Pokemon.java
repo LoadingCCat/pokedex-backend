@@ -1,5 +1,6 @@
 package com.pokedex.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -51,6 +52,34 @@ public class Pokemon {
     @Column
     private Double peso;
 
+    // ---- Estadísticas base (de /pokemon/{id} -> stats en la PokeAPI) ----
+    @Column
+    private Integer ps;
+
+    @Column
+    private Integer ataque;
+
+    @Column
+    private Integer defensa;
+
+    @Column(name = "ataque_especial")
+    private Integer ataqueEspecial;
+
+    @Column(name = "defensa_especial")
+    private Integer defensaEspecial;
+
+    @Column
+    private Integer velocidad;
+
+    /** Suma de las 6 estadísticas base. Se calcula, no se guarda en la BD. null si falta alguna. */
+    public Integer getTotalEstadisticas() {
+        if (ps == null || ataque == null || defensa == null
+                || ataqueEspecial == null || defensaEspecial == null || velocidad == null) {
+            return null;
+        }
+        return ps + ataque + defensa + ataqueEspecial + defensaEspecial + velocidad;
+    }
+
     @ManyToMany
     @JoinTable(
         name = "pokemon_tipo",
@@ -66,4 +95,15 @@ public class Pokemon {
         inverseJoinColumns = @JoinColumn(name = "id_ruta")
     )
     private List<Ruta> rutas;
+
+    // Movimientos que puede aprender. No se incluyen en el JSON del Pokémon porque son
+    // muchos (Pikachu tiene más de 100); se consultan en GET /api/pokemons/{id}/movimientos
+    @ManyToMany
+    @JoinTable(
+        name = "pokemon_movimiento",
+        joinColumns = @JoinColumn(name = "id_pokedex"),
+        inverseJoinColumns = @JoinColumn(name = "id_movimiento")
+    )
+    @JsonIgnore
+    private List<Movimiento> movimientos;
 }
