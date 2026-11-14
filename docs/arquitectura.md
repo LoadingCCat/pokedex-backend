@@ -24,7 +24,7 @@ El frontend solo habla con nuestra API. La PokeAPI se consulta únicamente duran
 | `config/` | CORS |
 
 ## Datos
-Entidades: **Pokemon**, **Tipo**, **Ruta**, **Movimiento**
+Entidades: **Pokemon**, **Tipo**, **Ruta**, **Movimiento**, **Evolucion**
 
 ```
 Pokemon N──N Tipo         (pokemon_tipo)

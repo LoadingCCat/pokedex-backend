@@ -26,7 +26,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] B.15 F7 · `GET /pokemons/{id}/evoluciones` (cadenas guardadas al importar, tabla `evolucion`)
 
 ## Back · pendiente
-- [ ] B.25 Reimportar las 9 generaciones (`total=1025`) para llenar las cadenas evolutivas (hoy solo están las de los Pokémon 1–133)
+- [ ] B.25 Reimportar las 9 generaciones (`total=1025`) para llenar las cadenas evolutivas (hoy solo están las de los Pokémon 1–133). Al terminar: `cadenas-evolutivas` con 0 fallidos y revisar que ninguna `condicion` diga "Método especial" o "Sin datos en la PokeAPI" sin motivo
 - [ ] B.18 Decidir si al reimportar se actualizan `categoria` y `potencia` de los movimientos existentes (hoy solo `nombreEs`, para no pisar cambios hechos con PUT)
 - [ ] B.22 Búsqueda por nombre sin importar tildes (extensión `unaccent` de PostgreSQL)
 - [ ] B.19 Pruebas de los criterios de aceptación de F1–F5 sin depender de PostgreSQL (U5)

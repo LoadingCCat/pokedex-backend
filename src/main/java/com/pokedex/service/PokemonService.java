@@ -644,7 +644,18 @@ public class PokemonService {
         Map.entry("recoil-damage", "Tras recibir daño de retroceso"),
         Map.entry("use-move", "Usando un movimiento"),
         Map.entry("three-defeated-bisharp", "Tras derrotar a tres Bisharp líderes"),
-        Map.entry("gimmighoul-coins", "Con 999 monedas de Gimmighoul")
+        Map.entry("gimmighoul-coins", "Con 999 monedas de Gimmighoul"),
+        Map.entry("in-battle-level-up", "Subiendo de nivel en combate"),
+        Map.entry("meltan-candies", "Con 400 caramelos de Meltan")
+        // "unclassified" y cualquier método nuevo de la PokeAPI salen como "Método especial"
+    );
+
+    /** Sufijos de las formas regionales en los nombres de forma de la PokeAPI (ej. "meowth-galar"). */
+    private static final Map<String, String> FORMAS_REGIONALES = Map.of(
+        "alola", "de Alola",
+        "galar", "de Galar",
+        "hisui", "de Hisui",
+        "paldea", "de Paldea"
     );
 
     /**
@@ -661,7 +672,7 @@ public class PokemonService {
             if (cadena == null || !(cadena.get("id") instanceof Number idCadena)) {
                 throw new IllegalStateException("La PokeAPI no devolvió la cadena");
             }
-            guardarEtapa(mapa(cadena.get("chain")), null, idCadena.intValue(), cache);
+            guardarEtapa(mapa(cadena.get("chain")), null, null, idCadena.intValue(), cache);
             cache.cadenasGuardadas.add(url);
             cache.cadenasFallidas.remove(url);
         } catch (Exception e) {
@@ -671,8 +682,8 @@ public class PokemonService {
     }
 
     /** Guarda una etapa de la cadena y, de forma recursiva, las etapas a las que evoluciona. */
-    private void guardarEtapa(Map<String, Object> nodo, Integer idPreEvolucion, int idCadena,
-                              CacheImportacion cache) {
+    private void guardarEtapa(Map<String, Object> nodo, Integer idPreEvolucion, String nombrePreEvolucion,
+                              int idCadena, CacheImportacion cache) {
         Map<String, Object> especie = mapa(nodo.get("species"));
         Integer idPokedex = idDeUrl((String) especie.get("url"));
         String nombre = (String) especie.get("name");
@@ -686,24 +697,66 @@ public class PokemonService {
         etapa.setIdPreEvolucion(idPreEvolucion);
         etapa.setCondicion(idPreEvolucion == null
                 ? null
-                : describirCondicion(lista(nodo.get("evolution_details")), cache));
+                : describirCondicion(lista(nodo.get("evolution_details")), nombrePreEvolucion, nombre, cache));
         evolucionRepository.save(etapa);
 
         for (Map<String, Object> siguiente : lista(nodo.get("evolves_to"))) {
-            guardarEtapa(siguiente, idPokedex, idCadena, cache);
+            guardarEtapa(siguiente, idPokedex, nombre, idCadena, cache);
         }
+    }
+
+    /**
+     * Si el detalle solo aplica a una forma distinta de la normal (regional u otra), devuelve
+     * cuál: "Meowth de Galar". Devuelve null si aplica a la forma normal de la especie.
+     * La PokeAPI lo indica en required_pokemon_form (quién evoluciona) y evolved_pokemon_form
+     * (en qué forma se convierte); si coinciden con el nombre de la especie, es la forma normal.
+     */
+    private static String formaEspecial(Map<String, Object> detalle, String nombrePreEvolucion, String nombre) {
+        String requerida = (String) mapa(detalle.get("required_pokemon_form")).get("name");
+        if (requerida != null && !requerida.equals(nombrePreEvolucion)) {
+            return describirForma(requerida, nombrePreEvolucion);
+        }
+        String resultante = (String) mapa(detalle.get("evolved_pokemon_form")).get("name");
+        if (resultante != null && !resultante.equals(nombre)) {
+            return describirForma(resultante, nombre);
+        }
+        return null;
+    }
+
+    /** "meowth-galar" -> "Meowth de Galar"; otras formas, el slug legible ("Basculin White Striped"). */
+    private static String describirForma(String forma, String especie) {
+        if (especie != null && forma.startsWith(especie + "-")) {
+            String region = FORMAS_REGIONALES.get(forma.substring(especie.length() + 1));
+            if (region != null) {
+                return capitalizar(especie.replace('-', ' ')) + " " + region;
+            }
+        }
+        return capitalizar(forma.replace('-', ' '));
     }
 
     /**
      * Texto en español de cómo se llega a una etapa. La PokeAPI repite la condición por cada
      * juego y lista una por cada lugar: se quitan las repetidas y los lugares de una misma
      * forma se agrupan ("Subiendo de nivel en Bosque Vetusto / Pinwheel Forest o Usando Piedra Hoja").
+     *
+     * Las formas regionales están fuera del alcance (F7): si hay alguna forma de evolucionar
+     * de la especie normal, las que solo aplican a otra forma se descartan (Slowpoke de Galar
+     * con el Brazal Galanuez). Si solo existe esa vía (Perrserker), se conserva y se aclara:
+     * "Nivel 28 (solo Meowth de Galar)".
      */
-    private String describirCondicion(List<Map<String, Object>> detalles, CacheImportacion cache) {
+    private String describirCondicion(List<Map<String, Object>> detalles, String nombrePreEvolucion,
+                                      String nombre, CacheImportacion cache) {
+        boolean hayFormaNormal = detalles.stream()
+                .anyMatch(d -> formaEspecial(d, nombrePreEvolucion, nombre) == null);
+
         Map<String, Set<String>> lugaresPorForma = new java.util.LinkedHashMap<>();
         for (Map<String, Object> detalle : detalles) {
-            Set<String> lugares = lugaresPorForma.computeIfAbsent(
-                    describirDetalle(detalle, cache), k -> new LinkedHashSet<>());
+            String forma = formaEspecial(detalle, nombrePreEvolucion, nombre);
+            if (forma != null && hayFormaNormal) {
+                continue;
+            }
+            String texto = describirDetalle(detalle, cache) + (forma != null ? " (solo " + forma + ")" : "");
+            Set<String> lugares = lugaresPorForma.computeIfAbsent(texto, k -> new LinkedHashSet<>());
             Map<String, Object> lugar = mapa(detalle.get("location"));
             if (lugar.get("name") != null) {
                 lugares.add(nombreDeLugarDeEvolucion(lugar));

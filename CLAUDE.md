@@ -55,7 +55,7 @@ com.pokedex/
 ├── PokedexBackendApplication   # arranque + bean RestTemplate (timeouts 5 s conexión / 15 s lectura)
 ├── config/CorsConfig           # CORS abierto ("*") en /api/** para desarrollo
 ├── controller/                 # Pokemon, Movimiento, Ruta, Tipo — validan la entrada y lanzan excepciones propias
-├── entity/                     # Pokemon, Movimiento, Ruta, Tipo
+├── entity/                     # Pokemon, Movimiento, Ruta, Tipo, Evolucion
 ├── exception/                  # GlobalExceptionHandler + BadRequest / ResourceNotFound / Conflict
 ├── repository/                 # Spring Data JPA
 └── service/                    # PokemonService: toda la importación desde la PokeAPI
@@ -102,7 +102,7 @@ com.pokedex/
 
 ## Pendiente
 
-La lista de pendientes vive en `docs/tareas.md` (sección "Back · pendiente"); las specs de lo que falta están en `docs/specs/` (F7 y F8).
+La lista de pendientes vive en `docs/tareas.md` (sección "Back · pendiente"). Las specs F1–F8 de `docs/specs/` están todas implementadas.
 
 ## Notas
 
