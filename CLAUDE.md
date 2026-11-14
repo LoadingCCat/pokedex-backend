@@ -73,7 +73,7 @@ com.pokedex/
 ## Contrato de la API (el frontend depende de esto)
 
 - Base: `http://localhost:8080/api`. Si cambias un endpoint, un campo o un formato, **actualiza `docs/contratos/api.md`** en el mismo commit y avisa que el frontend se ve afectado. El README solo tiene la instalación y el índice de docs.
-- Listas de Pokémon, movimientos y rutas paginadas con `?page=&size=&sort=` (por defecto 20, máximo 200; movimientos y rutas se ordenan por `nombre` con `@SortDefault`, no `@PageableDefault`, que cambia el tamaño a 10). Siguen como arreglo: `/pokemons/{id}/movimientos`, `/rutas/regiones`, `/tipos`. Formato fijo (`serialization-mode=via-dto`):
+- Listas de Pokémon, movimientos y rutas paginadas con `?page=&size=&sort=` (por defecto 20, máximo 200; sin `sort`, los Pokémon se ordenan por `idPokedex` y movimientos y rutas por `nombre`, con `@SortDefault`, no `@PageableDefault`, que cambia el tamaño a 10). Siguen como arreglo: `/pokemons/{id}/movimientos`, `/rutas/regiones`, `/tipos`. Formato fijo (`serialization-mode=via-dto`):
   `{ "content": [...], "page": { "size", "number", "totalElements", "totalPages" } }`
 - `GET /pokemons` acepta filtros opcionales combinados con Y (`nombre`, `generacion`, `tipo`, `region`, `obtencion`), armados en `repository/PokemonFiltros` (`Specification` con `EXISTS`, sin `JOIN`). Un filtro nuevo se agrega ahí, no como otra `@Query`.
 - Todos los errores salen de `GlobalExceptionHandler` con el mismo JSON: `{ timestamp, status, error, mensaje, path }`.

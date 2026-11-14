@@ -14,7 +14,7 @@ Formato de una respuesta paginada (siempre igual):
   "page": { "size": 20, "number": 0, "totalElements": 151, "totalPages": 8 }
 }
 ```
-`page.number` empieza en 0. Un `sort` por un campo que no existe responde 400.
+`page.number` empieza en 0. Si no se envía `sort`, las listas de Pokémon se ordenan por `idPokedex` ascendente. Un `sort` por un campo que no existe responde 400.
 
 | Método | Ruta | Descripción |
 |---|---|---|

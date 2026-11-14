@@ -22,10 +22,10 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] B.23 Importar las 9 generaciones (`total=1025`): 1025 importados, 0 fallidos (620 rutas, 797 movimientos)
 - [x] B.17 Paginación en `/movimientos` y `/rutas` (cambió el contrato: avisar al frontend) + `sort` inválido → 400 también en consultas `@Query`
 - [x] B.16 F8 · Filtros combinados en `GET /pokemons` (`nombre`, `generacion`, `tipo`, `region`, `obtencion`)
+- [x] B.24 F1 · Orden por defecto `idPokedex` en todas las listas de Pokémon (antes salían en el orden físico de la BD)
 
 ## Back · pendiente
 - [ ] B.15 F7 · `GET /pokemons/{id}/evoluciones`
-- [ ] B.24 Orden por defecto en las listas de Pokémon (hoy, sin `sort`, salen en el orden físico de la BD: la primera página empieza en pikachu y la paginación puede repetir o saltar registros)
 - [ ] B.18 Decidir si al reimportar se actualizan `categoria` y `potencia` de los movimientos existentes (hoy solo `nombreEs`, para no pisar cambios hechos con PUT)
 - [ ] B.22 Búsqueda por nombre sin importar tildes (extensión `unaccent` de PostgreSQL)
 - [ ] B.19 Pruebas de los criterios de aceptación de F1–F5 sin depender de PostgreSQL (U5)

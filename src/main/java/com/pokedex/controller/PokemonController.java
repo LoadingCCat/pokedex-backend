@@ -12,6 +12,7 @@ import com.pokedex.service.PokemonService;
 import com.pokedex.service.PokemonService.ResultadoImportacion;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.SortDefault;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedHashMap;
@@ -42,6 +43,10 @@ public class PokemonController {
     // CONSULTAS (contrato para el frontend)
     // ---------------------------------------------------------------
 
+    // Todas las listas de Pokémon se ordenan por idPokedex si no se envía ?sort= (@SortDefault):
+    // sin un orden fijo, la BD devuelve las filas en cualquier orden y la paginación puede
+    // repetir o saltarse Pokémon.
+
     // GET /api/pokemons?page=0&size=20&sort=idPokedex
     // Filtros opcionales que se combinan con Y: ?nombre=&generacion=&tipo=&region=&obtencion=
     // Ej. /api/pokemons?tipo=fire&generacion=1. Un filtro vacío (?tipo=) se ignora.
@@ -51,7 +56,7 @@ public class PokemonController {
                                         @RequestParam(required = false) String tipo,
                                         @RequestParam(required = false) String region,
                                         @RequestParam(required = false) String obtencion,
-                                        Pageable pageable) {
+                                        @SortDefault("idPokedex") Pageable pageable) {
         nombre = limpiar(nombre);
         tipo = limpiar(tipo);
         region = limpiar(region);
@@ -91,7 +96,7 @@ public class PokemonController {
 
     // GET /api/pokemons/buscar?nombre=pika
     @GetMapping("/buscar")
-    public Page<Pokemon> buscarPorNombre(@RequestParam String nombre, Pageable pageable) {
+    public Page<Pokemon> buscarPorNombre(@RequestParam String nombre, @SortDefault("idPokedex") Pageable pageable) {
         if (nombre.isBlank()) {
             throw new BadRequestException("El parámetro 'nombre' no puede estar vacío");
         }
@@ -100,7 +105,7 @@ public class PokemonController {
 
     // GET /api/pokemons/generacion/1
     @GetMapping("/generacion/{generacion}")
-    public Page<Pokemon> listarPorGeneracion(@PathVariable Integer generacion, Pageable pageable) {
+    public Page<Pokemon> listarPorGeneracion(@PathVariable Integer generacion, @SortDefault("idPokedex") Pageable pageable) {
         validarGeneracion(generacion);
         return pokemonRepository.findByGeneracion(generacion, pageable);
     }
@@ -123,20 +128,20 @@ public class PokemonController {
 
     // GET /api/pokemons/tipo/fire
     @GetMapping("/tipo/{tipo}")
-    public Page<Pokemon> listarPorTipo(@PathVariable String tipo, Pageable pageable) {
+    public Page<Pokemon> listarPorTipo(@PathVariable String tipo, @SortDefault("idPokedex") Pageable pageable) {
         return pokemonRepository.findByTiposNombreIgnoreCase(tipo, pageable);
     }
 
     // GET /api/pokemons/region/kanto
     @GetMapping("/region/{region}")
-    public Page<Pokemon> listarPorRegion(@PathVariable String region, Pageable pageable) {
+    public Page<Pokemon> listarPorRegion(@PathVariable String region, @SortDefault("idPokedex") Pageable pageable) {
         return pokemonRepository.buscarPorRegion(region, pageable);
     }
 
     // GET /api/pokemons/obtencion/legendario  -> por forma de obtención
     // Valores: Inicial, Singular, Fósil, Legendario, Salvaje, Regalo, Huevo, Evolución, Sin datos
     @GetMapping("/obtencion/{tipoObtencion}")
-    public Page<Pokemon> listarPorObtencion(@PathVariable String tipoObtencion, Pageable pageable) {
+    public Page<Pokemon> listarPorObtencion(@PathVariable String tipoObtencion, @SortDefault("idPokedex") Pageable pageable) {
         // Acepta el valor con o sin tilde: /obtencion/fosil = /obtencion/Fósil
         return pokemonRepository.findByTipoObtencionIgnoreCase(normalizarObtencion(tipoObtencion), pageable);
     }
@@ -150,7 +155,7 @@ public class PokemonController {
 
     // GET /api/pokemons/ruta/{idRuta}  -> Pokémon que aparecen en una ruta concreta
     @GetMapping("/ruta/{idRuta}")
-    public Page<Pokemon> listarPorRuta(@PathVariable Integer idRuta, Pageable pageable) {
+    public Page<Pokemon> listarPorRuta(@PathVariable Integer idRuta, @SortDefault("idPokedex") Pageable pageable) {
         if (!rutaRepository.existsById(idRuta)) {
             throw new ResourceNotFoundException("Ruta", idRuta);
         }
