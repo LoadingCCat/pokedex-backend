@@ -4,10 +4,12 @@ import com.pokedex.entity.Pokemon;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface PokemonRepository extends JpaRepository<Pokemon, Integer> {
+// JpaSpecificationExecutor: permite los filtros combinados de GET /pokemons (ver PokemonFiltros)
+public interface PokemonRepository extends JpaRepository<Pokemon, Integer>, JpaSpecificationExecutor<Pokemon> {
 
     // Busca en el nombre original (slug en inglés) y en el nombre en español
     @Query(

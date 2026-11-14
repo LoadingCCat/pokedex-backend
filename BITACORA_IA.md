@@ -56,7 +56,8 @@ Pikachu (`/api/pokemons/25`) con `totalEstadisticas = 320` y unos 110 movimiento
 |---|---|
 | F6 · `nombreEs` en Pokemon y Movimiento, búsqueda en ambos campos, reimportación de `nombreEs` en movimientos existentes, README y CLAUDE.md actualizados | `dbcfb78` |
 
-| B.17 · Paginación en `/movimientos` y `/rutas`; `sort` inválido → 400 también en consultas `@Query`; B.23 verificada (1025 importados, 0 fallidos) | (este commit) |
+| B.17 · Paginación en `/movimientos` y `/rutas`; `sort` inválido → 400 también en consultas `@Query`; B.23 verificada (1025 importados, 0 fallidos) | `68f8aa1` |
+| B.16 · F8 filtros combinados en `GET /pokemons` (`PokemonFiltros` con `Specification`) | (este commit) |
 
 ### Errores del agente y cómo se corrigieron
 | Problema | Cómo se detectó | Corrección |

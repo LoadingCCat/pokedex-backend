@@ -5,6 +5,7 @@ import com.pokedex.entity.Pokemon;
 import com.pokedex.exception.BadRequestException;
 import com.pokedex.exception.ResourceNotFoundException;
 import com.pokedex.repository.MovimientoRepository;
+import com.pokedex.repository.PokemonFiltros;
 import com.pokedex.repository.PokemonRepository;
 import com.pokedex.repository.RutaRepository;
 import com.pokedex.service.PokemonService;
@@ -42,9 +43,50 @@ public class PokemonController {
     // ---------------------------------------------------------------
 
     // GET /api/pokemons?page=0&size=20&sort=idPokedex
+    // Filtros opcionales que se combinan con Y: ?nombre=&generacion=&tipo=&region=&obtencion=
+    // Ej. /api/pokemons?tipo=fire&generacion=1. Un filtro vacío (?tipo=) se ignora.
     @GetMapping
-    public Page<Pokemon> listarPokemons(Pageable pageable) {
-        return pokemonRepository.findAll(pageable);
+    public Page<Pokemon> listarPokemons(@RequestParam(required = false) String nombre,
+                                        @RequestParam(required = false) Integer generacion,
+                                        @RequestParam(required = false) String tipo,
+                                        @RequestParam(required = false) String region,
+                                        @RequestParam(required = false) String obtencion,
+                                        Pageable pageable) {
+        nombre = limpiar(nombre);
+        tipo = limpiar(tipo);
+        region = limpiar(region);
+        obtencion = limpiar(obtencion);
+        if (generacion != null) {
+            validarGeneracion(generacion);
+        }
+        if (obtencion != null) {
+            obtencion = normalizarObtencion(obtencion);
+        }
+        if (nombre == null && generacion == null && tipo == null && region == null && obtencion == null) {
+            return pokemonRepository.findAll(pageable);
+        }
+        return pokemonRepository.findAll(PokemonFiltros.con(nombre, generacion, tipo, region, obtencion), pageable);
+    }
+
+    /** Quita espacios; un filtro vacío o en blanco cuenta como no enviado. */
+    private static String limpiar(String valor) {
+        return valor == null || valor.isBlank() ? null : valor.trim();
+    }
+
+    private static void validarGeneracion(int generacion) {
+        if (generacion < 1 || generacion > MAX_GENERACION) {
+            throw new BadRequestException("La generación debe estar entre 1 y " + MAX_GENERACION);
+        }
+    }
+
+    /** Acepta el valor con o sin tilde (fosil = Fósil) y devuelve el nombre oficial; 400 si no existe. */
+    private static String normalizarObtencion(String tipoObtencion) {
+        String buscado = sinTildes(tipoObtencion.trim());
+        return TIPOS_OBTENCION.stream()
+                .filter(t -> sinTildes(t).equalsIgnoreCase(buscado))
+                .findFirst()
+                .orElseThrow(() -> new BadRequestException(
+                        "Tipo de obtención inválido. Valores: " + String.join(", ", TIPOS_OBTENCION)));
     }
 
     // GET /api/pokemons/buscar?nombre=pika
@@ -59,9 +101,7 @@ public class PokemonController {
     // GET /api/pokemons/generacion/1
     @GetMapping("/generacion/{generacion}")
     public Page<Pokemon> listarPorGeneracion(@PathVariable Integer generacion, Pageable pageable) {
-        if (generacion < 1 || generacion > MAX_GENERACION) {
-            throw new BadRequestException("La generación debe estar entre 1 y " + MAX_GENERACION);
-        }
+        validarGeneracion(generacion);
         return pokemonRepository.findByGeneracion(generacion, pageable);
     }
 
@@ -98,13 +138,7 @@ public class PokemonController {
     @GetMapping("/obtencion/{tipoObtencion}")
     public Page<Pokemon> listarPorObtencion(@PathVariable String tipoObtencion, Pageable pageable) {
         // Acepta el valor con o sin tilde: /obtencion/fosil = /obtencion/Fósil
-        String buscado = sinTildes(tipoObtencion.trim());
-        String valor = TIPOS_OBTENCION.stream()
-                .filter(t -> sinTildes(t).equalsIgnoreCase(buscado))
-                .findFirst()
-                .orElseThrow(() -> new BadRequestException(
-                        "Tipo de obtención inválido. Valores: " + String.join(", ", TIPOS_OBTENCION)));
-        return pokemonRepository.findByTipoObtencionIgnoreCase(valor, pageable);
+        return pokemonRepository.findByTipoObtencionIgnoreCase(normalizarObtencion(tipoObtencion), pageable);
     }
 
     private static final List<String> TIPOS_OBTENCION = List.of(

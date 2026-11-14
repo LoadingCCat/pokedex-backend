@@ -18,7 +18,7 @@ Formato de una respuesta paginada (siempre igual):
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/pokemons` | Listado paginado |
+| GET | `/pokemons` | Listado paginado, con filtros opcionales combinables (ver abajo) |
 | GET | `/pokemons/buscar?nombre=pika` | Búsqueda por nombre (parcial, sin importar mayúsculas); busca en `nombre` y en `nombreEs` |
 | GET | `/pokemons/generacion/{1-9}` | Filtrar por generación |
 | GET | `/pokemons/tipo/{nombre}` | Filtrar por tipo (`fire`, `water`, …) |
@@ -29,6 +29,22 @@ Formato de una respuesta paginada (siempre igual):
 | GET | `/pokemons/{id}/movimientos` | Movimientos que puede aprender, ordenados por nombre (404 si el Pokémon no existe) |
 | GET/POST | `/pokemons/importar-rango?total=N&movimientos=M` | Importar desde PokeAPI |
 | GET/POST | `/pokemons/importar-todo` | Importación rápida (50 + 50) |
+
+### Filtros combinados en `GET /pokemons`
+Todos son opcionales y se combinan con **Y**. Ejemplo: `/pokemons?tipo=fire&generacion=1&sort=velocidad,desc`.
+
+| Parámetro | Qué filtra | Valor inválido |
+|---|---|---|
+| `nombre` | Texto parcial, sin importar mayúsculas, en `nombre` o `nombreEs` | — |
+| `generacion` | 1 a 9 | 400 |
+| `tipo` | Nombre del tipo en inglés (`fire`, `water`…), sin importar mayúsculas. Un solo tipo por petición | Tipo inexistente → 200 con `content` vacío |
+| `region` | Nativos de la región **o** que aparecen en alguna de sus rutas (igual que `/pokemons/region/{nombre}`) | Región inexistente → `content` vacío |
+| `obtencion` | Forma de obtención, con o sin tilde (`fosil` = `Fósil`) | 400 con la lista de valores válidos |
+
+- Un parámetro vacío (`?tipo=&generacion=1`) se ignora, como si no se hubiera enviado.
+- Sin filtros, responde igual que el listado normal.
+- Se pueden combinar con `page`, `size` y `sort`. `page.totalElements` cuenta Pokémon distintos (sin duplicados).
+- Los endpoints de un solo filtro (`/buscar`, `/generacion/{n}`, `/tipo/{t}`, `/region/{r}`, `/obtencion/{o}`) siguen funcionando y dan el mismo resultado que su parámetro equivalente.
 
 Ejemplo de Pokémon:
 ```json
