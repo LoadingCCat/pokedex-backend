@@ -19,7 +19,7 @@ Formato de una respuesta paginada (siempre igual):
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET | `/pokemons` | Listado paginado, con filtros opcionales combinables (ver abajo) |
-| GET | `/pokemons/buscar?nombre=pika` | Búsqueda por nombre (parcial, sin importar mayúsculas); busca en `nombre` y en `nombreEs` |
+| GET | `/pokemons/buscar?nombre=pika` | Búsqueda por nombre (parcial, sin importar mayúsculas ni tildes: `pikachú` encuentra `pikachu`); busca en `nombre` y en `nombreEs` |
 | GET | `/pokemons/generacion/{1-9}` | Filtrar por generación |
 | GET | `/pokemons/tipo/{nombre}` | Filtrar por tipo (`fire`, `water`, …) |
 | GET | `/pokemons/region/{nombre}` | Pokémon nativos de la región **o** que aparecen en alguna de sus rutas (`kanto`, `johto`, `teselia`, …) |
@@ -36,7 +36,7 @@ Todos son opcionales y se combinan con **Y**. Ejemplo: `/pokemons?tipo=fire&gene
 
 | Parámetro | Qué filtra | Valor inválido |
 |---|---|---|
-| `nombre` | Texto parcial, sin importar mayúsculas, en `nombre` o `nombreEs` | — |
+| `nombre` | Texto parcial, sin importar mayúsculas ni tildes, en `nombre` o `nombreEs` | — |
 | `generacion` | 1 a 9 | 400 |
 | `tipo` | Nombre del tipo en inglés (`fire`, `water`…), sin importar mayúsculas. Un solo tipo por petición | Tipo inexistente → 200 con `content` vacío |
 | `region` | Nativos de la región **o** que aparecen en alguna de sus rutas (igual que `/pokemons/region/{nombre}`) | Región inexistente → `content` vacío |
@@ -111,7 +111,7 @@ Las listas son paginadas, con el mismo formato `{ content, page }` y los mismos 
 |---|---|---|
 | GET | `/movimientos` | Listado paginado |
 | GET | `/movimientos/{id}` | Detalle (404 si no existe) |
-| GET | `/movimientos/buscar?nombre=...` | Búsqueda paginada por nombre (parcial, sin importar mayúsculas); busca en `nombre` y en `nombreEs` (`trueno` encuentra `thunder-punch`). Nombre vacío → 400 |
+| GET | `/movimientos/buscar?nombre=...` | Búsqueda paginada por nombre (parcial, sin importar mayúsculas ni tildes); busca en `nombre` y en `nombreEs` (`trueno` encuentra `thunder-punch`, `psiquico` encuentra "Psíquico" y `puno` encuentra "Puño Trueno"). Nombre vacío → 400 |
 | GET | `/movimientos/categoria/{Físico\|Especial\|Estado}` | Filtrar por categoría (paginado) |
 | GET | `/movimientos/competitivos` | Movimientos con potencia > 80 (paginado) |
 | POST | `/movimientos` | Crear (`nombre`, `categoria`, `potencia`; `nombreEs` opcional) |

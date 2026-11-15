@@ -24,14 +24,15 @@ public interface MovimientoRepository extends JpaRepository<Movimiento, Integer>
 
     Page<Movimiento> findByEsCompetitivoTrue(Pageable pageable);
 
-    // Busca en el nombre original (slug en inglés) y en el nombre en español
+    // Busca en el nombre original (slug en inglés) y en el nombre en español,
+    // sin importar mayúsculas ni tildes (unaccent de PostgreSQL, F9)
     @Query(
         value = "SELECT m FROM Movimiento m "
-              + "WHERE LOWER(m.nombre) LIKE LOWER(CONCAT('%', :nombre, '%')) "
-              + "OR LOWER(m.nombreEs) LIKE LOWER(CONCAT('%', :nombre, '%'))",
+              + "WHERE LOWER(function('unaccent', m.nombre)) LIKE LOWER(function('unaccent', CONCAT('%', :nombre, '%'))) "
+              + "OR LOWER(function('unaccent', m.nombreEs)) LIKE LOWER(function('unaccent', CONCAT('%', :nombre, '%')))",
         countQuery = "SELECT COUNT(m) FROM Movimiento m "
-              + "WHERE LOWER(m.nombre) LIKE LOWER(CONCAT('%', :nombre, '%')) "
-              + "OR LOWER(m.nombreEs) LIKE LOWER(CONCAT('%', :nombre, '%'))"
+              + "WHERE LOWER(function('unaccent', m.nombre)) LIKE LOWER(function('unaccent', CONCAT('%', :nombre, '%'))) "
+              + "OR LOWER(function('unaccent', m.nombreEs)) LIKE LOWER(function('unaccent', CONCAT('%', :nombre, '%')))"
     )
     Page<Movimiento> buscarPorNombre(@Param("nombre") String nombre, Pageable pageable);
 

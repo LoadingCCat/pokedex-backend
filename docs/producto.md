@@ -23,6 +23,7 @@ Este repositorio cubre el **backend**: una API REST estable que el frontend pued
 | F6 | Nombres en español | Hecha |
 | F7 | Cadena evolutiva | Hecha |
 | F8 | Filtros combinados | Hecha |
+| F9 | Búsqueda sin importar tildes | Hecha |
 
 ## Fuera del MVP
 - Autenticación y roles: login, registro de usuarios externos y favoritos por cuenta.

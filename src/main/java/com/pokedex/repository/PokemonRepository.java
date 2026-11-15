@@ -11,14 +11,15 @@ import org.springframework.data.repository.query.Param;
 // JpaSpecificationExecutor: permite los filtros combinados de GET /pokemons (ver PokemonFiltros)
 public interface PokemonRepository extends JpaRepository<Pokemon, Integer>, JpaSpecificationExecutor<Pokemon> {
 
-    // Busca en el nombre original (slug en inglés) y en el nombre en español
+    // Busca en el nombre original (slug en inglés) y en el nombre en español,
+    // sin importar mayúsculas ni tildes (unaccent de PostgreSQL, F9)
     @Query(
         value = "SELECT p FROM Pokemon p "
-              + "WHERE LOWER(p.nombre) LIKE LOWER(CONCAT('%', :nombre, '%')) "
-              + "OR LOWER(p.nombreEs) LIKE LOWER(CONCAT('%', :nombre, '%'))",
+              + "WHERE LOWER(function('unaccent', p.nombre)) LIKE LOWER(function('unaccent', CONCAT('%', :nombre, '%'))) "
+              + "OR LOWER(function('unaccent', p.nombreEs)) LIKE LOWER(function('unaccent', CONCAT('%', :nombre, '%')))",
         countQuery = "SELECT COUNT(p) FROM Pokemon p "
-              + "WHERE LOWER(p.nombre) LIKE LOWER(CONCAT('%', :nombre, '%')) "
-              + "OR LOWER(p.nombreEs) LIKE LOWER(CONCAT('%', :nombre, '%'))"
+              + "WHERE LOWER(function('unaccent', p.nombre)) LIKE LOWER(function('unaccent', CONCAT('%', :nombre, '%'))) "
+              + "OR LOWER(function('unaccent', p.nombreEs)) LIKE LOWER(function('unaccent', CONCAT('%', :nombre, '%')))"
     )
     Page<Pokemon> buscarPorNombre(@Param("nombre") String nombre, Pageable pageable);
 

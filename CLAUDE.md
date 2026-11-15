@@ -96,13 +96,13 @@ com.pokedex/
 
 - Nombres de clases, métodos, variables, comentarios y mensajes de error **en español**, como el resto del código.
 - Inyección por constructor (sin `@Autowired` en campos). Entidades con Lombok `@Getter @Setter @NoArgsConstructor`.
-- Consultas personalizadas: `@Query` explícita con `LOWER()` para comparar texto sin importar mayúsculas (PostgreSQL), o métodos derivados con `IgnoreCase`. Con `JOIN` + paginación, usar `DISTINCT` y un `countQuery` propio.
+- Consultas personalizadas: `@Query` explícita con `LOWER()` para comparar texto sin importar mayúsculas (PostgreSQL), o métodos derivados con `IgnoreCase`. Con `JOIN` + paginación, usar `DISTINCT` y un `countQuery` propio. Para ignorar tildes, `function('unaccent', …)` en JPQL o `cb.function("unaccent", …)` en una `Specification` (F9); la extensión la crea `schema.sql` al arrancar.
 - El JSON de la PokeAPI se lee como `Map`/`List` sin tipar: usa los helpers `getJson`, `getJsonList`, `mapa`, `lista`, y `@SuppressWarnings("unchecked")` a nivel de método.
 - Commits con mensajes cortos en español. Compilar (`.\mvnw.cmd clean compile`) y probar los endpoints afectados antes de hacer commit.
 
 ## Pendiente
 
-La lista de pendientes vive en `docs/tareas.md` (sección "Back · pendiente"). Las specs F1–F8 de `docs/specs/` están todas implementadas.
+La lista de pendientes vive en `docs/tareas.md` (sección "Back · pendiente"). Las specs F1–F9 de `docs/specs/` están todas implementadas.
 
 ## Notas
 

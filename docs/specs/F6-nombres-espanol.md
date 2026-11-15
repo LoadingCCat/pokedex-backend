@@ -23,4 +23,4 @@ Como fan hispanohablante, quiero ver los nombres de los Pokémon y de los movimi
 - [ ] `POST /api/movimientos` con `"nombreEs": "   "` (solo espacios) lo guarda como `null`.
 
 ## Fuera de alcance
-Traducir rutas (ya usan el español cuando la PokeAPI lo tiene) y tipos. Búsqueda sin importar tildes (pendiente: requiere `unaccent` en PostgreSQL).
+Traducir rutas (ya usan el español cuando la PokeAPI lo tiene) y tipos. La búsqueda sin importar tildes está en F9.

@@ -4,6 +4,7 @@ import com.pokedex.entity.Pokemon;
 import com.pokedex.entity.Ruta;
 import com.pokedex.entity.Tipo;
 import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
@@ -39,10 +40,11 @@ public final class PokemonFiltros {
             List<Predicate> condiciones = new ArrayList<>();
 
             if (nombre != null) {
-                String patron = "%" + nombre.toLowerCase() + "%";
+                // Sin importar mayúsculas ni tildes: unaccent de PostgreSQL a ambos lados (F9)
+                Expression<String> patron = sinTildes(cb, cb.literal("%" + nombre.toLowerCase() + "%"));
                 condiciones.add(cb.or(
-                        cb.like(cb.lower(pokemon.get("nombre")), patron),
-                        cb.like(cb.lower(pokemon.get("nombreEs")), patron)));
+                        cb.like(sinTildes(cb, cb.lower(pokemon.get("nombre"))), patron),
+                        cb.like(sinTildes(cb, cb.lower(pokemon.get("nombreEs"))), patron)));
             }
             if (generacion != null) {
                 condiciones.add(cb.equal(pokemon.get("generacion"), generacion));
@@ -72,6 +74,10 @@ public final class PokemonFiltros {
             }
             return cb.and(condiciones.toArray(new Predicate[0]));
         };
+    }
+
+    private static Expression<String> sinTildes(CriteriaBuilder cb, Expression<String> texto) {
+        return cb.function("unaccent", String.class, texto);
     }
 
     private static Predicate igualSinMayusculas(CriteriaBuilder cb, Root<Pokemon> pokemon,
