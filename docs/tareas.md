@@ -25,10 +25,10 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] B.24 F1 · Orden por defecto `idPokedex` en todas las listas de Pokémon (antes salían en el orden físico de la BD)
 - [x] B.15 F7 · `GET /pokemons/{id}/evoluciones` (cadenas guardadas al importar, tabla `evolucion`)
 - [x] B.25 Reimportar las 9 generaciones para llenar las cadenas evolutivas: 1025 importados, 0 fallidos; las 1025 etapas responden en `/evoluciones`, ninguna "Método especial" y una sola "Sin datos en la PokeAPI" (Manaphy, que la PokeAPI lista sin condición)
+- [x] B.18 Decidir si al reimportar se actualizan `categoria` y `potencia` de los movimientos existentes (hoy solo `nombreEs`, para no pisar cambios hechos con PUT) → decidido: se deja así (ver `docs/decisiones.md`)
 
 ## Back · pendiente
 - [ ] B.26 Pulir textos de `condicion` en las evoluciones (requiere reimportar): falta `min_steps` (Pawmot sale "Subiendo de nivel" en vez de caminar 1000 pasos), "Usando un movimiento, tras usar Puño Furia 20 veces" es redundante (Annihilape), Basculegion repite la condición por género, y las formas no regionales salen con el slug en inglés (Wormadam, Urshifu)
-- [ ] B.18 Decidir si al reimportar se actualizan `categoria` y `potencia` de los movimientos existentes (hoy solo `nombreEs`, para no pisar cambios hechos con PUT)
 - [ ] B.22 Búsqueda por nombre sin importar tildes (extensión `unaccent` de PostgreSQL)
 - [ ] B.19 Pruebas de los criterios de aceptación de F1–F8 sin depender de PostgreSQL (U5)
 - [ ] B.20 Importación en segundo plano con endpoint de progreso (opcional)
