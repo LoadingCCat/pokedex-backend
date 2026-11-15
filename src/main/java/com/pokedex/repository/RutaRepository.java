@@ -6,8 +6,10 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface RutaRepository extends JpaRepository<Ruta, Integer> {
@@ -18,6 +20,10 @@ public interface RutaRepository extends JpaRepository<Ruta, Integer> {
     Page<Ruta> findByRegionIgnoreCase(String region, Pageable pageable);
 
     Optional<Ruta> findByIdPokeapi(Integer idPokeapi);
+
+    // Rutas que ya tiene un Pokémon (la importación las conserva si /encounters falla)
+    @Query("SELECT r FROM Pokemon p JOIN p.rutas r WHERE p.idPokedex = :idPokedex")
+    List<Ruta> buscarPorPokemon(@Param("idPokedex") Integer idPokedex);
 
     // ---- Limpieza de las rutas de ejemplo que creaba la versión anterior del importador ----
     // Primero se quitan los vínculos con Pokémon y luego las rutas.

@@ -28,8 +28,9 @@ Formato de una respuesta paginada (siempre igual):
 | GET | `/pokemons/{id}` | Detalle (404 si no existe) |
 | GET | `/pokemons/{id}/movimientos` | Movimientos que puede aprender, ordenados por nombre (404 si el Pokémon no existe) |
 | GET | `/pokemons/{id}/evoluciones` | Cadena evolutiva completa a la que pertenece el Pokémon (404 si no existe); ver abajo |
-| GET/POST | `/pokemons/importar-rango?total=N&movimientos=M` | Importar desde PokeAPI |
-| GET/POST | `/pokemons/importar-todo` | Importación rápida (50 + 50) |
+| GET/POST | `/pokemons/importar-rango?total=N&movimientos=M` | Inicia la importación desde la PokeAPI en segundo plano: responde 202 al instante (409 si ya hay una en curso). Uso interno |
+| GET/POST | `/pokemons/importar-todo` | Igual, importación rápida (50 + 50). Uso interno |
+| GET | `/pokemons/importacion` | Progreso de la importación en curso o de la última (ver "Formato de los demás recursos"). Uso interno |
 
 ### Filtros combinados en `GET /pokemons`
 Todos son opcionales y se combinan con **Y**. Ejemplo: `/pokemons?tipo=fire&generacion=1&sort=velocidad,desc`.
@@ -154,9 +155,17 @@ Siguen siendo arreglos JSON sin paginar: `/pokemons/{id}/movimientos`, `/rutas/r
 // Tipo
 { "id": 8, "nombre": "electric" }
 
-// Respuesta de una importación
+// Respuesta de importar-rango / importar-todo: 202 Accepted, al instante
 {
-  "mensaje": "Importación finalizada",
+  "mensaje": "Importación iniciada. Consulta el avance en GET /api/pokemons/importacion",
+  "progreso": { "estado": "en-curso", "fase": "pokemons", "procesados": 0, "total": 151, "...": "..." }
+}
+
+// GET /api/pokemons/importacion: importación terminada
+{
+  "estado": "terminada", "fase": null,
+  "procesados": 151, "total": 151, "porcentaje": 100, "fallidos": 0,
+  "inicio": "2026-11-14T21:00:00", "fin": "2026-11-14T21:03:10", "mensaje": null,
   "resultados": [
     { "recurso": "pokemons", "importados": 151, "omitidos": 0, "fallidos": 0 },
     { "recurso": "rutas", "importados": 12, "omitidos": 190, "fallidos": 0 },
@@ -166,7 +175,9 @@ Siguen siendo arreglos JSON sin paginar: `/pokemons/{id}/movimientos`, `/rutas/r
   ]
 }
 ```
-En una importación, `importados` son los registros creados, `omitidos` los que ya existían y `fallidos` los que no se pudieron traer de la PokeAPI. En `pokemons` y `cadenas-evolutivas`, `importados` también cuenta los que solo se actualizaron. Los números del ejemplo son ilustrativos.
+La importación corre en segundo plano (F10). `estado` es `sin-iniciar` (nada desde que arrancó el servidor), `en-curso`, `terminada` o `error` (con un `mensaje` genérico; el detalle va al log). `fase` es `pokemons` o `movimientos`, y `procesados`/`total`/`porcentaje` se refieren a esa fase. `resultados` solo viene al terminar. El progreso vive en memoria: tras reiniciar el servidor vuelve a `sin-iniciar`.
+
+En `resultados`, `importados` son los registros creados, `omitidos` los que ya existían y `fallidos` los que no se pudieron traer de la PokeAPI. En `pokemons` y `cadenas-evolutivas`, `importados` también cuenta los que solo se actualizaron. Los números del ejemplo son ilustrativos.
 
 ## Errores
 

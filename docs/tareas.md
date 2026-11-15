@@ -27,11 +27,11 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] B.25 Reimportar las 9 generaciones para llenar las cadenas evolutivas: 1025 importados, 0 fallidos; las 1025 etapas responden en `/evoluciones`, ninguna "Método especial" y una sola "Sin datos en la PokeAPI" (Manaphy, que la PokeAPI lista sin condición)
 - [x] B.18 Decidir si al reimportar se actualizan `categoria` y `potencia` de los movimientos existentes (hoy solo `nombreEs`, para no pisar cambios hechos con PUT) → decidido: se deja así (ver `docs/decisiones.md`)
 - [x] B.22 F9 · Búsqueda por nombre sin importar tildes (`unaccent` de PostgreSQL, creada al arrancar con `schema.sql`)
+- [x] B.20 F10 · Importación en segundo plano (202) con progreso en `GET /api/pokemons/importacion`; sigue el 409 si ya hay una en curso
 
 ## Back · pendiente
 - [ ] B.26 Pulir textos de `condicion` en las evoluciones (requiere reimportar): falta `min_steps` (Pawmot sale "Subiendo de nivel" en vez de caminar 1000 pasos), "Usando un movimiento, tras usar Puño Furia 20 veces" es redundante (Annihilape), Basculegion repite la condición por género, y las formas no regionales salen con el slug en inglés (Wormadam, Urshifu)
 - [ ] B.19 Pruebas de los criterios de aceptación de F1–F8 sin depender de PostgreSQL (U5)
-- [ ] B.20 Importación en segundo plano con endpoint de progreso (opcional)
 
 ## Front (U3)
 <!-- Se detalla cuando el backend esté terminado. Pedir las tareas al agente en modo plan,

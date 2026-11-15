@@ -11,10 +11,12 @@ import com.pokedex.repository.RutaRepository;
 import com.pokedex.service.EvolucionService;
 import com.pokedex.service.EvolucionService.EtapaEvolucion;
 import com.pokedex.service.PokemonService;
-import com.pokedex.service.PokemonService.ResultadoImportacion;
+import com.pokedex.service.ProgresoImportacion;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.SortDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedHashMap;
@@ -176,31 +178,39 @@ public class PokemonController {
     // ---------------------------------------------------------------
     // IMPORTACIÓN DESDE POKEAPI (uso interno, no es parte del contrato)
     // Aceptan GET (para probar desde el navegador) y POST.
+    // Corren en segundo plano (F10): responden 202 al instante y el avance se
+    // consulta en GET /api/pokemons/importacion.
     // ---------------------------------------------------------------
 
     // /api/pokemons/importar-rango?total=151&movimientos=100
     @RequestMapping(value = "/importar-rango", method = {RequestMethod.GET, RequestMethod.POST})
-    public Map<String, Object> importarRango(@RequestParam int total,
-                                             @RequestParam(defaultValue = "50") int movimientos) {
+    public ResponseEntity<Map<String, Object>> importarRango(@RequestParam int total,
+                                                             @RequestParam(defaultValue = "50") int movimientos) {
         if (total < 1 || total > PokemonService.MAX_POKEMON) {
             throw new BadRequestException("'total' debe estar entre 1 y " + PokemonService.MAX_POKEMON);
         }
         if (movimientos < 0 || movimientos > MAX_MOVIMIENTOS) {
             throw new BadRequestException("'movimientos' debe estar entre 0 y " + MAX_MOVIMIENTOS);
         }
-        return respuestaImportacion(pokemonService.importarTodo(total, movimientos));
+        return respuestaImportacion(pokemonService.iniciarImportacion(total, movimientos));
     }
 
     // /api/pokemons/importar-todo  -> importación rápida (50 Pokémon y 50 movimientos)
     @RequestMapping(value = "/importar-todo", method = {RequestMethod.GET, RequestMethod.POST})
-    public Map<String, Object> importarTodoAutomaticamente() {
-        return respuestaImportacion(pokemonService.importarTodo(50, 50));
+    public ResponseEntity<Map<String, Object>> importarTodoAutomaticamente() {
+        return respuestaImportacion(pokemonService.iniciarImportacion(50, 50));
     }
 
-    private Map<String, Object> respuestaImportacion(List<ResultadoImportacion> resultados) {
+    // GET /api/pokemons/importacion -> avance de la importación en curso o de la última
+    @GetMapping("/importacion")
+    public ProgresoImportacion.Estado progresoImportacion() {
+        return pokemonService.progresoImportacion();
+    }
+
+    private ResponseEntity<Map<String, Object>> respuestaImportacion(ProgresoImportacion.Estado progreso) {
         Map<String, Object> respuesta = new LinkedHashMap<>();
-        respuesta.put("mensaje", "Importación finalizada");
-        respuesta.put("resultados", resultados);
-        return respuesta;
+        respuesta.put("mensaje", "Importación iniciada. Consulta el avance en GET /api/pokemons/importacion");
+        respuesta.put("progreso", progreso);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(respuesta);
     }
 }

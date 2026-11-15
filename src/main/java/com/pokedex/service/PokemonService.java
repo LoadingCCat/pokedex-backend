@@ -13,6 +13,8 @@ import com.pokedex.repository.RutaRepository;
 import com.pokedex.repository.TipoRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -148,10 +150,13 @@ public class PokemonService {
     private final RutaRepository rutaRepository;
     private final EvolucionRepository evolucionRepository;
     private final RestTemplate restTemplate;
+    private final TaskExecutor ejecutorImportacion;
 
     public PokemonService(PokemonRepository pokemonRepository, TipoRepository tipoRepository,
                           MovimientoRepository movimientoRepository, RutaRepository rutaRepository,
-                          EvolucionRepository evolucionRepository, RestTemplate restTemplate) {
+                          EvolucionRepository evolucionRepository, RestTemplate restTemplate,
+                          @Qualifier("applicationTaskExecutor") TaskExecutor ejecutorImportacion) {
+        this.ejecutorImportacion = ejecutorImportacion;
         this.pokemonRepository = pokemonRepository;
         this.tipoRepository = tipoRepository;
         this.movimientoRepository = movimientoRepository;
@@ -167,27 +172,59 @@ public class PokemonService {
     /** true mientras hay una importación corriendo (evita dos importaciones al mismo tiempo). */
     private final AtomicBoolean importacionEnCurso = new AtomicBoolean(false);
 
-    /** Importa Pokémon (con sus rutas reales) y movimientos. */
-    public List<ResultadoImportacion> importarTodo(int totalPokemon, int totalMovimientos) {
+    /** Avance de la importación en curso o de la última (F10). */
+    private final ProgresoImportacion progreso = new ProgresoImportacion();
+
+    /**
+     * Inicia la importación en segundo plano y vuelve de inmediato (F10).
+     * El bloqueo se toma aquí, en el hilo de la petición, para que el 409 sea inmediato.
+     */
+    public ProgresoImportacion.Estado iniciarImportacion(int totalPokemon, int totalMovimientos) {
         if (!importacionEnCurso.compareAndSet(false, true)) {
             throw new ConflictException("Ya hay una importación en curso. Espera a que termine.");
         }
+        progreso.iniciar(totalPokemon);
         try {
-            limpiarRutasDeEjemplo();
+            ejecutorImportacion.execute(() -> ejecutarImportacion(totalPokemon, totalMovimientos));
+        } catch (RuntimeException e) {
+            // El ejecutor rechazó la tarea: no queda nada corriendo, se libera el bloqueo
+            progreso.fallar();
+            importacionEnCurso.set(false);
+            throw e;
+        }
+        return progreso.instantanea();
+    }
 
-            CacheImportacion cache = new CacheImportacion();
-            List<ResultadoImportacion> resultados = new ArrayList<>();
-            resultados.add(importarPokemonsMasivo(totalPokemon, cache));
-            resultados.add(new ResultadoImportacion("rutas", cache.creadas, cache.existentes, cache.fallidas));
-            resultados.add(new ResultadoImportacion("movimientos-aprendidos", cache.movimientosCreados,
-                    cache.movimientosExistentes, cache.movimientosFallidos.size()));
-            resultados.add(new ResultadoImportacion("cadenas-evolutivas", cache.cadenasGuardadas.size(),
-                    0, cache.cadenasFallidas.size()));
-            resultados.add(importarMovimientosMasivo(totalMovimientos));
-            return resultados;
+    public ProgresoImportacion.Estado progresoImportacion() {
+        return progreso.instantanea();
+    }
+
+    /** Corre en el hilo de fondo. Nunca deja escapar excepciones y siempre libera el bloqueo. */
+    private void ejecutarImportacion(int totalPokemon, int totalMovimientos) {
+        try {
+            progreso.terminar(importarTodo(totalPokemon, totalMovimientos));
+        } catch (Exception e) {
+            log.error("La importación se detuvo por un error inesperado", e);
+            progreso.fallar();
         } finally {
             importacionEnCurso.set(false);
         }
+    }
+
+    /** Importa Pokémon (con sus rutas reales) y movimientos. */
+    private List<ResultadoImportacion> importarTodo(int totalPokemon, int totalMovimientos) {
+        limpiarRutasDeEjemplo();
+
+        CacheImportacion cache = new CacheImportacion();
+        List<ResultadoImportacion> resultados = new ArrayList<>();
+        resultados.add(importarPokemonsMasivo(totalPokemon, cache));
+        resultados.add(new ResultadoImportacion("rutas", cache.creadas, cache.existentes, cache.fallidas));
+        resultados.add(new ResultadoImportacion("movimientos-aprendidos", cache.movimientosCreados,
+                cache.movimientosExistentes, cache.movimientosFallidos.size()));
+        resultados.add(new ResultadoImportacion("cadenas-evolutivas", cache.cadenasGuardadas.size(),
+                0, cache.cadenasFallidas.size()));
+        resultados.add(importarMovimientosMasivo(totalMovimientos));
+        return resultados;
     }
 
     /** Borra las rutas inventadas que creaba la versión anterior del importador. */
@@ -210,13 +247,16 @@ public class PokemonService {
     private ResultadoImportacion importarPokemonsMasivo(int total, CacheImportacion cache) {
         int importados = 0;
         int fallidos = 0;
+        progreso.fase("pokemons", total);
 
         for (int id = 1; id <= total; id++) {
             try {
                 importarPokemon(id, cache);
                 importados++;
+                progreso.avanzar(false);
             } catch (Exception e) {
                 fallidos++;
+                progreso.avanzar(true);
                 log.warn("Error al importar el Pokémon ID {}: {}", id, e.getMessage());
             }
             if (id % 25 == 0) {
@@ -274,7 +314,9 @@ public class PokemonService {
             encuentros = obtenerEncuentros(idPokedex, cache);
         } catch (Exception e) {
             log.warn("No se pudieron obtener las rutas del Pokémon ID {}: {}", id, e.getMessage());
-            List<Ruta> anteriores = pokemon.getRutas() != null ? new ArrayList<>(pokemon.getRutas()) : new ArrayList<>();
+            // Con una consulta y no con pokemon.getRutas(): la importación corre en segundo plano,
+            // sin sesión abierta, y leer la relación lazy lanzaría LazyInitializationException
+            List<Ruta> anteriores = new ArrayList<>(rutaRepository.buscarPorPokemon(idPokedex));
             encuentros = new Encuentros(anteriores, Set.of());
         }
         pokemon.setRutas(encuentros.rutas());
@@ -970,8 +1012,13 @@ public class PokemonService {
         int importados = 0;
         int omitidos = 0;
         int fallidos = 0;
+        if (total > 0) {
+            progreso.fase("movimientos", total);
+        }
 
         for (int id = 1; id <= total; id++) {
+            // Cuenta como procesado al salir de la vuelta, también con continue
+            progreso.avanzar(false);
             try {
                 Map<String, Object> datos = getJson(POKEAPI + "/move/" + id);
                 if (datos == null) {

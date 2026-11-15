@@ -37,7 +37,7 @@ El proyecto sigue Spec-Driven Development (SDD): primero el documento, después 
 
 - Si al arrancar sale "Port 8080 was already in use", hay otro servidor corriendo: detenerlo antes de volver a arrancar.
 - Llenar o actualizar la BD (tarda minutos; se puede repetir, no duplica):
-  `POST http://localhost:8080/api/pokemons/importar-rango?total=151&movimientos=0` (todos: `total=1025`)
+  `POST http://localhost:8080/api/pokemons/importar-rango?total=151&movimientos=0` (todos: `total=1025`, unos 20 min). Responde 202 al instante; el avance, en `GET http://localhost:8080/api/pokemons/importacion`
 - Probar endpoints con `curl.exe "http://localhost:8080/api/..."`.
 - Tests: solo existe `contextLoads()`, que necesita PostgreSQL encendido. No hay tests reales todavía.
 
@@ -89,7 +89,9 @@ com.pokedex/
 
 - Por Pokémon: `/pokemon/{id}` (datos, tipos, estadísticas, movimientos), `/pokemon-species/{id}` (generación, descripción, legendario…) y `/pokemon/{id}/encounters` (rutas). `CacheImportacion` evita pedir dos veces la misma ruta o movimiento.
 - Es idempotente: actualiza lo que existe y no duplica. Si falla una parte opcional (especie, rutas, movimientos), se registra en el log y se conserva lo que había.
-- Solo una importación a la vez (`AtomicBoolean` → 409). Corre de forma síncrona dentro de la petición HTTP: con `total=1025` el cliente puede cortar antes de que termine, aunque el servidor siga.
+- Solo una importación a la vez (`AtomicBoolean` → 409, tomado en el hilo de la petición). Corre en segundo plano (F10, `applicationTaskExecutor`): `importar-rango` responde 202 al instante y el avance se consulta en `GET /api/pokemons/importacion` (progreso en memoria, en `ProgresoImportacion`).
+- En el hilo de fondo no hay sesión de BD (`open-in-view` solo aplica a peticiones): la importación **no** puede leer relaciones lazy (`pokemon.getRutas()`…); usar una consulta del repositorio.
+- El servidor se arranca en la terminal de la app, no desde el Bash del agente: ahí Tomcat no puede abrir el puerto ("Unable to establish loopback connection").
 - Los endpoints de importación aceptan GET y POST (GET para probar desde el navegador).
 
 ## Convenciones de código
@@ -102,7 +104,7 @@ com.pokedex/
 
 ## Pendiente
 
-La lista de pendientes vive en `docs/tareas.md` (sección "Back · pendiente"). Las specs F1–F9 de `docs/specs/` están todas implementadas.
+La lista de pendientes vive en `docs/tareas.md` (sección "Back · pendiente"). Las specs F1–F10 de `docs/specs/` están todas implementadas.
 
 ## Notas
 
