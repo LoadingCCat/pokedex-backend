@@ -706,86 +706,140 @@ public class PokemonService {
     }
 
     /**
-     * Si el detalle solo aplica a una forma distinta de la normal (regional u otra), devuelve
-     * cuál: "Meowth de Galar". Devuelve null si aplica a la forma normal de la especie.
-     * La PokeAPI lo indica en required_pokemon_form (quién evoluciona) y evolved_pokemon_form
-     * (en qué forma se convierte); si coinciden con el nombre de la especie, es la forma normal.
+     * Si el detalle solo aplica a una forma regional, devuelve cuál: "Meowth de Galar".
+     * Devuelve null si no es regional. La PokeAPI lo indica en required_pokemon_form (quién
+     * evoluciona) y evolved_pokemon_form (en qué forma se convierte).
+     *
+     * Las demás formas (Wormadam Planta, Meowstic macho, los 63 Alcremie...) no cuentan: son
+     * variantes de la misma especie y no cambian cómo se evoluciona.
      */
-    private static String formaEspecial(Map<String, Object> detalle, String nombrePreEvolucion, String nombre) {
-        String requerida = (String) mapa(detalle.get("required_pokemon_form")).get("name");
-        if (requerida != null && !requerida.equals(nombrePreEvolucion)) {
-            return describirForma(requerida, nombrePreEvolucion);
+    private static String formaRegional(Map<String, Object> detalle, String nombrePreEvolucion, String nombre) {
+        String requerida = regionDeForma(
+                (String) mapa(detalle.get("required_pokemon_form")).get("name"), nombrePreEvolucion);
+        if (requerida != null) {
+            return requerida;
         }
-        String resultante = (String) mapa(detalle.get("evolved_pokemon_form")).get("name");
-        if (resultante != null && !resultante.equals(nombre)) {
-            return describirForma(resultante, nombre);
-        }
-        return null;
+        return regionDeForma((String) mapa(detalle.get("evolved_pokemon_form")).get("name"), nombre);
     }
 
-    /** "meowth-galar" -> "Meowth de Galar"; otras formas, el slug legible ("Basculin White Striped"). */
-    private static String describirForma(String forma, String especie) {
-        if (especie != null && forma.startsWith(especie + "-")) {
-            String region = FORMAS_REGIONALES.get(forma.substring(especie.length() + 1));
-            if (region != null) {
-                return capitalizar(especie.replace('-', ' ')) + " " + region;
-            }
+    /** "meowth-galar" con especie "meowth" -> "Meowth de Galar"; null si la forma no es regional. */
+    private static String regionDeForma(String forma, String especie) {
+        if (forma == null || especie == null || !forma.startsWith(especie + "-")) {
+            return null;
         }
-        return capitalizar(forma.replace('-', ' '));
+        String region = FORMAS_REGIONALES.get(forma.substring(especie.length() + 1));
+        return region != null ? capitalizar(especie.replace('-', ' ')) + " " + region : null;
+    }
+
+    /** Formas de evolucionar con el mismo texto: se juntan sus lugares y los géneros que aplican. */
+    private static class GrupoDeCondicion {
+        final String texto;
+        final String formaRegional;                              // null si es la forma normal
+        final Set<String> lugares = new LinkedHashSet<>();
+        final Set<Integer> generos = new HashSet<>();            // 0 = cualquiera, 1 = hembra, 2 = macho
+
+        GrupoDeCondicion(String texto, String formaRegional) {
+            this.texto = texto;
+            this.formaRegional = formaRegional;
+        }
     }
 
     /**
      * Texto en español de cómo se llega a una etapa. La PokeAPI repite la condición por cada
-     * juego y lista una por cada lugar: se quitan las repetidas y los lugares de una misma
-     * forma se agrupan ("Subiendo de nivel en Bosque Vetusto / Pinwheel Forest o Usando Piedra Hoja").
+     * juego, por cada lugar, por cada género y por cada forma resultante: se quitan las
+     * repetidas y se agrupan las que solo cambian en el lugar o el género
+     * ("Subiendo de nivel en Bosque Vetusto / Pinwheel Forest o Usando Piedra Hoja").
      *
      * Las formas regionales están fuera del alcance (F7): si hay alguna forma de evolucionar
-     * de la especie normal, las que solo aplican a otra forma se descartan (Slowpoke de Galar
-     * con el Brazal Galanuez). Si solo existe esa vía (Perrserker), se conserva y se aclara:
-     * "Nivel 28 (solo Meowth de Galar)".
+     * de la especie normal, las que solo aplican a una forma regional se descartan (Slowpoke
+     * de Galar con el Brazal Galanuez). Si solo existe esa vía (Perrserker), se conserva y se
+     * aclara: "Nivel 28 (solo Meowth de Galar)".
      */
     private String describirCondicion(List<Map<String, Object>> detalles, String nombrePreEvolucion,
                                       String nombre, CacheImportacion cache) {
         boolean hayFormaNormal = detalles.stream()
-                .anyMatch(d -> formaEspecial(d, nombrePreEvolucion, nombre) == null);
+                .anyMatch(d -> formaRegional(d, nombrePreEvolucion, nombre) == null);
 
-        Map<String, Set<String>> lugaresPorForma = new java.util.LinkedHashMap<>();
+        Map<String, GrupoDeCondicion> grupos = new java.util.LinkedHashMap<>();
         for (Map<String, Object> detalle : detalles) {
-            String forma = formaEspecial(detalle, nombrePreEvolucion, nombre);
+            String forma = formaRegional(detalle, nombrePreEvolucion, nombre);
             if (forma != null && hayFormaNormal) {
                 continue;
             }
-            String texto = describirDetalle(detalle, cache) + (forma != null ? " (solo " + forma + ")" : "");
-            Set<String> lugares = lugaresPorForma.computeIfAbsent(texto, k -> new LinkedHashSet<>());
+            String texto = describirDetalle(detalle, cache);
+            GrupoDeCondicion grupo = grupos.computeIfAbsent(texto + "|" + forma,
+                    k -> new GrupoDeCondicion(texto, forma));
             Map<String, Object> lugar = mapa(detalle.get("location"));
             if (lugar.get("name") != null) {
-                lugares.add(nombreDeLugarDeEvolucion(lugar));
+                grupo.lugares.add(nombreDeLugarDeEvolucion(lugar));
             }
+            Integer genero = entero(detalle.get("gender"));
+            grupo.generos.add(genero != null ? genero : 0);
         }
-        if (lugaresPorForma.isEmpty()) {
+        if (grupos.isEmpty()) {
             return "Sin datos en la PokeAPI";
         }
+
         List<String> formas = new ArrayList<>();
-        for (Map.Entry<String, Set<String>> forma : lugaresPorForma.entrySet()) {
-            formas.add(forma.getValue().isEmpty()
-                    ? forma.getKey()
-                    : forma.getKey() + " en " + String.join(" / ", forma.getValue()));
+        for (GrupoDeCondicion grupo : grupos.values()) {
+            StringBuilder sb = new StringBuilder(grupo.texto);
+            // El género solo se menciona si la condición no aplica a los dos
+            if (grupo.generos.size() == 1 && !grupo.generos.contains(0)) {
+                sb.append(grupo.generos.contains(1) ? ", solo hembras" : ", solo machos");
+            }
+            if (!grupo.lugares.isEmpty()) {
+                sb.append(" en ").append(String.join(" / ", grupo.lugares));
+            }
+            if (grupo.formaRegional != null) {
+                sb.append(" (solo ").append(grupo.formaRegional).append(")");
+            }
+            formas.add(sb.toString());
         }
         return String.join(" o ", formas);
     }
 
-    /** Una entrada de "evolution_details" (sin el lugar, que se agrupa aparte). */
+    /** Una entrada de "evolution_details", sin el lugar ni el género (se agrupan aparte). */
     private String describirDetalle(Map<String, Object> detalle, CacheImportacion cache) {
         String metodo = (String) mapa(detalle.get("trigger")).get("name");
+        if (metodo == null) {
+            metodo = "";
+        }
         Integer nivel = entero(detalle.get("min_level"));
+        Integer danio = entero(detalle.get("min_damage_taken"));
+        String movimientoUsado = (String) mapa(detalle.get("used_move")).get("name");
+        boolean girando = metodo.equals("spin");
         List<String> partes = new ArrayList<>();
 
-        switch (metodo != null ? metodo : "") {
+        switch (metodo) {
             case "level-up" -> partes.add(nivel != null ? "Nivel " + nivel : "Subiendo de nivel");
             case "trade" -> partes.add("Por intercambio");
             case "use-item" -> {
                 Map<String, Object> objeto = mapa(detalle.get("item"));
                 partes.add(objeto.get("name") != null ? "Usando " + nombreDeObjeto(objeto, cache) : "Usando un objeto");
+            }
+            // Alcremie: la PokeAPI lista 63 combinaciones de confite, hora y giro (una por forma)
+            case "spin" -> partes.add("Girando sobre sí mismo con un confite equipado");
+            case "use-move", "agile-style-move", "strong-style-move" -> {
+                String estilo = metodo.equals("agile-style-move") ? " en estilo rápido"
+                        : metodo.equals("strong-style-move") ? " en estilo fuerte" : "";
+                if (movimientoUsado != null) {
+                    Integer veces = entero(detalle.get("min_move_count"));
+                    partes.add("Usando " + nombreDeMovimiento(movimientoUsado)
+                            + (veces != null ? " " + veces + " veces" : "") + estilo);
+                    movimientoUsado = null; // ya está dicho
+                } else {
+                    partes.add("Usando un movimiento" + estilo);
+                }
+            }
+            case "recoil-damage" -> {
+                partes.add(danio != null ? "Tras recibir " + danio + " PS de daño de retroceso"
+                        : "Tras recibir daño de retroceso");
+                danio = null;
+            }
+            case "take-damage" -> {
+                partes.add(danio != null ? "Tras recibir " + danio + " PS de daño en combate"
+                        : "Tras recibir daño en combate");
+                danio = null;
             }
             default -> {
                 partes.add(METODOS_DE_EVOLUCION.getOrDefault(metodo, "Método especial"));
@@ -796,7 +850,7 @@ public class PokemonService {
         }
 
         Map<String, Object> objetoEquipado = mapa(detalle.get("held_item"));
-        if (objetoEquipado.get("name") != null) {
+        if (objetoEquipado.get("name") != null && !girando) {
             partes.add("llevando " + nombreDeObjeto(objetoEquipado, cache));
         }
         if (entero(detalle.get("min_happiness")) != null) {
@@ -808,7 +862,7 @@ public class PokemonService {
         if (entero(detalle.get("min_beauty")) != null) {
             partes.add("con belleza alta");
         }
-        if (detalle.get("time_of_day") instanceof String momento) {
+        if (detalle.get("time_of_day") instanceof String momento && !girando) {
             switch (momento) {
                 case "day" -> partes.add("de día");
                 case "night" -> partes.add("de noche");
@@ -824,15 +878,17 @@ public class PokemonService {
         if (tipoMovimiento != null) {
             partes.add("conociendo un movimiento de tipo " + tipoMovimiento);
         }
-        String movimientoUsado = (String) mapa(detalle.get("used_move")).get("name");
         if (movimientoUsado != null) {
             Integer veces = entero(detalle.get("min_move_count"));
             partes.add("tras usar " + nombreDeMovimiento(movimientoUsado)
                     + (veces != null ? " " + veces + " veces" : ""));
         }
-        Integer genero = entero(detalle.get("gender"));
-        if (genero != null) {
-            partes.add(genero == 1 ? "solo hembras" : "solo machos");
+        Integer pasos = entero(detalle.get("min_steps"));
+        if (pasos != null) {
+            partes.add("tras caminar " + pasos + " pasos con él fuera de la Poké Ball");
+        }
+        if (danio != null) {
+            partes.add("tras recibir " + danio + " PS de daño");
         }
         Integer estadisticas = entero(detalle.get("relative_physical_stats"));
         if (estadisticas != null) {
@@ -853,6 +909,9 @@ public class PokemonService {
         }
         if (Boolean.TRUE.equals(detalle.get("needs_overworld_rain"))) {
             partes.add("con lluvia");
+        }
+        if (Boolean.TRUE.equals(detalle.get("needs_multiplayer"))) {
+            partes.add("jugando en multijugador");
         }
         if (Boolean.TRUE.equals(detalle.get("turn_upside_down"))) {
             partes.add("con la consola boca abajo");

@@ -98,6 +98,7 @@ Devuelve la cadena **completa**, como árbol, empezando por su etapa base: `/pok
 ```
 - `evoluciones` son las etapas a las que evoluciona; siempre es un arreglo (vacío en la última etapa). Las ramas son varios elementos: Eevee tiene 8, ordenados por `idPokedex`.
 - `condicion` es cómo se llega a esa etapa, en español ("Nivel 16", "Usando Piedra Agua", "Por intercambio", "Subiendo de nivel, con amistad alta, de día"). Es `null` en la etapa base. Si hay varias formas, van unidas con " o ". Los nombres de lugares y de tipos pueden salir en inglés.
+- Las variantes de una misma especie (Wormadam Planta/Arena/Basura, los 63 Alcremie, Meowstic macho/hembra) no se distinguen: la condición es la de la especie. El género solo se menciona si la evolución es exclusiva de uno ("Nivel 20, solo hembras").
 - Las formas regionales no se incluyen: Slowbro sale con "Nivel 37", sin la vía de Slowpoke de Galar. Si una etapa solo se alcanza desde una forma regional, se indica: "Nivel 28 (solo Meowth de Galar)" en Perrserker.
 - `nombreEs` e `imagenUrl` son `null` si el Pokémon de esa etapa no está importado; `idPokedex` y `nombre` vienen siempre.
 - Un Pokémon sin evoluciones (Tauros), o cuya cadena todavía no se ha importado, devuelve una sola etapa con `evoluciones: []`.
