@@ -1,6 +1,6 @@
 # F1 · Catálogo y ficha de Pokémon
 
-**Estado:** Implementada · criterios pendientes de prueba automática (U5)
+**Estado:** Implementada · criterios con pruebas automáticas (ver `docs/pruebas.md`)
 
 ## Historia
 Como fan de Pokémon, quiero recorrer el catálogo, buscar por nombre y abrir la ficha de un Pokémon para conocer sus datos.

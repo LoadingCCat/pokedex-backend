@@ -1,0 +1,114 @@
+package com.pokedex.controller;
+
+import com.pokedex.entity.Ruta;
+import com.pokedex.repository.RutaRepository;
+import com.pokedex.service.PokemonService;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/** Criterios de F5 en el controller de rutas (sin PostgreSQL). */
+@WebMvcTest(RutaController.class)
+class RutaControllerTest {
+
+    @Autowired
+    private MockMvc mvc;
+
+    @MockitoBean
+    private RutaRepository rutaRepository;
+    @MockitoBean
+    private PokemonService pokemonService;
+
+    @Test
+    void listadoPaginadoOrdenadoPorNombre() throws Exception {
+        when(rutaRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+
+        mvc.perform(get("/api/rutas"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.page").exists());
+
+        ArgumentCaptor<Pageable> pagina = ArgumentCaptor.forClass(Pageable.class);
+        verify(rutaRepository).findAll(pagina.capture());
+        assertThat(pagina.getValue().getSort()).isEqualTo(Sort.by("nombre"));
+    }
+
+    @Test
+    void regionesEsUnArregloSinPaginar() throws Exception {
+        when(pokemonService.listarRegiones()).thenReturn(List.of("Kanto", "Johto"));
+
+        mvc.perform(get("/api/rutas/regiones"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0]").value("Kanto"));
+    }
+
+    @Test
+    void rutaInexistenteResponde404() throws Exception {
+        when(rutaRepository.findById(999)).thenReturn(Optional.empty());
+
+        mvc.perform(get("/api/rutas/999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.mensaje").value("Ruta con id 999 no existe"));
+    }
+
+    @Test
+    void crearFuerzaIdPokeapiYIdANull() throws Exception {
+        when(rutaRepository.save(any(Ruta.class))).thenAnswer(i -> i.getArgument(0));
+
+        mvc.perform(post("/api/rutas").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"idRuta\":3,\"idPokeapi\":321,\"nombre\":\" Ruta Inventada \",\"region\":\"Kanto\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.nombre").value("Ruta Inventada"))
+                .andExpect(jsonPath("$.idPokeapi").doesNotExist())
+                .andExpect(jsonPath("$.idRuta").doesNotExist());
+    }
+
+    @Test
+    void crearSinNombreOSinRegionResponde400() throws Exception {
+        mvc.perform(post("/api/rutas").contentType(MediaType.APPLICATION_JSON).content("{\"region\":\"Kanto\"}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/rutas").contentType(MediaType.APPLICATION_JSON).content("{\"nombre\":\"Ruta X\"}"))
+                .andExpect(status().isBadRequest());
+        verify(rutaRepository, never()).save(any());
+    }
+
+    @Test
+    void crearUnaRutaRepetidaEnLaMismaRegionResponde400() throws Exception {
+        when(rutaRepository.existsByNombreIgnoreCaseAndRegionIgnoreCase(anyString(), anyString())).thenReturn(true);
+
+        mvc.perform(post("/api/rutas").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombre\":\"Ruta 1\",\"region\":\"Kanto\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void actualizarUnaRutaInexistenteResponde404() throws Exception {
+        when(rutaRepository.findById(999)).thenReturn(Optional.empty());
+
+        mvc.perform(put("/api/rutas/999").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombre\":\"Ruta X\",\"region\":\"Kanto\"}"))
+                .andExpect(status().isNotFound());
+    }
+}

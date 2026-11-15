@@ -1,6 +1,6 @@
 # F10 · Importación en segundo plano con progreso
 
-**Estado:** Implementada · criterios pendientes de prueba automática (U5)
+**Estado:** Implementada · criterios con pruebas automáticas (ver `docs/pruebas.md`)
 
 ## Historia
 Como integrante del equipo, quiero lanzar la importación de las 1025 especies y consultar cuánto lleva, sin dejar una petición HTTP abierta 20 minutos que el cliente puede cortar.

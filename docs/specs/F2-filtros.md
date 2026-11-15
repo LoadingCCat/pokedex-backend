@@ -1,6 +1,6 @@
 # F2 · Filtros del catálogo
 
-**Estado:** Implementada · criterios pendientes de prueba automática (U5)
+**Estado:** Implementada · criterios con pruebas automáticas (ver `docs/pruebas.md`)
 
 ## Historia
 Como fan de Pokémon, quiero filtrar el catálogo por generación, tipo, región, ruta o forma de obtención para encontrar rápido lo que busco.

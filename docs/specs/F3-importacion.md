@@ -1,6 +1,6 @@
 # F3 · Importación desde la PokeAPI
 
-**Estado:** Implementada · criterios pendientes de prueba automática (U5)
+**Estado:** Implementada · criterios con pruebas automáticas (ver `docs/pruebas.md`)
 
 ## Historia
 Como integrante del equipo, quiero llenar o actualizar la base de datos desde la PokeAPI con una sola petición, para no cargar datos a mano.

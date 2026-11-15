@@ -1,6 +1,6 @@
 # F9 · Búsqueda sin importar tildes
 
-**Estado:** Implementada · criterios pendientes de prueba automática (U5)
+**Estado:** Implementada · criterios con pruebas automáticas (ver `docs/pruebas.md`)
 
 ## Historia
 Como fan hispanohablante, quiero encontrar un Pokémon o un movimiento escribiendo su nombre sin tildes (`psiquico`, `puno`) para no depender de escribirlo exactamente igual que en el juego.

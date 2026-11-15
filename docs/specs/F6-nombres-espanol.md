@@ -1,6 +1,6 @@
 # F6 · Nombres en español
 
-**Estado:** Implementada (commit `dbcfb78`) · criterios pendientes de prueba automática (U5)
+**Estado:** Implementada (commit `dbcfb78`) · criterios con pruebas automáticas (ver `docs/pruebas.md`)
 
 ## Historia
 Como fan hispanohablante, quiero ver los nombres de los Pokémon y de los movimientos en español para entender la Pokédex sin traducir.

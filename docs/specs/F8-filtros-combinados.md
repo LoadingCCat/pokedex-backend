@@ -1,6 +1,6 @@
 # F8 · Filtros combinados
 
-**Estado:** Implementada · criterios pendientes de prueba automática (U5)
+**Estado:** Implementada · criterios con pruebas automáticas (ver `docs/pruebas.md`)
 
 ## Historia
 Como fan de Pokémon, quiero combinar filtros (por ejemplo, tipo fuego de la generación 1) para encontrar exactamente lo que busco.

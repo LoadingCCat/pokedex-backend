@@ -1,6 +1,6 @@
 # F4 · Movimientos
 
-**Estado:** Implementada · criterios pendientes de prueba automática (U5)
+**Estado:** Implementada · criterios con pruebas automáticas (ver `docs/pruebas.md`)
 
 ## Historia
 Como fan de Pokémon, quiero consultar los movimientos y ver cuáles puede aprender cada Pokémon, para conocer sus opciones de combate.

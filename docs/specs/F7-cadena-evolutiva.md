@@ -1,6 +1,6 @@
 # F7 · Cadena evolutiva
 
-**Estado:** Implementada · criterios pendientes de prueba automática (U5)
+**Estado:** Implementada · criterios con pruebas automáticas (ver `docs/pruebas.md`)
 
 ## Historia
 Como fan de Pokémon, quiero ver de qué evoluciona y en qué evoluciona un Pokémon, y cómo, para planear mi equipo.

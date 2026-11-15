@@ -1,6 +1,6 @@
 # F5 · Rutas y regiones
 
-**Estado:** Implementada · criterios pendientes de prueba automática (U5)
+**Estado:** Implementada · criterios con pruebas automáticas (ver `docs/pruebas.md`)
 
 ## Historia
 Como fan de Pokémon, quiero explorar las regiones y los lugares de los juegos para saber qué Pokémon aparecen en cada uno.

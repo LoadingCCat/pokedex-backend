@@ -13,6 +13,7 @@ El proyecto sigue Spec-Driven Development (SDD): primero el documento, después 
 - Stack, capas y modelo de datos: @docs/arquitectura.md
 - Contrato de la API para el frontend: @docs/contratos/api.md
 - Funcionalidades y criterios de aceptación: `docs/specs/` (una spec por funcionalidad, F1…)
+- Qué prueba automática cubre cada criterio: `docs/pruebas.md`
 - Por qué se decidió cada cosa: `docs/decisiones.md`
 - Qué está hecho y qué sigue: `docs/tareas.md`
 - Prompts y errores del agente: `BITACORA_IA.md`
@@ -39,7 +40,7 @@ El proyecto sigue Spec-Driven Development (SDD): primero el documento, después 
 - Llenar o actualizar la BD (tarda minutos; se puede repetir, no duplica):
   `POST http://localhost:8080/api/pokemons/importar-rango?total=151&movimientos=0` (todos: `total=1025`, unos 20 min). Responde 202 al instante; el avance, en `GET http://localhost:8080/api/pokemons/importacion`
 - Probar endpoints con `curl.exe "http://localhost:8080/api/..."`.
-- Tests: solo existe `contextLoads()`, que necesita PostgreSQL encendido. No hay tests reales todavía.
+- Tests: `.\mvnw.cmd test` (unas 80 pruebas, F1–F10). No necesitan el PostgreSQL local ni la PokeAPI: los controllers y servicios usan simulaciones, y las consultas SQL corren contra un PostgreSQL embebido (zonky). Se lanzan desde la terminal de la app, no desde el Bash del agente. Detalle en `docs/pruebas.md`.
 
 ## Configuración y credenciales
 

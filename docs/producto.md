@@ -36,5 +36,5 @@ Este repositorio cubre el **backend**: una API REST estable que el frontend pued
 
 ## Cómo sabremos que funciona
 - Las 9 generaciones (1025 Pokémon) importadas y consultables desde el frontend, con 0 fallidos en la importación.
-- Todos los criterios de aceptación de F1–F8 se cumplen (se convierten en pruebas en la U5).
+- Todos los criterios de aceptación de F1–F10 se cumplen y tienen pruebas automáticas (`docs/pruebas.md`).
 - El frontend no necesita llamar a la PokeAPI para nada.
