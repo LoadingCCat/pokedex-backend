@@ -5,8 +5,39 @@ Agregar una entrada por sesión de trabajo.
 
 ---
 
-## Sesión anterior (chat aparte) · antes de 2026-11-14
-**[completar]**: importación de rutas reales desde `/encounters`, forma de obtención, CRUD de movimientos y rutas, manejo de errores. Anotar aquí los prompts y los problemas de esa sesión.
+## Sesión anterior (chat aparte de Claude) · entre 2026-11-11 y 2026-11-14
+
+Partió del backend inicial (`4056b5c`, 2026-11-11). Lo hecho en esta sesión se subió el 2026-11-14 en `d14b92e`, junto con las primeras correcciones de la sesión siguiente. Fuente: el resumen que dio ese chat al terminar (los prompts están parafraseados, no son citas).
+
+### Prompts clave
+- Revisar el backend en la carpeta del proyecto (Spring Boot + PostgreSQL + PokeAPI).
+- Con un PDF de contexto técnico adjunto: completar el backend y arreglar los problemas encontrados.
+- ¿Las rutas pueden salir de datos reales de la PokeAPI en lugar de ser inventadas?
+- Explicar cómo se obtiene cada Pokémon que no tiene rutas (iniciales, legendarios, fósiles…).
+- Cómo activar el acceso a red para que el agente compilara y ejecutara el código.
+
+### Lo que hizo el agente
+| Cambio | Archivos |
+|---|---|
+| Importador: descripción en español (con respaldo en inglés), generaciones 1–9, imagen oficial, altura y peso; movimientos duplicados revisados con una consulta a la BD | `PokemonService`, `MovimientoRepository` |
+| Rutas reales desde `/pokemon/{id}/encounters`, guardadas una vez gracias al campo nuevo `idPokeapi`; las rutas de ejemplo se borran solas | `PokemonService`, `Ruta`, `RutaRepository` |
+| Región de origen (`region`) y `/pokemons/region/{nombre}`: nativos de la región más los que aparecen en sus rutas | `Pokemon`, `PokemonRepository` |
+| Forma de obtención (`tipoObtencion` + `formaObtencion`: Inicial, Singular, Fósil, Legendario, Regalo, Salvaje, Huevo, Evolución, Sin datos) y `/pokemons/obtencion/{tipo}`, con o sin tilde | `Pokemon`, `PokemonService`, `PokemonController` |
+| Errores: `ResourceNotFoundException` (404) y `BadRequestException` (400); `GlobalExceptionHandler` también responde 400 y 405, todo con el mismo JSON | `exception/` |
+| Endpoints nuevos: Pokémon `/ruta/{id}` y `/obtencion/{tipo}`; movimientos búsqueda, categoría, competitivos, `PUT` y `DELETE`; rutas `/regiones`, `/region/{r}` y `PUT`; validación en `POST` y `PUT` | `PokemonController`, `MovimientoController`, `RutaController` |
+| La contraseña salió de `application.properties` a `application-local.properties` (en `.gitignore`), con un `.example` para el equipo | `application.properties`, `.gitignore` |
+| README con endpoints, formato de errores y formas de obtención | `README.md` |
+
+### Errores del agente y malentendidos
+| Problema | Cómo se resolvió |
+|---|---|
+| El primer mensaje llegó cortado y el agente no sabía qué parte del proyecto le tocaba al usuario | El agente preguntó; el usuario aclaró que se encarga del backend |
+| El agente no podía compilar: su entorno no tenía internet | Escribió el código revisando solo la sintaxis y el usuario compiló en su PC |
+| Las primeras pruebas mostraban el comportamiento viejo | El servidor seguía corriendo con clases antiguas en `target/`: detenerlo y ejecutar `mvnw clean spring-boot:run` |
+| Las rutas de ejemplo caían solo en 2 de las 6 de Kanto: la fórmula `(id*3+1) % 6` solo daba 1 o 4 | Se corrigió la fórmula y luego se reemplazó todo por rutas reales |
+| Muchos Pokémon quedaban sin rutas (iniciales, Mew, casi todo Galar y Paldea) | Se agregaron `tipoObtencion` y `formaObtencion` para explicar cada caso |
+| El build falló con "Could not find goal 'run.'" | El comando se había escrito `spring-boot:run.`, con un punto al final |
+| Tras activar el acceso a red, el agente seguía sin internet | Ese ajuste solo se aplica a conversaciones nuevas: hubo que abrir otro chat |
 
 ---
 
