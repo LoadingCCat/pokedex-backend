@@ -187,3 +187,28 @@ Sesión del frontend (`pokedex-frontend`, Next.js 16 + Tailwind 4), iniciada des
 - 36 pruebas con vitest sin backend, y 62 con `API_URL` (las 26 de contrato comparan el mock con la API real). Build con 1034 páginas.
 - Criterios de P1–P5 revisados en el navegador a 375 y 1280 px; revisión automática de accesibilidad de 13 URL.
 - Web publicada: 14 URL comprobadas con `curl` (200 y título correcto; 404 propio en `/no-existe`; imágenes optimizadas).
+
+---
+
+## 2026-11-16 · Gemini (entorno en la torre nueva)
+
+Configuración del backend en otro equipo (la torre) a partir del repositorio de GitHub. Fuente: el resumen que dio Gemini al terminar (prompts parafraseados). No hubo cambios de código ni commits.
+
+### Prompts clave
+- Continuar la sincronización y configuración de `pokedex-backend` en la torre a partir del repositorio de GitHub.
+- Clonar el repositorio en `C:\Proyectos` y abrirlo en VS Code.
+- Crear la base de datos local en pgAdmin 4 y el archivo de propiedades locales.
+- Rellenar la sección "Sesión anterior" de esta bitácora (ver el último error).
+
+### Lo que hizo el agente
+- Estructura de carpetas en `C:\Proyectos\pokedex-backend`.
+- Base de datos PostgreSQL `pokedex` creada en pgAdmin 4.
+- `application-local.properties` con las credenciales y la URL de esa base de datos, fuera de git.
+
+### Errores del agente y cómo se corrigieron
+| Problema | Corrección |
+|---|---|
+| Los comandos `cd` y `mkdir` se pegaron juntos en PowerShell | Separarlos y ejecutarlos de uno en uno |
+| La terminal de VS Code no reconocía `git` porque se abrió antes de que se registraran las variables de entorno | Clonar con el botón de VS Code o usar Git Bash |
+| `application.properties` apunta a `pokedex_db` por defecto, pero la base se creó como `pokedex` | URL explícita en `application-local.properties` |
+| Intentó rellenar "Sesión anterior" con suposiciones que contradecían el historial: la entidad `Evolucion`, el 409 y la carga por lotes son del 2026-11-14, y el importador nunca usó DTOs | Se descartó su versión; la sección se completó con el resumen del chat de Claude de esa sesión (`0d0c892`) |
