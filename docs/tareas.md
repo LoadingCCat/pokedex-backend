@@ -40,7 +40,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.1 Identidad visual «Laboratorio» en `pokedex-frontend/docs/diseno/identidad-visual.md` (paleta AA, 18 colores de tipo, tipografía, componentes, tokens de Tailwind)
 - [x] FE.2 Skill `ui-componentes` en `pokedex-frontend/.claude/skills/`
 - [x] FE.3 Docs del front: `CLAUDE.md` y `docs/pantallas.md` (P1 Catálogo, P2 Ficha, P3 Movimientos, P4 Regiones, P5 Ruta)
-- [ ] FE.4 Base: tokens y fuentes de la identidad, `lang="es"`, imágenes remotas, cabecera y pie, `lib/formato.ts`, `lib/tipos-pokemon.ts`
+- [x] FE.4 Base: tokens y fuentes de la identidad, `lang="es"`, imágenes remotas, cabecera y pie, `lib/formato.ts`, `lib/tipos-pokemon.ts`
 - [ ] FE.5 Volcado mock (`scripts/generar-mock.mjs` → `datos/mock/`) desde el backend local con los 1025 importados
 - [ ] FE.6 Capa `lib/api`: tipos del contrato, mock en memoria que reproduce `api.md`, cliente HTTP con `API_URL`; pruebas con vitest
 - [ ] FE.7 Componentes base (`components/ui`, `InsigniaTipo`, `TarjetaPokemon`, `ImagenPokemon`)
