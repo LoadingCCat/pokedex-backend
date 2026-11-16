@@ -46,7 +46,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.7 Componentes base (`components/ui`, `InsigniaTipo`, `TarjetaPokemon`, `ImagenPokemon`)
 - [x] FE.8 P1 Catálogo con buscador, filtros combinados, orden y paginación en la URL
 - [x] FE.9 P2 Ficha: datos, estadísticas, obtención y rutas, cadena evolutiva, 404 propio
-- [ ] FE.10 Movimientos: tabla en la ficha y P3 `/movimientos`
+- [x] FE.10 Movimientos: tabla en la ficha y P3 `/movimientos`
 - [ ] FE.11 P4 Regiones y P5 Ruta
 - [ ] FE.12 Pulido: `error`/`loading` globales, metadata, repaso de accesibilidad y móvil, README
 - [ ] FE.13 Publicar en Vercel con el mock (el push y el despliegue los confirma el usuario)
