@@ -49,7 +49,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.10 Movimientos: tabla en la ficha y P3 `/movimientos`
 - [x] FE.11 P4 Regiones y P5 Ruta
 - [x] FE.12 Pulido: `error` global (sin `loading` global: cada pantalla tiene su esqueleto), metadata, repaso de accesibilidad y móvil, README
-- [ ] FE.13 Publicar en Vercel con el mock (el push y el despliegue los confirma el usuario)
+- [x] FE.13 Publicar en Vercel con el mock: <https://pokedex-frontend-seven.vercel.app/> (repo público `LoadingCCat/pokedex-frontend`, rama `master`; cada push despliega)
 
 ## Nube (U6)
 <!-- Se detalla al iniciar la U6. -->
