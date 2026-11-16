@@ -54,7 +54,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 ## Front · nostalgia, imágenes y WikiDex
 <!-- Por fases; cada fase se aprueba antes de implementarla. Spec: pantallas.md, "Ampliación…" y P6. -->
 - [x] FE.14 Fase 0 · Docs: "Toques de nostalgia" en la identidad, ampliación y P6 en `pantallas.md`, decisiones
-- [ ] FE.15 Fase 1 · Sprite animado de Negro/Blanco al pasar el ratón por las tarjetas (#001–#649)
+- [x] FE.15 Fase 1 · Sprite animado de Negro/Blanco al pasar el ratón por las tarjetas (#001–#649)
 - [ ] FE.16 Fase 1 · Botón "Escuchar" con el grito en la ficha
 - [ ] FE.17 Fase 1 · Interruptor "Shiny" en la ficha
 - [ ] FE.18 Fase 1 · Barras de estadísticas que se llenan al aparecer
