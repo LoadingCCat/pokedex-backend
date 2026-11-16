@@ -41,7 +41,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.2 Skill `ui-componentes` en `pokedex-frontend/.claude/skills/`
 - [x] FE.3 Docs del front: `CLAUDE.md` y `docs/pantallas.md` (P1 Catálogo, P2 Ficha, P3 Movimientos, P4 Regiones, P5 Ruta)
 - [x] FE.4 Base: tokens y fuentes de la identidad, `lang="es"`, imágenes remotas, cabecera y pie, `lib/formato.ts`, `lib/tipos-pokemon.ts`
-- [ ] FE.5 Volcado mock (`scripts/generar-mock.mjs` → `datos/mock/`) desde el backend local con los 1025 importados
+- [x] FE.5 Volcado mock (`scripts/generar-mock.mjs` → `datos/mock/`) desde el backend local: 1025 Pokémon, 797 movimientos, 620 rutas, 540 cadenas evolutivas (unos 3,3 MB)
 - [ ] FE.6 Capa `lib/api`: tipos del contrato, mock en memoria que reproduce `api.md`, cliente HTTP con `API_URL`; pruebas con vitest
 - [ ] FE.7 Componentes base (`components/ui`, `InsigniaTipo`, `TarjetaPokemon`, `ImagenPokemon`)
 - [ ] FE.8 P1 Catálogo con buscador, filtros combinados, orden y paginación en la URL
