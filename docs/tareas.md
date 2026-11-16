@@ -37,6 +37,19 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 <!-- Se detalla cuando el backend esté terminado. Pedir las tareas al agente en modo plan,
      a partir de docs/specs/ y docs/contratos/api.md. Antes: identidad visual en docs/diseno/
      y la skill ui-componentes. -->
+- [x] FE.1 Identidad visual «Laboratorio» en `pokedex-frontend/docs/diseno/identidad-visual.md` (paleta AA, 18 colores de tipo, tipografía, componentes, tokens de Tailwind)
+- [x] FE.2 Skill `ui-componentes` en `pokedex-frontend/.claude/skills/`
+- [x] FE.3 Docs del front: `CLAUDE.md` y `docs/pantallas.md` (P1 Catálogo, P2 Ficha, P3 Movimientos, P4 Regiones, P5 Ruta)
+- [ ] FE.4 Base: tokens y fuentes de la identidad, `lang="es"`, imágenes remotas, cabecera y pie, `lib/formato.ts`, `lib/tipos-pokemon.ts`
+- [ ] FE.5 Volcado mock (`scripts/generar-mock.mjs` → `datos/mock/`) desde el backend local con los 1025 importados
+- [ ] FE.6 Capa `lib/api`: tipos del contrato, mock en memoria que reproduce `api.md`, cliente HTTP con `API_URL`; pruebas con vitest
+- [ ] FE.7 Componentes base (`components/ui`, `InsigniaTipo`, `TarjetaPokemon`, `ImagenPokemon`)
+- [ ] FE.8 P1 Catálogo con buscador, filtros combinados, orden y paginación en la URL
+- [ ] FE.9 P2 Ficha: datos, estadísticas, obtención y rutas, cadena evolutiva, 404 propio
+- [ ] FE.10 Movimientos: tabla en la ficha y P3 `/movimientos`
+- [ ] FE.11 P4 Regiones y P5 Ruta
+- [ ] FE.12 Pulido: `error`/`loading` globales, metadata, repaso de accesibilidad y móvil, README
+- [ ] FE.13 Publicar en Vercel con el mock (el push y el despliegue los confirma el usuario)
 
 ## Nube (U6)
 <!-- Se detalla al iniciar la U6. -->
