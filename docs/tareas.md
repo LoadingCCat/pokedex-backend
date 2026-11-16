@@ -48,7 +48,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.9 P2 Ficha: datos, estadísticas, obtención y rutas, cadena evolutiva, 404 propio
 - [x] FE.10 Movimientos: tabla en la ficha y P3 `/movimientos`
 - [x] FE.11 P4 Regiones y P5 Ruta
-- [ ] FE.12 Pulido: `error`/`loading` globales, metadata, repaso de accesibilidad y móvil, README
+- [x] FE.12 Pulido: `error` global (sin `loading` global: cada pantalla tiene su esqueleto), metadata, repaso de accesibilidad y móvil, README
 - [ ] FE.13 Publicar en Vercel con el mock (el push y el despliegue los confirma el usuario)
 
 ## Nube (U6)

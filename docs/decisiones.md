@@ -69,3 +69,5 @@ Registro de decisiones técnicas y de producto. Si una decisión cambia, se agre
 | 2026-11-16 | Los movimientos de la ficha van en un `<details>` cerrado al cargar | Son unos 100 por Pokémon; desplegable nativo, accesible y sin JavaScript |
 | 2026-11-16 | Las rutas de Orre (18, de los juegos de GameCube) se muestran en el front, pero su región sale sin enlace | La PokeAPI las trae como región, pero `/rutas/regiones` solo lista las 9 de origen; enlazar a `/regiones/orre` daría un 404 |
 | 2026-11-16 | Las rutas de una región se paginan de 24 en 24 en el front (la API acepta cualquier tamaño hasta 200) | Llena sin huecos la cuadrícula de 2 y 3 columnas |
+| 2026-11-16 | El front no tiene `loading.tsx` global, aunque estaba en el plan de FE.12 | Cada pantalla ya envuelve sus datos en `<Suspense>` con un esqueleto de su forma; un `loading` global taparía la cabecera de cada página (título, filtros) con un esqueleto genérico |
+| 2026-11-16 | `app/error.tsx` muestra un mensaje genérico con "Reintentar" (`retry` de Next 16) y "Ir al catálogo"; el detalle solo va a la consola | Igual que el 500 del backend: no exponer detalles técnicos al usuario |
