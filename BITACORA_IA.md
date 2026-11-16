@@ -69,8 +69,6 @@ Pikachu (`/api/pokemons/25`) con `totalEstadisticas = 320` y unos 110 movimiento
 | Para el orden por defecto iba a usar `@PageableDefault`, que fija el tamaño de página en 10 e ignora el 20 configurado | Revisión antes de escribir el código | `@SortDefault("nombre")` |
 | En F7, la primera versión mezclaba las evoluciones de formas regionales con la normal (Slowbro: "Nivel 37 o Usando Brazal Galanuez") y le faltaban 3 métodos de evolución de la PokeAPI | Revisión con el advisor antes de cerrar la tarea, mirando la salida de las pruebas | Se usan `required_pokemon_form` / `evolved_pokemon_form` para descartar o aclarar las vías regionales, y se contrastó la lista con `/evolution-trigger` |
 
-**[completar]**: otros problemas que hayas notado tú durante la sesión.
-
 ---
 
 ## 2026-11-14/15 · Claude Code (PC nueva)
@@ -100,4 +98,61 @@ Pikachu (`/api/pokemons/25`) con `totalEstadisticas = 320` y unos 110 movimiento
 | 7 de las 80 pruebas fallaron la primera vez: `jsonPath("$.content[*]…").value(List.of(…))` no funciona en Spring 7 para rutas con `[*]` (no era un error de la API) | Al correr `mvnw test` | Se usa el matcher `contains(…)` de Hamcrest |
 | Al editar `CLAUDE.md` con `sed`, se perdió la barra invertida de `.\mvnw.cmd` | Revisión del resultado | Corregido con una edición exacta |
 
-**[completar]**: otros problemas que hayas notado tú durante la sesión (por ejemplo, la lentitud de la PC que obligó a reiniciar a mitad de la primera importación).
+---
+
+## 2026-11-16 · Claude Code (frontend, U3: FE.1–FE.13)
+
+Sesión del frontend (`pokedex-frontend`, Next.js 16 + Tailwind 4), iniciada desde otra sesión de Claude Code. Las tareas, decisiones y esta bitácora se llevan en el backend.
+
+**Publicado en Vercel:** <https://pokedex-frontend-seven.vercel.app/> · Repo: <https://github.com/LoadingCCat/pokedex-frontend>
+
+### Prompts clave
+- *"Propón 2 identidades visuales distintas… tono de voz, paleta HEX que cumpla contraste AA, tipografía de Google Fonts y estilo de componentes… Espera a que el usuario elija una"* → «Laboratorio» (clara, técnica) y «Dispositivo» (oscura, tipo consola), con el contraste de cada color medido. El usuario eligió **A · Laboratorio**.
+- *"Sigue la planificación establecida"* → la skill `ui-componentes`, siguiente paso de `tareas.md`.
+- *"Sí, planifica U3"* → plan en modo plan con dos preguntas: el front es **solo de consulta** (sin CRUD) y el mock es un **volcado completo** del backend. Plan aprobado: FE.3–FE.13.
+- *"Sí, FE.n"* (una por tarea) → cada tarea con lint, build, pruebas, revisión en el navegador a 375 y 1280 px, commit y `[x]` en `tareas.md`.
+- *"Hazlo público… ya puedes crear el repositorio"* y *"push de ambos"* → repo creado con `gh` y push solo tras el permiso explícito.
+- *"Revisa los entregables de la U3 que faltan…"* → capturas de referencia evaluadas con la rúbrica, esta entrada y el enlace en el README.
+
+### Lo que hizo el agente
+| Cambio | Commit (front) |
+|---|---|
+| FE.1–FE.3 · Identidad «Laboratorio» (`docs/diseno/identidad-visual.md`, 18 colores de tipo AA), skill `ui-componentes`, `CLAUDE.md` y `docs/pantallas.md` (P1–P5) | `cfed966` |
+| FE.4 · Tokens, fuentes, `lang="es"`, cabecera y pie, `lib/formato.ts`, `lib/tipos-pokemon.ts` | `bd5c1ac` |
+| FE.5 · Volcado mock del backend: 1025 Pokémon, 797 movimientos, 620 rutas, 540 cadenas (`scripts/generar-mock.mjs`) | `648aada` |
+| FE.6 · Capa `lib/api` (mock en memoria + cliente HTTP con `API_URL`); vitest: 23 pruebas del mock y 26 que lo comparan con la API real | `6c22f1c` |
+| FE.7 · Componentes base | `79d27ac` |
+| FE.8 · P1 Catálogo: búsqueda, filtros combinados, orden y paginación en la URL | `7325005` |
+| FE.9 · P2 Ficha: estadísticas, obtención, cadena evolutiva, 404 propio; 1025 fichas estáticas | `91bf240` |
+| FE.10 · Movimientos en la ficha y P3 `/movimientos` | `109f1fd` |
+| FE.11 · P4 Regiones y P5 Ruta | `868faef` |
+| FE.12 · `error.tsx`, README, repaso automático de accesibilidad y móvil | `e140e74` |
+| FE.13 · Publicación en Vercel con el mock | `0312e55` |
+| Capturas de referencia evaluadas con la rúbrica (`docs/diseno/referencias/`) | (este commit) |
+
+### Errores del agente y cómo se corrigieron
+| Problema | Cómo se detectó | Corrección |
+|---|---|---|
+| En la spec de P3 iba a combinar búsqueda, categoría y competitivos, pero la API tiene un endpoint por caso | Al leer el contrato antes de escribir la capa `lib/api` | Un solo selector de vista; el mock tampoco combina, para que funcione igual con la API real |
+| Criterios de la spec escritos de memoria y no con los datos: Mew "sin rutas" (tiene Faraway Island) y la ruta "Bosque Verde" (se llama "Viridian Forest") | Al validar el volcado y al probar las pantallas | Criterios cambiados a Meganium y Viridian Forest |
+| La plantilla de títulos "%s · Pokedex+" no se aplicaba al catálogo (página del mismo segmento que el layout) | Revisando `document.title` en el navegador | `title: { absolute: … }` en la página |
+| Dos elementos hermanos con la misma `key` (la URL) en el catálogo | Error de React en la consola | Prefijos `filtros:` y `resultados:` |
+| La ficha leía `params` fuera de `<Suspense>`, lo que impide la navegación instantánea con `cacheComponents` | Error de Next en la consola | Contenido de la ficha dentro de `<Suspense>` con esqueleto; anotado en `decisiones.md` |
+| `/movimientos` salía ordenado por el slug en inglés ("Absorber", "Roca Veloz", "Ácido") | Al revisar la tabla en el navegador | `sort=nombreEs` (se comprobó que la API lo acepta en los 4 endpoints) |
+| La tabla de movimientos tenía un ancho mínimo y obligaba a desplazarse en horizontal a 375 px | Captura en móvil | Sin ancho mínimo y con menos relleno en móvil |
+| "Este Pokémon no aparece en estado salvaje" se repetía cuando `formaObtencion` ya lo decía | Al revisar Meganium | Solo se muestra si el texto no lo dice ya |
+| Un `git add … public` falló porque la carpeta ya no existía, y el commit del backend salió antes que el del front | Salida del comando | Se repitió el commit del front sin esa ruta |
+| La revisión automática de accesibilidad marcó "0 `h1`" en las fichas: medía antes de que React mostrara el contenido de `<Suspense>` | Al comparar con la página real | La revisión espera a que haya un `h1` visible; luego todo dio OK |
+| Las primeras capturas a 390 px salieron cortadas: Chrome sin interfaz no deja una ventana tan estrecha y la página se pintaba a ~500 px | Al revisar las imágenes | Capturas con emulación de dispositivo (CDP, `setDeviceMetricsOverride`) |
+
+### Otros hallazgos
+- PostgreSQL estaba detenido y hacían falta permisos de administrador para iniciarlo (`net start` dio "Acceso denegado"); el usuario lo inició en una terminal de administrador.
+- `gh` no estaba instalado; el usuario lo instaló con `winget` e inició sesión él mismo.
+- Git y `gh` terminaron con código 255 aunque el push salió bien: se comprobó siempre con `git status` y `gh repo view`.
+- La PokeAPI trae 18 lugares de Orre, una región que no está entre las 9 de origen: se muestran, pero su región va sin enlace.
+- No se hicieron variantes /a /b /c de las pantallas (ver `decisiones.md`).
+
+### Verificación
+- 36 pruebas con vitest sin backend, y 62 con `API_URL` (las 26 de contrato comparan el mock con la API real). Build con 1034 páginas.
+- Criterios de P1–P5 revisados en el navegador a 375 y 1280 px; revisión automática de accesibilidad de 13 URL.
+- Web publicada: 14 URL comprobadas con `curl` (200 y título correcto; 404 propio en `/no-existe`; imágenes optimizadas).

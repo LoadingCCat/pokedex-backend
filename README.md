@@ -2,6 +2,8 @@
 
 API REST de la Pokedex+ hecha con Java 21, Spring Boot 4.1.2, Maven y PostgreSQL. Los datos se importan desde la [PokeAPI](https://pokeapi.co/).
 
+**Frontend publicado:** <https://pokedex-frontend-seven.vercel.app/> (código en [LoadingCCat/pokedex-frontend](https://github.com/LoadingCCat/pokedex-frontend)). La versión publicada usa datos mock con la forma de esta API; para conectarlo a este backend en local, ver su README (`API_URL`).
+
 ## Cómo correrlo
 
 1. Crea la base de datos `pokedex_db` en PostgreSQL.
