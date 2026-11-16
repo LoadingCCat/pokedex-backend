@@ -45,7 +45,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.6 Capa `lib/api`: tipos del contrato, mock en memoria que reproduce `api.md`, cliente HTTP con `API_URL`; 23 pruebas del mock (F1, F2, F4, F5, F7, F8, F9) y 26 que lo comparan con la API real
 - [x] FE.7 Componentes base (`components/ui`, `InsigniaTipo`, `TarjetaPokemon`, `ImagenPokemon`)
 - [x] FE.8 P1 Catálogo con buscador, filtros combinados, orden y paginación en la URL
-- [ ] FE.9 P2 Ficha: datos, estadísticas, obtención y rutas, cadena evolutiva, 404 propio
+- [x] FE.9 P2 Ficha: datos, estadísticas, obtención y rutas, cadena evolutiva, 404 propio
 - [ ] FE.10 Movimientos: tabla en la ficha y P3 `/movimientos`
 - [ ] FE.11 P4 Regiones y P5 Ruta
 - [ ] FE.12 Pulido: `error`/`loading` globales, metadata, repaso de accesibilidad y móvil, README
