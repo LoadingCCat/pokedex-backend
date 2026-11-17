@@ -62,6 +62,8 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.20 Fase 2 · Capturas de lugares en P5, empezando por Kanto
 - [x] FE.21 Fase 3 · Enlaces verificados a WikiDex (script + ficha, lugares y regiones)
 - [x] FE.22 Fase 4 · `/creditos`, tamaño del build, capturas de referencia, evaluación y bitácora
+- [ ] FE.23 Fase 5 · Capturas del juego en la ficha: datos, sección y créditos, con la primera generación (Articuno, Zapdos, Moltres, Mewtwo y Mew)
+- [ ] FE.24 Fase 5 · Capturas del juego del resto de legendarios y singulares
 
 ## Nube (U6)
 <!-- Se detalla al iniciar la U6. -->
