@@ -65,7 +65,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.21 Fase 3 · Enlaces verificados a WikiDex (script + ficha, lugares y regiones)
 - [x] FE.22 Fase 4 · `/creditos`, tamaño del build, capturas de referencia, evaluación y bitácora
 - [x] FE.23 Fase 5 · Capturas del juego en la ficha: datos, sección y créditos, con la primera generación (Articuno, Zapdos, Moltres, Mewtwo y Mew)
-- [ ] FE.24 Fase 5 · Capturas del juego del resto de legendarios y singulares
+- [x] FE.24 Fase 5 · Capturas del juego del resto de legendarios y singulares: 87 capturas de 52 de los 94 (los demás no tienen en WikiDex capturas de cómo se consiguen)
 - [x] FE.25 Fase 6 · Disco de MT del color del tipo en las tablas de movimientos (requiere B.27 y regenerar el mock)
 
 ## Nube (U6)
