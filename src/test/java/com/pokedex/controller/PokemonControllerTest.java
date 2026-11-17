@@ -66,6 +66,9 @@ class PokemonControllerTest {
     private PokemonService pokemonService;
     @MockitoBean
     private EvolucionService evolucionService;
+    // F15: sus endpoints se prueban en GestionPokemonControllerTest
+    @MockitoBean
+    private com.pokedex.service.GestionPokemonService gestionPokemonService;
 
     static Pokemon pikachu() {
         Pokemon p = new Pokemon();
@@ -164,7 +167,8 @@ class PokemonControllerTest {
 
     @Test
     void metodoNoPermitidoResponde405() throws Exception {
-        mvc.perform(delete("/api/pokemons/25"))
+        // Desde F15, DELETE /api/pokemons/{id} existe: el ejemplo pasa a una ruta que solo acepta GET
+        mvc.perform(delete("/api/pokemons/25/movimientos"))
                 .andExpect(status().isMethodNotAllowed())
                 .andExpect(jsonPath("$.status").value(405));
     }

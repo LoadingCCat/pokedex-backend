@@ -9,6 +9,7 @@ import com.pokedex.exception.ConflictException;
 import com.pokedex.repository.EvolucionRepository;
 import com.pokedex.repository.MovimientoRepository;
 import com.pokedex.repository.PokemonRepository;
+import com.pokedex.repository.PokemonExcluidoRepository;
 import com.pokedex.repository.RutaExcluidaRepository;
 import com.pokedex.repository.RutaRepository;
 import com.pokedex.repository.TipoRepository;
@@ -157,6 +158,7 @@ public class PokemonService {
     private final RutaRepository rutaRepository;
     private final EvolucionRepository evolucionRepository;
     private final RutaExcluidaRepository rutaExcluidaRepository;
+    private final PokemonExcluidoRepository pokemonExcluidoRepository;
     private final RestTemplate restTemplate;
     private final TaskExecutor ejecutorImportacion;
 
@@ -166,7 +168,7 @@ public class PokemonService {
     public PokemonService(PokemonRepository pokemonRepository, TipoRepository tipoRepository,
                           MovimientoRepository movimientoRepository, RutaRepository rutaRepository,
                           EvolucionRepository evolucionRepository, RutaExcluidaRepository rutaExcluidaRepository,
-                          RestTemplate restTemplate,
+                          PokemonExcluidoRepository pokemonExcluidoRepository, RestTemplate restTemplate,
                           @Qualifier("applicationTaskExecutor") TaskExecutor ejecutorImportacion) {
         this.ejecutorImportacion = ejecutorImportacion;
         this.pokemonRepository = pokemonRepository;
@@ -175,6 +177,7 @@ public class PokemonService {
         this.rutaRepository = rutaRepository;
         this.evolucionRepository = evolucionRepository;
         this.rutaExcluidaRepository = rutaExcluidaRepository;
+        this.pokemonExcluidoRepository = pokemonExcluidoRepository;
         this.restTemplate = restTemplate;
     }
 
@@ -262,10 +265,14 @@ public class PokemonService {
         int fallidos = 0;
         progreso.fase("pokemons", total);
 
+        int omitidos = 0;
         for (int id = 1; id <= total; id++) {
             try {
-                importarPokemon(id, cache);
-                importados++;
+                if (importarPokemon(id, cache)) {
+                    importados++;
+                } else {
+                    omitidos++;
+                }
                 progreso.avanzar(false);
             } catch (Exception e) {
                 fallidos++;
@@ -276,11 +283,19 @@ public class PokemonService {
                 log.info("Importando Pokémon... {}/{}", id, total);
             }
         }
-        log.info("Pokémon importados: {} (fallidos: {})", importados, fallidos);
-        return new ResultadoImportacion("pokemons", importados, 0, fallidos);
+        log.info("Pokémon importados: {} (omitidos: {}, fallidos: {})", importados, omitidos, fallidos);
+        return new ResultadoImportacion("pokemons", importados, omitidos, fallidos);
     }
 
-    private void importarPokemon(int id, CacheImportacion cache) {
+    /**
+     * Importa o actualiza un Pokémon. Devuelve false si se omitió porque se borró a mano (F15).
+     * Si se editó a mano (editadoAMano), conserva sus datos, tipos, rutas y forma de obtención,
+     * y solo refresca lo que el panel no edita (movimientos y cadena evolutiva).
+     */
+    private boolean importarPokemon(int id, CacheImportacion cache) {
+        if (pokemonExcluidoRepository.existsById(id)) {
+            return false;
+        }
         Map<String, Object> datos = getJson(POKEAPI + "/pokemon/" + id);
         if (datos == null) {
             throw new IllegalStateException("La PokeAPI no devolvió datos");
@@ -298,21 +313,25 @@ public class PokemonService {
         int generacion = obtenerGeneracion(especie, idPokedex);
 
         Pokemon pokemon = pokemonRepository.findById(idPokedex).orElseGet(Pokemon::new);
-        pokemon.setIdPokedex(idPokedex);
-        pokemon.setNombre((String) datos.get("name"));
-        // Si la especie falló o no trae nombres, se conserva el nombreEs que ya tenía
-        String nombreEs = especie != null ? nombreEnEspanol(especie.get("names")) : null;
-        if (nombreEs != null) {
-            pokemon.setNombreEs(nombreEs);
+        // F15: lo editado desde el panel no se pisa (regla de B.18 y B.28)
+        boolean editadoAMano = Boolean.TRUE.equals(pokemon.getEditadoAMano());
+        if (!editadoAMano) {
+            pokemon.setIdPokedex(idPokedex);
+            pokemon.setNombre((String) datos.get("name"));
+            // Si la especie falló o no trae nombres, se conserva el nombreEs que ya tenía
+            String nombreEs = especie != null ? nombreEnEspanol(especie.get("names")) : null;
+            if (nombreEs != null) {
+                pokemon.setNombreEs(nombreEs);
+            }
+            pokemon.setDescripcion(obtenerDescripcion(especie));
+            pokemon.setGeneracion(generacion);
+            pokemon.setRegion(REGION_POR_GENERACION[generacion - 1]);
+            pokemon.setImagenUrl(obtenerImagen(datos));
+            pokemon.setAltura(decimal(datos.get("height"))); // PokeAPI: decímetros -> metros
+            pokemon.setPeso(decimal(datos.get("weight")));   // PokeAPI: hectogramos -> kg
+            pokemon.setTipos(obtenerTipos(datos));
+            asignarEstadisticas(pokemon, datos);
         }
-        pokemon.setDescripcion(obtenerDescripcion(especie));
-        pokemon.setGeneracion(generacion);
-        pokemon.setRegion(REGION_POR_GENERACION[generacion - 1]);
-        pokemon.setImagenUrl(obtenerImagen(datos));
-        pokemon.setAltura(decimal(datos.get("height"))); // PokeAPI: decímetros -> metros
-        pokemon.setPeso(decimal(datos.get("weight")));   // PokeAPI: hectogramos -> kg
-        pokemon.setTipos(obtenerTipos(datos));
-        asignarEstadisticas(pokemon, datos);
 
         // Si los movimientos fallan, se conservan los que ya tenía (no se toca la lista)
         try {
@@ -321,25 +340,33 @@ public class PokemonService {
             log.warn("No se pudieron obtener los movimientos del Pokémon ID {}: {}", id, e.getMessage());
         }
 
-        // Si los encuentros fallan, se conservan las rutas que ya tenía
-        Encuentros encuentros;
-        try {
-            encuentros = obtenerEncuentros(idPokedex, cache);
-        } catch (Exception e) {
-            log.warn("No se pudieron obtener las rutas del Pokémon ID {}: {}", id, e.getMessage());
-            // Con una consulta y no con pokemon.getRutas(): la importación corre en segundo plano,
-            // sin sesión abierta, y leer la relación lazy lanzaría LazyInitializationException
-            List<Ruta> anteriores = new ArrayList<>(rutaRepository.buscarPorPokemon(idPokedex));
-            encuentros = new Encuentros(anteriores, Set.of());
-        }
-        pokemon.setRutas(encuentros.rutas());
+        if (!editadoAMano) {
+            // Si los encuentros fallan, se conservan las rutas que ya tenía
+            Encuentros encuentros;
+            try {
+                encuentros = obtenerEncuentros(idPokedex, cache);
+            } catch (Exception e) {
+                log.warn("No se pudieron obtener las rutas del Pokémon ID {}: {}", id, e.getMessage());
+                // Con una consulta y no con pokemon.getRutas(): la importación corre en segundo plano,
+                // sin sesión abierta, y leer la relación lazy lanzaría LazyInitializationException
+                List<Ruta> anteriores = new ArrayList<>(rutaRepository.buscarPorPokemon(idPokedex));
+                encuentros = new Encuentros(anteriores, Set.of());
+            }
+            pokemon.setRutas(encuentros.rutas());
 
-        definirObtencion(pokemon, especie, encuentros);
+            definirObtencion(pokemon, especie, encuentros);
+        }
 
         pokemonRepository.save(pokemon);
 
         // Parte opcional: si la cadena falla, el Pokémon queda importado igual
         importarCadenaEvolutiva(especie, cache);
+        return true;
+    }
+
+    /** Región de origen según la generación (1 = Kanto … 9 = Paldea). */
+    public static String regionDeGeneracion(int generacion) {
+        return REGION_POR_GENERACION[generacion - 1];
     }
 
     private List<Tipo> obtenerTipos(Map<String, Object> datos) {

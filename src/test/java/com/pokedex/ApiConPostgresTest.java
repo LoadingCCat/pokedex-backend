@@ -8,6 +8,7 @@ import com.pokedex.entity.Usuario;
 import com.pokedex.repository.EvolucionRepository;
 import com.pokedex.repository.MovimientoRepository;
 import com.pokedex.repository.PokemonRepository;
+import com.pokedex.repository.PokemonExcluidoRepository;
 import com.pokedex.repository.RutaExcluidaRepository;
 import com.pokedex.repository.RutaRepository;
 import com.pokedex.repository.TipoRepository;
@@ -30,6 +31,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -77,6 +79,7 @@ class ApiConPostgresTest {
         tipoRepository.deleteAll();
         evolucionRepository.deleteAll();
         rutaExcluidaRepository.deleteAll();
+        pokemonExcluidoRepository.deleteAll();
 
         Tipo electric = tipoRepository.save(new Tipo("electric"));
         Tipo fire = tipoRepository.save(new Tipo("fire"));
@@ -298,6 +301,8 @@ class ApiConPostgresTest {
     private UsuarioRepository usuarioRepository;
     @Autowired
     private RutaExcluidaRepository rutaExcluidaRepository;
+    @Autowired
+    private PokemonExcluidoRepository pokemonExcluidoRepository;
 
     private String tokenAdmin() throws Exception {
         String respuesta = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
@@ -345,6 +350,30 @@ class ApiConPostgresTest {
         mvc.perform(get("/api/rutas/region/kanto"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.page.totalElements").value(3));
+    }
+
+    @Test
+    void editarYBorrarUnPokemonConElTokenDeAdmin() throws Exception {
+        String token = "Bearer " + tokenAdmin();
+        String cuerpo = """
+                {"nombreEs": "Pikachu Editado", "ps": 35, "ataque": 60, "defensa": 40, "ataqueEspecial": 50,
+                 "defensaEspecial": 50, "velocidad": 95, "altura": 0.4, "peso": 6, "tipoObtencion": "Inicial",
+                 "tipos": ["electric", "fairy"]}""";
+
+        mvc.perform(put("/api/pokemons/25").header("Authorization", token)
+                        .contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/pokemons/25"))
+                .andExpect(jsonPath("$.nombreEs").value("Pikachu Editado"))
+                .andExpect(jsonPath("$.tipos[*].nombre", containsInAnyOrder("electric", "fairy")))
+                .andExpect(jsonPath("$.rutas.length()").value(2)) // sin "rutas" en el cuerpo, se conservan
+                .andExpect(jsonPath("$.editadoAMano").value(true));
+
+        // Cyndaquil (#155) tiene tipo y dos rutas: al borrarlo se van sus filas de pokemon_tipo y pokemon_ruta
+        mvc.perform(delete("/api/pokemons/155").header("Authorization", token)).andExpect(status().isNoContent());
+        mvc.perform(get("/api/pokemons/155")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/pokemons/tipo/fire")).andExpect(jsonPath("$.content[*].idPokedex", contains(4)));
+        org.assertj.core.api.Assertions.assertThat(pokemonExcluidoRepository.existsById(155)).isTrue();
     }
 
     // ---------- F5 · rutas ----------

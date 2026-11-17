@@ -174,4 +174,13 @@ class RutaControllerTest {
         mvc.perform(delete("/api/rutas/3")).andExpect(status().isUnauthorized());
         verify(rutaRepository, never()).delete(any(Ruta.class));
     }
+
+    @Test
+    void unaRutaSinNombreRespondeConElCampo() throws Exception {
+        mvc.perform(post("/api/rutas").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombre\":\" \",\"region\":\"Kanto\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value("El nombre de la ruta es obligatorio"))
+                .andExpect(jsonPath("$.campos.nombre").value("El nombre de la ruta es obligatorio"));
+    }
 }

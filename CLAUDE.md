@@ -69,7 +69,7 @@ com.pokedex/
 
 ## Modelo de datos (lo que no es obvio)
 
-- **`Pokemon`**: la clave primaria es `idPokedex` (número oficial, no autoincremental; no hay otro `id`). Tiene `region` (de origen, según la generación), `tipoObtencion` + `formaObtencion`, `imagenUrl`, `altura` (m), `peso` (kg), las 6 estadísticas base (`ps`, `ataque`, `defensa`, `ataqueEspecial`, `defensaEspecial`, `velocidad`) y `getTotalEstadisticas()`, que se calcula y no se guarda.
+- **`Pokemon`**: la clave primaria es `idPokedex` (número oficial, no autoincremental; no hay otro `id`). `editadoAMano` (F15) marca los creados o editados desde el panel; los borrados quedan en `pokemon_excluido`. Crear, editar y borrar pasa por `GestionPokemonService`, con el cuerpo validado en `DatosPokemon`. Tiene `region` (de origen, según la generación), `tipoObtencion` + `formaObtencion`, `imagenUrl`, `altura` (m), `peso` (kg), las 6 estadísticas base (`ps`, `ataque`, `defensa`, `ataqueEspecial`, `defensaEspecial`, `velocidad`) y `getTotalEstadisticas()`, que se calcula y no se guarda.
 - Relaciones `@ManyToMany` de `Pokemon`: `tipos` (tabla `pokemon_tipo`), `rutas` (`pokemon_ruta`) y `movimientos` (`pokemon_movimiento`). `movimientos` lleva `@JsonIgnore` porque son más de 100 por Pokémon; se exponen en `GET /api/pokemons/{id}/movimientos`.
 - **`Ruta`** = lugar real de los juegos, sacado de `/pokemon/{id}/encounters`. `idPokeapi` (único) identifica las importadas; las creadas con `POST /rutas` lo tienen en `null` (el controller lo fuerza). `DELETE /rutas/{id}` la desvincula y, si era importada, anota su `idPokeapi` en `ruta_excluida`, que la importación salta.
 - **`Movimiento`**: `categoria` ∈ {Físico, Especial, Estado}; `tipo` (nullable) con el nombre en inglés de los tipos (`electric`), validado contra los 18 en POST/PUT; `esCompetitivo` lo calcula el servidor (`potencia > 80`). Antes de borrar uno hay que desvincularlo de `pokemon_movimiento` (`desvincularDePokemons`).
@@ -115,4 +115,5 @@ La lista de pendientes vive en `docs/tareas.md` (sección "Back · pendiente"). 
 
 ## Notas
 
+- Al reimportar (F15): se saltan los Pokémon de `pokemon_excluido` y los lugares de `ruta_excluida` (cuentan como omitidos), y un Pokémon con `editadoAMano` conserva sus datos, tipos, rutas y forma de obtención.
 - Al reimportar, de los movimientos ya existentes solo se actualiza `nombreEs`, y `tipo` si estaba en `null` (no `categoria` ni `potencia`, para no pisar cambios hechos con PUT); los Pokémon sí se actualizan completos.

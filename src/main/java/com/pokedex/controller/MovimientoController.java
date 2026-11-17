@@ -2,6 +2,7 @@ package com.pokedex.controller;
 
 import com.pokedex.entity.Movimiento;
 import com.pokedex.exception.BadRequestException;
+import com.pokedex.exception.CamposInvalidosException;
 import com.pokedex.exception.ResourceNotFoundException;
 import com.pokedex.repository.MovimientoRepository;
 import org.springframework.data.domain.Page;
@@ -70,7 +71,7 @@ public class MovimientoController {
     public ResponseEntity<Movimiento> guardarMovimiento(@RequestBody Movimiento movimiento) {
         validar(movimiento);
         if (movimientoRepository.existsByNombreIgnoreCase(movimiento.getNombre().trim())) {
-            throw new BadRequestException("Ya existe un movimiento llamado '" + movimiento.getNombre() + "'");
+            throw CamposInvalidosException.de("nombre", "Ya existe un movimiento llamado '" + movimiento.getNombre() + "'");
         }
         movimiento.setIdMovimiento(null); // evita sobrescribir uno existente enviando un id
         prepararCampos(movimiento);
@@ -112,19 +113,20 @@ public class MovimientoController {
     }
 
     private void validar(Movimiento movimiento) {
+        // CamposInvalidosException es un 400 con el mismo mensaje y, además, "campos" (F15)
         if (movimiento.getNombre() == null || movimiento.getNombre().isBlank()) {
-            throw new BadRequestException("El nombre del movimiento es obligatorio");
+            throw CamposInvalidosException.de("nombre", "El nombre del movimiento es obligatorio");
         }
         if (movimiento.getCategoria() == null || CATEGORIAS.stream()
                 .noneMatch(c -> c.equalsIgnoreCase(movimiento.getCategoria().trim()))) {
-            throw new BadRequestException("La categoría debe ser una de: Físico, Especial, Estado");
+            throw CamposInvalidosException.de("categoria", "La categoría debe ser una de: Físico, Especial, Estado");
         }
         if (movimiento.getPotencia() != null && movimiento.getPotencia() < 0) {
-            throw new BadRequestException("La potencia no puede ser negativa");
+            throw CamposInvalidosException.de("potencia", "La potencia no puede ser negativa");
         }
         String tipo = movimiento.getTipo();
         if (tipo != null && !tipo.isBlank() && !TIPOS.contains(tipo.trim().toLowerCase())) {
-            throw new BadRequestException("El tipo debe ser uno de: " + String.join(", ", TIPOS));
+            throw CamposInvalidosException.de("tipo", "El tipo debe ser uno de: " + String.join(", ", TIPOS));
         }
     }
 

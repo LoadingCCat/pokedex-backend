@@ -1,6 +1,6 @@
 # F15 · Panel de administración y autenticación
 
-**Estado:** En progreso (B.30 autenticación y B.31 borrar rutas, hechas)
+**Estado:** En progreso (backend hecho: B.30–B.32; falta el frontend, FE.34–FE.37)
 
 ## Historia
 Como administrador, quiero iniciar sesión y gestionar Pokémon, movimientos y rutas desde un panel, sin que nadie más pueda modificar los datos (RF-11, RF-12 y RNF-05 de la entrevista).
@@ -30,6 +30,7 @@ Como administrador, quiero iniciar sesión y gestionar Pokémon, movimientos y r
      - `PUT /api/pokemons/{id}` edita `nombreEs`, las 6 estadísticas (enteros de 1 a 255), `altura` y `peso` (≥ 0), `tipoObtencion` (uno de los 9 valores), `formaObtencion`, `tipos` (1 o 2 de los 18) y `rutas` (ids que existan). Marca `editadoAMano = true`.
      - `POST /api/pokemons` crea uno con un `idPokedex` libre mayor que 0 (si ya existe → 409) y `nombre` (slug) obligatorio, con las mismas validaciones. Responde 201 y queda `editadoAMano`.
      - `DELETE /api/pokemons/{id}` → 204. Borra sus relaciones (tipos, rutas, habilidades, aprendizaje, encuentros) y guarda el id en `pokemon_excluido`.
+   - Los 400 de movimientos y rutas conservan su mensaje y suman `campos` con el campo que falló.
    - Los errores de validación son 400, y el mensaje nombra el campo: `{ ..., "mensaje": "...", "campos": { "ataque": "Debe estar entre 1 y 255" } }`. `campos` es un campo nuevo y opcional del error.
 6. **Reimportación (regla de B.18 y B.28):** un Pokémon con `editadoAMano` conserva sus campos, tipos y rutas, y solo se refrescan habilidades, aprendizaje y encuentros, que el panel no edita. Los ids de `pokemon_excluido` se saltan y cuentan como `omitidos`.
 7. **Postman:** `docs/postman/pokedex-admin.postman_collection.json` trae el login, que guarda el token en la variable de colección `{{token}}`, y las peticiones de crear, editar y borrar Pokémon, movimientos y rutas con `Authorization: Bearer {{token}}`. `{{baseUrl}}` es `http://localhost:8080/api`. `{{usuario}}` y `{{contrasena}}` se llenan en Postman; la colección no guarda credenciales. Sirve para la demo de la sustentación.
@@ -47,9 +48,9 @@ Como administrador, quiero iniciar sesión y gestionar Pokémon, movimientos y r
 - [x] `GET /api/pokemons`, `GET /api/pokemons/25` y `GET /api/movimientos` sin token → 200.
 - [x] Un token vencido o firmado con otro secreto → 401.
 - [x] `GET /api/pokemons/importar-rango?total=1` sin token → 401.
-- [ ] `PUT /api/pokemons/25` con `"ataque": 300` o `"ataque": "abc"` → 400, con `campos.ataque`. Uno válido → 200 y `editadoAMano: true`.
-- [ ] `POST /api/pokemons` con un `idPokedex` existente → 409.
-- [ ] Reimportar no pisa los cambios de un Pokémon editado ni resucita uno borrado (prueba con la PokeAPI simulada).
+- [x] `PUT /api/pokemons/25` con `"ataque": 300` o `"ataque": "abc"` → 400, con `campos.ataque`. Uno válido → 200 y `editadoAMano: true`.
+- [x] `POST /api/pokemons` con un `idPokedex` existente → 409.
+- [x] Reimportar no pisa los cambios de un Pokémon editado ni resucita uno borrado (prueba con la PokeAPI simulada).
 - [x] `DELETE /api/rutas/{id}` → 204, y ningún Pokémon la lista después; un lugar importado borrado no vuelve al reimportar.
 - [x] El administrador inicial se crea desde `ADMIN_USERNAME`/`ADMIN_PASSWORD`, y un grep del repo no encuentra credenciales ni el secreto.
 - [ ] La colección de Postman funciona de punta a punta: login → crear → editar → borrar, sin escribir el token a mano.

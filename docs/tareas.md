@@ -89,7 +89,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 **Fase 2 · F15 Autenticación y panel**
 - [x] B.30 F15 · Spring Security + JWT (oauth2-resource-server), tabla `usuario` (BCrypt), administrador inicial desde `ADMIN_USERNAME`/`ADMIN_PASSWORD`, `JWT_SECRETO`, CORS; 401/403 con el formato de error; las pruebas de escritura existentes usan un usuario ADMIN simulado. 14 pruebas nuevas (107)
 - [x] B.31 F15 · `DELETE /rutas/{id}` (desvincula Pokémon; los lugares importados quedan en `ruta_excluida` y no vuelven al reimportar). 6 pruebas nuevas (113)
-- [ ] B.32 F15 · `POST`/`PUT`/`DELETE /pokemons`, `editadoAMano`, `pokemon_excluido` y la reimportación que los respeta; errores con `campos`; colección de Postman en `docs/postman/` (login con `{{token}}` y crear, editar y borrar)
+- [x] B.32 F15 · `POST`/`PUT`/`DELETE /pokemons`, `editadoAMano`, `pokemon_excluido` y la reimportación que los respeta; errores con `campos`; colección de Postman en `docs/postman/` (login con `{{token}}` y crear, editar y borrar; 15 peticiones). 16 pruebas nuevas (129)
 - [ ] FE.34 F15 · `/login`, route handler de sesión (cookie `httpOnly`), `proxy.ts` y aviso en modo mock
 - [ ] FE.35 F15 · `/admin` Pokémon (listado, búsqueda, crear, editar y eliminar con confirmación; validación y 400 por campo)
 - [ ] FE.36 F15 · `/admin` Movimientos

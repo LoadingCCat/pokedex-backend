@@ -28,6 +28,9 @@ Formato de una respuesta paginada (siempre igual):
 | GET | `/pokemons/{id}` | Detalle (404 si no existe) |
 | GET | `/pokemons/{id}/movimientos` | Movimientos que puede aprender, ordenados por nombre (404 si el Pokémon no existe) |
 | GET | `/pokemons/{id}/evoluciones` | Cadena evolutiva completa a la que pertenece el Pokémon (404 si no existe); ver abajo |
+| POST | `/pokemons` | **ADMIN.** Crear un Pokémon (201). Número ocupado → 409. Ver "Crear y editar Pokémon" |
+| PUT | `/pokemons/{id}` | **ADMIN.** Editar (200; 404 si no existe). Queda con `editadoAMano: true` y la reimportación no lo pisa |
+| DELETE | `/pokemons/{id}` | **ADMIN.** Borrar (204; 404 si no existe). La reimportación no lo vuelve a crear |
 | GET/POST | `/pokemons/importar-rango?total=N&movimientos=M` | Inicia la importación desde la PokeAPI en segundo plano: responde 202 al instante (409 si ya hay una en curso). Uso interno; **ADMIN** |
 | GET/POST | `/pokemons/importar-todo` | Igual, importación rápida (50 + 50). Uso interno; **ADMIN** |
 | GET | `/pokemons/importacion` | Progreso de la importación en curso o de la última (ver "Formato de los demás recursos"). Uso interno |
@@ -74,6 +77,19 @@ Ejemplo de Pokémon:
 }
 ```
 `nombre` es el identificador de la PokeAPI (slug en inglés, no cambia); `nombreEs` es el nombre en español para mostrar (si la PokeAPI no lo tiene, el de inglés). `nombreEs` puede venir en `null` en registros importados antes de que existiera el campo: se llena al volver a importar.
+
+`editadoAMano` es `true` si el Pokémon se creó o se editó desde el panel (F15); en los importados sin tocar es `null`. Al reimportar, uno editado conserva sus datos, tipos, rutas y forma de obtención.
+
+### Crear y editar Pokémon — `POST /pokemons`, `PUT /pokemons/{id}` (F15, ADMIN)
+```json
+{ "nombreEs": "Pikachu", "ps": 35, "ataque": 55, "defensa": 40, "ataqueEspecial": 50, "defensaEspecial": 50,
+  "velocidad": 90, "altura": 0.4, "peso": 6.0, "tipoObtencion": "Inicial", "tipos": ["electric"],
+  "formaObtencion": "...", "descripcion": "...", "imagenUrl": "https://...", "rutas": [3, 7] }
+```
+- **Obligatorios:** `nombreEs`; las 6 estadísticas (enteros de 1 a 255); `altura` y `peso` (≥ 0); `tipoObtencion` (uno de los 9 valores, con o sin tilde); `tipos` (1 o 2 de `/tipos`).
+- **Al crear, además:** `idPokedex` (entero > 0, libre), `nombre` (slug: minúsculas, números y guiones) y `generacion` (1–9; de ella sale `region`).
+- **Opcionales:** `formaObtencion`, `descripcion`, `imagenUrl` (https) y `rutas` (ids que existan). En `PUT`, un opcional que no se envía se conserva; `nombre` no cambia.
+- Un error de validación responde 400 con `campos`, un mensaje por cada campo mal (`"ataque": "Debe estar entre 1 y 255"`, `"ataque": "Debe ser un número entero"` si llega `"abc"`).
 
 Las estadísticas son las base de la PokeAPI; `totalEstadisticas` es su suma (la calcula el servidor). Los movimientos no van en este JSON porque son muchos: se piden aparte en `/pokemons/{id}/movimientos`.
 
@@ -213,12 +229,12 @@ Todos los errores devuelven el mismo formato:
 
 | Código | Cuándo |
 |---|---|
-| 400 | Parámetro inválido o faltante, JSON mal formado, datos inválidos en POST/PUT, `sort` por un campo que no existe |
+| 400 | Parámetro inválido o faltante, JSON mal formado, datos inválidos en POST/PUT, `sort` por un campo que no existe. En POST/PUT de Pokémon, movimientos y rutas, el JSON suma `campos`: `{ "nombre": "..." }`, un mensaje por cada campo mal (F15) |
 | 401 | Falta el token, es inválido o venció; o usuario o contraseña incorrectos en el login (F15) |
 | 403 | El token es válido, pero sin el rol ADMIN (F15) |
 | 404 | La URL no existe o el ID no existe |
 | 405 | Método HTTP no permitido en esa ruta |
-| 409 | Se pidió una importación mientras otra sigue en curso |
+| 409 | Se pidió una importación mientras otra sigue en curso, o se creó un Pokémon con un número ocupado |
 | 500 | Error inesperado del servidor (el detalle solo queda en el log, no en la respuesta) |
 
 ## Notas sobre los datos
@@ -264,9 +280,6 @@ Lo de esta sección **todavía no existe en la API**. Cada parte pasa a su secci
 | GET | `/pokemons/{id}/habilidades` | Arreglo ordenado por `slot` (404 si el Pokémon no existe) | F11 |
 | GET | `/pokemons/{id}/ubicaciones?juego=` | Encuentros por juego, con método, probabilidad y niveles (404 / 400) | F13 |
 | GET | `/juegos` | Juegos con datos, en orden de lanzamiento; arreglo sin paginar | F13 |
-| POST | `/pokemons` | Crear Pokémon (ADMIN; 201, 400, 409) | F15 |
-| PUT | `/pokemons/{id}` | Editar Pokémon (ADMIN; marca `editadoAMano`) | F15 |
-| DELETE | `/pokemons/{id}` | Borrar Pokémon (ADMIN; 204; la reimportación no lo vuelve a crear) | F15 |
 
 ### Cambios que solo agregan
 - `GET /pokemons/{id}/movimientos` acepta `?juego=` y `?metodo=` (`nivel`, `maquina`, `tutor`, `huevo`, `otros`). **Sin parámetros devuelve los mismos elementos de hoy** (Pikachu: 109). Cada elemento suma `precision`, `metodo`, `nivel`, `metodos`, `etiqueta` y `juego` (F12):
@@ -281,7 +294,5 @@ Lo de esta sección **todavía no existe en la API**. Cada parte pasa a su secci
   ```
   Sin `juego`, se usa el grupo más reciente en el que el Pokémon aprende movimientos por nivel (nunca Champions). `etiqueta` ∈ `"Aventura"` (por nivel, > 1, en ese juego), `"Competitivo"` (potencia > 80), `"Ambos"` o `null`. Los valores del ejemplo son ilustrativos.
 - Movimiento: campo `precision` (0–100 o `null`), también en POST/PUT. Al reimportar solo se llena si está en `null`.
-- Pokémon: campo `editadoAMano` (`true` si se editó o se creó desde el panel; si no, `null` o `false`).
-- Errores de validación: campo opcional `campos` (`{ "ataque": "Debe estar entre 1 y 255" }`).
 
-Ya implementado: la autenticación (B.30), en la sección "Autenticación" de arriba.
+Ya implementado y movido a su sección: la autenticación (B.30), `DELETE /rutas/{id}` (B.31), `POST`/`PUT`/`DELETE /pokemons`, `editadoAMano` y `campos` en los errores (B.32).

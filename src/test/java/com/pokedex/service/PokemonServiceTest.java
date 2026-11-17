@@ -3,10 +3,12 @@ package com.pokedex.service;
 import com.pokedex.entity.Movimiento;
 import com.pokedex.entity.Pokemon;
 import com.pokedex.entity.Ruta;
+import com.pokedex.entity.Tipo;
 import com.pokedex.exception.ConflictException;
 import com.pokedex.repository.EvolucionRepository;
 import com.pokedex.repository.MovimientoRepository;
 import com.pokedex.repository.PokemonRepository;
+import com.pokedex.repository.PokemonExcluidoRepository;
 import com.pokedex.repository.RutaExcluidaRepository;
 import com.pokedex.repository.RutaRepository;
 import com.pokedex.repository.TipoRepository;
@@ -50,6 +52,7 @@ class PokemonServiceTest {
     private final RutaRepository rutaRepository = mock(RutaRepository.class);
     private final EvolucionRepository evolucionRepository = mock(EvolucionRepository.class);
     private final RutaExcluidaRepository rutaExcluidaRepository = mock(RutaExcluidaRepository.class);
+    private final PokemonExcluidoRepository pokemonExcluidoRepository = mock(PokemonExcluidoRepository.class);
     private final RestTemplate restTemplate = mock(RestTemplate.class);
 
     /** URL → respuesta simulada de la PokeAPI. Una RuntimeException se lanza en vez de responder. */
@@ -75,7 +78,7 @@ class PokemonServiceTest {
 
     private PokemonService servicio(TaskExecutor ejecutor) {
         return new PokemonService(pokemonRepository, tipoRepository, movimientoRepository, rutaRepository,
-                evolucionRepository, rutaExcluidaRepository, restTemplate, ejecutor);
+                evolucionRepository, rutaExcluidaRepository, pokemonExcluidoRepository, restTemplate, ejecutor);
     }
 
     // ---------- datos de ejemplo de la PokeAPI ----------
@@ -261,6 +264,44 @@ class PokemonServiceTest {
 
         verify(rutaRepository, never()).save(any(Ruta.class));
         assertThat(guardado().getRutas()).isEmpty();
+    }
+
+    // ---------- F15 · la reimportación respeta el panel ----------
+
+    @Test
+    void alReimportarSeSaltaUnPokemonBorradoAMano() {
+        pokemon(1, "bulbasaur", "Bulbasaur", "grass");
+        when(pokemonExcluidoRepository.existsById(1)).thenReturn(true);
+
+        ResultadoImportacion resultado = servicio(new SyncTaskExecutor()).importarPokemonsMasivo(1);
+
+        assertThat(resultado).isEqualTo(new ResultadoImportacion("pokemons", 0, 1, 0));
+        verify(pokemonRepository, never()).save(any(Pokemon.class));
+    }
+
+    @Test
+    void alReimportarUnPokemonEditadoAManoConservaSusDatosTiposYRutas() {
+        pokemon(1, "bulbasaur", "Bulbasaur", "grass");
+        Pokemon editado = new Pokemon();
+        editado.setIdPokedex(1);
+        editado.setNombre("bulbasaur");
+        editado.setNombreEs("Mi Bulbasaur");
+        editado.setAtaque(99);
+        editado.setTipoObtencion("Regalo");
+        editado.setTipos(List.of(new Tipo("fire")));
+        editado.setRutas(List.of());
+        editado.setEditadoAMano(true);
+        when(pokemonRepository.findById(1)).thenReturn(Optional.of(editado));
+
+        ResultadoImportacion resultado = servicio(new SyncTaskExecutor()).importarPokemonsMasivo(1);
+
+        assertThat(resultado).isEqualTo(new ResultadoImportacion("pokemons", 1, 0, 0));
+        Pokemon p = guardado();
+        assertThat(p.getNombreEs()).isEqualTo("Mi Bulbasaur");
+        assertThat(p.getAtaque()).isEqualTo(99);
+        assertThat(p.getTipoObtencion()).isEqualTo("Regalo");
+        assertThat(p.getTipos()).extracting("nombre").containsExactly("fire");
+        assertThat(p.getEditadoAMano()).isTrue();
     }
 
     // ---------- B.18 · reimportar movimientos existentes ----------

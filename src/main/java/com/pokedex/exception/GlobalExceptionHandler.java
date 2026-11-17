@@ -48,6 +48,16 @@ public class GlobalExceptionHandler {
         return construir(HttpStatus.BAD_REQUEST, "Petición inválida", ex.getMessage(), request);
     }
 
+    // 400 con el detalle por campo (formularios del panel, F15): suma "campos" al JSON de siempre
+    @ExceptionHandler(CamposInvalidosException.class)
+    public ResponseEntity<Map<String, Object>> manejarCamposInvalidos(CamposInvalidosException ex,
+                                                                      HttpServletRequest request) {
+        ResponseEntity<Map<String, Object>> respuesta =
+                construir(HttpStatus.BAD_REQUEST, "Petición inválida", ex.getMessage(), request);
+        respuesta.getBody().put("campos", ex.getCampos());
+        return respuesta;
+    }
+
     // 400: tipo de parámetro incorrecto (ej. /api/pokemons/abc o ?total=xyz)
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Map<String, Object>> manejarTipoIncorrecto(MethodArgumentTypeMismatchException ex,

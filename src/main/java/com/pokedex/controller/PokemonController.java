@@ -8,7 +8,10 @@ import com.pokedex.repository.MovimientoRepository;
 import com.pokedex.repository.PokemonFiltros;
 import com.pokedex.repository.PokemonRepository;
 import com.pokedex.repository.RutaRepository;
+import com.pokedex.service.DatosPokemon;
 import com.pokedex.service.EvolucionService;
+import com.pokedex.service.FormasObtencion;
+import com.pokedex.service.GestionPokemonService;
 import com.pokedex.service.EvolucionService.EtapaEvolucion;
 import com.pokedex.service.PokemonService;
 import com.pokedex.service.ProgresoImportacion;
@@ -37,14 +40,42 @@ public class PokemonController {
     private final PokemonService pokemonService;
     private final EvolucionService evolucionService;
 
+    private final GestionPokemonService gestionPokemonService;
+
     public PokemonController(PokemonRepository pokemonRepository, RutaRepository rutaRepository,
                              MovimientoRepository movimientoRepository, PokemonService pokemonService,
-                             EvolucionService evolucionService) {
+                             EvolucionService evolucionService, GestionPokemonService gestionPokemonService) {
         this.pokemonRepository = pokemonRepository;
         this.rutaRepository = rutaRepository;
         this.movimientoRepository = movimientoRepository;
         this.pokemonService = pokemonService;
         this.evolucionService = evolucionService;
+        this.gestionPokemonService = gestionPokemonService;
+    }
+
+    // ---------------------------------------------------------------
+    // GESTIÓN (F15, solo ADMIN): crear, editar y borrar desde el panel
+    // ---------------------------------------------------------------
+
+    // POST /api/pokemons  -> 201. idPokedex ocupado -> 409
+    @PostMapping
+    public ResponseEntity<Pokemon> crearPokemon(@RequestBody(required = false) Map<String, Object> cuerpo) {
+        Pokemon creado = gestionPokemonService.crear(DatosPokemon.desde(cuerpo, true));
+        return ResponseEntity.status(HttpStatus.CREATED).body(creado);
+    }
+
+    // PUT /api/pokemons/{id}  -> 200 y queda editadoAMano (la reimportación no lo pisa)
+    @PutMapping("/{id}")
+    public Pokemon actualizarPokemon(@PathVariable Integer id,
+                                     @RequestBody(required = false) Map<String, Object> cuerpo) {
+        return gestionPokemonService.actualizar(id, DatosPokemon.desde(cuerpo, false));
+    }
+
+    // DELETE /api/pokemons/{id}  -> 204; la reimportación no lo vuelve a crear
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminarPokemon(@PathVariable Integer id) {
+        gestionPokemonService.eliminar(id);
+        return ResponseEntity.noContent().build();
     }
 
     // ---------------------------------------------------------------
@@ -116,12 +147,12 @@ public class PokemonController {
 
     /** Acepta el valor con o sin tilde (fosil = Fósil) y devuelve el nombre oficial; 400 si no existe. */
     private static String normalizarObtencion(String tipoObtencion) {
-        String buscado = sinTildes(tipoObtencion.trim());
-        return TIPOS_OBTENCION.stream()
-                .filter(t -> sinTildes(t).equalsIgnoreCase(buscado))
-                .findFirst()
-                .orElseThrow(() -> new BadRequestException(
-                        "Tipo de obtención inválido. Valores: " + String.join(", ", TIPOS_OBTENCION)));
+        String oficial = FormasObtencion.oficial(tipoObtencion);
+        if (oficial == null) {
+            throw new BadRequestException(
+                    "Tipo de obtención inválido. Valores: " + String.join(", ", FormasObtencion.VALORES));
+        }
+        return oficial;
     }
 
     // GET /api/pokemons/buscar?nombre=pika
@@ -180,13 +211,6 @@ public class PokemonController {
     public Page<Pokemon> listarPorObtencion(@PathVariable String tipoObtencion, @SortDefault("idPokedex") Pageable pageable) {
         // Acepta el valor con o sin tilde: /obtencion/fosil = /obtencion/Fósil
         return pokemonRepository.findByTipoObtencionIgnoreCase(normalizarObtencion(tipoObtencion), pageable);
-    }
-
-    private static final List<String> TIPOS_OBTENCION = List.of(
-            "Inicial", "Singular", "Fósil", "Legendario", "Salvaje", "Regalo", "Huevo", "Evolución", "Sin datos");
-
-    private static String sinTildes(String texto) {
-        return java.text.Normalizer.normalize(texto, java.text.Normalizer.Form.NFD).replaceAll("\\p{M}", "");
     }
 
     // GET /api/pokemons/ruta/{idRuta}  -> Pokémon que aparecen en una ruta concreta

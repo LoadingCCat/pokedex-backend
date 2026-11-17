@@ -75,6 +75,11 @@ public class Pokemon {
     @Column
     private Integer velocidad;
 
+    // F15: true si se creó o editó desde el panel. La reimportación conserva sus datos, tipos y
+    // rutas. null (o false) en los importados sin tocar
+    @Column(name = "editado_a_mano")
+    private Boolean editadoAMano;
+
     /** Suma de las 6 estadísticas base. Se calcula, no se guarda en la BD. null si falta alguna. */
     public Integer getTotalEstadisticas() {
         if (ps == null || ataque == null || defensa == null

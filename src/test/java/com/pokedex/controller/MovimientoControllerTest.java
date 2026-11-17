@@ -194,4 +194,16 @@ class MovimientoControllerTest {
         verify(movimientoRepository).desvincularDePokemons(eq(9));
         verify(movimientoRepository).delete(movimiento);
     }
+
+    // ---------- F15 · el 400 dice qué campo está mal (para el panel) ----------
+
+    @Test
+    void unDatoInvalidoRespondeConElMensajeDeSiempreYElCampo() throws Exception {
+        crear("{\"nombre\":\"rayo-x\",\"categoria\":\"Mágico\",\"potencia\":50}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value("La categoría debe ser una de: Físico, Especial, Estado"))
+                .andExpect(jsonPath("$.campos.categoria").value("La categoría debe ser una de: Físico, Especial, Estado"));
+        crear("{\"nombre\":\"rayo-x\",\"categoria\":\"Especial\",\"potencia\":-5}")
+                .andExpect(jsonPath("$.campos.potencia").value("La potencia no puede ser negativa"));
+    }
 }

@@ -1,0 +1,228 @@
+{
+  "info": {
+    "name": "Pokedex+ · Administración (F15)",
+    "description": "Demo de la seguridad de la API (sustentación).\n\n1. Arranca el backend con JWT_SECRETO, ADMIN_USERNAME y ADMIN_PASSWORD definidos.\n2. En la pestaña Variables de la colección, llena `usuario` y `contrasena` (no se guardan en el repositorio).\n3. Ejecuta \"0 · Login\": guarda el token en la variable `token` y todas las demás peticiones lo envían solas (Authorization: Bearer {{token}}).\n4. Sigue el orden de las carpetas. \"Sin token\" muestra el 401 y \"Validación\" muestra el 400 con `campos`.\n\nLos GET son públicos: no necesitan token.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080/api", "type": "string" },
+    { "key": "usuario", "value": "", "type": "string" },
+    { "key": "contrasena", "value": "", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "idPokemon", "value": "2000", "type": "string" },
+    { "key": "idMovimiento", "value": "", "type": "string" },
+    { "key": "idRuta", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "0 · Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login correcto (200)', () => pm.response.to.have.status(200));",
+              "const cuerpo = pm.response.json();",
+              "pm.collectionVariables.set('token', cuerpo.token);",
+              "console.log('Token guardado; vence en', cuerpo.expiraEn);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"usuario\": \"{{usuario}}\",\n  \"contrasena\": \"{{contrasena}}\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login",
+        "description": "Devuelve { token, expiraEn, usuario, rol }. Con una contraseña incorrecta, 401 \"Usuario o contraseña incorrectos\"."
+      }
+    },
+    {
+      "name": "1 · Seguridad",
+      "item": [
+        {
+          "name": "GET público sin token (200)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{baseUrl}}/pokemons/25"
+          }
+        },
+        {
+          "name": "Crear sin token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('401 sin token', () => pm.response.to.have.status(401));"] }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Ruta sin permiso\",\n  \"region\": \"Kanto\"\n}" },
+            "url": "{{baseUrl}}/rutas"
+          }
+        },
+        {
+          "name": "Login con contraseña incorrecta (401)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"usuario\": \"{{usuario}}\",\n  \"contrasena\": \"no-es-esta\"\n}" },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 · Pokémon",
+      "item": [
+        {
+          "name": "Crear Pokémon (201)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idPokedex\": {{idPokemon}},\n  \"nombre\": \"pokemon-de-la-demo\",\n  \"nombreEs\": \"Pokémon de la demo\",\n  \"generacion\": 9,\n  \"ps\": 70, \"ataque\": 80, \"defensa\": 65,\n  \"ataqueEspecial\": 90, \"defensaEspecial\": 75, \"velocidad\": 100,\n  \"altura\": 1.2, \"peso\": 35.5,\n  \"tipoObtencion\": \"Regalo\",\n  \"formaObtencion\": \"Lo regala el equipo de Pokedex+ en la sustentación.\",\n  \"tipos\": [\"electric\", \"fairy\"]\n}"
+            },
+            "url": "{{baseUrl}}/pokemons",
+            "description": "Queda con editadoAMano = true. Si el número ya existe, 409."
+          }
+        },
+        {
+          "name": "Editar Pokémon (200)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreEs\": \"Pokémon de la demo (editado)\",\n  \"ps\": 75, \"ataque\": 85, \"defensa\": 65,\n  \"ataqueEspecial\": 95, \"defensaEspecial\": 75, \"velocidad\": 110,\n  \"altura\": 1.2, \"peso\": 35.5,\n  \"tipoObtencion\": \"Regalo\",\n  \"tipos\": [\"electric\"]\n}"
+            },
+            "url": "{{baseUrl}}/pokemons/{{idPokemon}}"
+          }
+        },
+        {
+          "name": "Validación: texto en una estadística (400 con campos)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreEs\": \"\",\n  \"ps\": 75, \"ataque\": \"abc\", \"defensa\": 300,\n  \"ataqueEspecial\": 95, \"defensaEspecial\": 75, \"velocidad\": 110,\n  \"altura\": 1.2, \"peso\": -3,\n  \"tipoObtencion\": \"Regalo\",\n  \"tipos\": [\"electric\"]\n}"
+            },
+            "url": "{{baseUrl}}/pokemons/{{idPokemon}}",
+            "description": "Responde 400 con campos: nombreEs, ataque, defensa y peso, cada uno con su mensaje."
+          }
+        },
+        {
+          "name": "Ver el Pokémon (GET público)",
+          "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/pokemons/{{idPokemon}}" }
+        },
+        {
+          "name": "Borrar Pokémon (204)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/pokemons/{{idPokemon}}",
+            "description": "La reimportación no lo vuelve a crear (pokemon_excluido)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 · Movimientos",
+      "item": [
+        {
+          "name": "Crear movimiento (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.collectionVariables.set('idMovimiento', pm.response.json().idMovimiento);"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"rayo-de-la-demo\",\n  \"nombreEs\": \"Rayo de la demo\",\n  \"tipo\": \"electric\",\n  \"categoria\": \"Especial\",\n  \"potencia\": 95\n}"
+            },
+            "url": "{{baseUrl}}/movimientos"
+          }
+        },
+        {
+          "name": "Editar movimiento (200)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"rayo-de-la-demo\",\n  \"nombreEs\": \"Rayo de la demo (editado)\",\n  \"categoria\": \"Especial\",\n  \"potencia\": 70\n}"
+            },
+            "url": "{{baseUrl}}/movimientos/{{idMovimiento}}"
+          }
+        },
+        {
+          "name": "Borrar movimiento (204)",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/movimientos/{{idMovimiento}}" }
+        }
+      ]
+    },
+    {
+      "name": "4 · Rutas",
+      "item": [
+        {
+          "name": "Crear ruta (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.collectionVariables.set('idRuta', pm.response.json().idRuta);"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ruta de la demo\",\n  \"region\": \"Kanto\",\n  \"descripcion\": \"Creada en la sustentación.\"\n}"
+            },
+            "url": "{{baseUrl}}/rutas"
+          }
+        },
+        {
+          "name": "Editar ruta (200)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ruta de la demo (editada)\",\n  \"region\": \"Kanto\",\n  \"descripcion\": \"Editada en la sustentación.\"\n}"
+            },
+            "url": "{{baseUrl}}/rutas/{{idRuta}}"
+          }
+        },
+        {
+          "name": "Borrar ruta (204)",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/rutas/{{idRuta}}" }
+        }
+      ]
+    }
+  ]
+}

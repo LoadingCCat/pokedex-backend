@@ -2,7 +2,7 @@ package com.pokedex.controller;
 
 import com.pokedex.entity.Ruta;
 import com.pokedex.entity.RutaExcluida;
-import com.pokedex.exception.BadRequestException;
+import com.pokedex.exception.CamposInvalidosException;
 import com.pokedex.exception.ResourceNotFoundException;
 import com.pokedex.repository.RutaExcluidaRepository;
 import com.pokedex.repository.RutaRepository;
@@ -61,7 +61,7 @@ public class RutaController {
     public ResponseEntity<Ruta> guardarRuta(@RequestBody Ruta ruta) {
         validar(ruta);
         if (rutaRepository.existsByNombreIgnoreCaseAndRegionIgnoreCase(ruta.getNombre().trim(), ruta.getRegion().trim())) {
-            throw new BadRequestException("Ya existe la ruta '" + ruta.getNombre() + "' en " + ruta.getRegion());
+            throw CamposInvalidosException.de("nombre", "Ya existe la ruta '" + ruta.getNombre() + "' en " + ruta.getRegion());
         }
         ruta.setIdRuta(null); // evita sobrescribir una ruta existente enviando un id
         ruta.setIdPokeapi(null); // solo el importador asigna idPokeapi (marca las rutas reales de la PokeAPI)
@@ -102,11 +102,12 @@ public class RutaController {
     }
 
     private void validar(Ruta ruta) {
+        // CamposInvalidosException es un 400 con el mismo mensaje y, además, "campos" (F15)
         if (ruta.getNombre() == null || ruta.getNombre().isBlank()) {
-            throw new BadRequestException("El nombre de la ruta es obligatorio");
+            throw CamposInvalidosException.de("nombre", "El nombre de la ruta es obligatorio");
         }
         if (ruta.getRegion() == null || ruta.getRegion().isBlank()) {
-            throw new BadRequestException("La región de la ruta es obligatoria");
+            throw CamposInvalidosException.de("region", "La región de la ruta es obligatoria");
         }
     }
 }
