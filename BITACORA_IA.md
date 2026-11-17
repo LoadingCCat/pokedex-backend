@@ -323,3 +323,19 @@ Continuación de la sesión anterior, con el mismo método por fases (docs → p
 | 9 capturas de pixel art (8 de la Fase 5) se habían guardado con pérdida | Leyendo la cabecera de cada WebP (`VP8` frente a `VP8L`) | El pixel art va siempre sin pérdida |
 | El servidor de desarrollo no recogió el cambio de `FiguraCreditada` y servía la versión anterior | Mirando el HTML con `curl` | Reinicio del servidor de desarrollo |
 | Las imágenes medían 2 px menos que su escala (478 en vez de 480) por el borde del bloque | Medición del `img` | La columna suma los 2 px del borde |
+
+### Continuación: B.28, FE.28–FE.32 (2026-11-17)
+- *"Lugares en español"* y *"Apruebo, España"* → B.28: el importador usa el título verificado de WikiDex cuando la PokeAPI no trae el nombre en español (`lugares-es.properties`, generado por `scripts/nombres-lugares-es.mjs` del front); 240 lugares pasan a español. FE.28 regenera el mock.
+- *"Podrías poner las imágenes en el inicial… y para el resto una captura de ahí, o un avistamiento"* y *"Intenta llenar todos los que puedas"* → FE.29 (capturas de la elección del inicial) y FE.30 (captura del lugar donde aparece); FE.31, capturas de lugares de las demás regiones.
+- *"Agrega también el pixelado clásico a un lado"* → FE.32: sprite clásico de 96 px a 2× junto a la ilustración, normal y shiny (los 1025 lo tienen).
+- Commits: back `19627ac` (B.28); front `3bb76c9`, `b66ff30` (FE.28), `ee4ffda` (FE.30), `8fe442a` (FE.29), y FE.32.
+
+| Problema | Cómo se detectó | Corrección |
+|---|---|---|
+| "Altar del Sol/de la Luna" y "Lago Corosol/Coroluna" no son pares Hispanoamérica/España sino de versión, y daban "de la Luna" | Revisando los 83 títulos con barra | Se excluyen en el script; esos lugares conservan su nombre de la PokeAPI |
+| Las expresiones regulares del script se escribieron con barras de escape perdidas por el heredoc de Bash | `node` dio un error de sintaxis | Corregidas con la herramienta Edit |
+| Los imports nuevos de `PokemonService` no se añadieron (el `sed` buscaba `\r` y el archivo había quedado con LF) | Error de compilación | Añadidos con Edit |
+| Una prueba de FE.30 dependía de los nombres del mock, todavía en inglés | Falló antes de regenerar el mock | La prueba comprueba región y tipo de captura, no un nombre |
+| Los guiones de comprobación con regex o `\n` dentro de `node -e` fallaban por el escapado | Error "Invalid regular expression" en Chrome sin interfaz | Se escriben como archivo `.js` |
+| La captura de doble pantalla de Hoenn (400 × 480) se recortaba a 384 px | Medición del `img` | El recorte solo se aplica al pixel art de lugares |
+| El primer intento de consulta de candidatas de iniciales tardó más de 10 min (Pikachu y Eevee tienen miles de imágenes en WikiDex) | El comando pasó a segundo plano | Se esperó; no se repitió |
