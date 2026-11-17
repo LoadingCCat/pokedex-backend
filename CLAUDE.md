@@ -40,7 +40,7 @@ El proyecto sigue Spec-Driven Development (SDD): primero el documento, después 
 - Llenar o actualizar la BD (tarda minutos; se puede repetir, no duplica):
   `POST http://localhost:8080/api/pokemons/importar-rango?total=151&movimientos=0` (todos: `total=1025`, unos 20 min). Responde 202 al instante; el avance, en `GET http://localhost:8080/api/pokemons/importacion`
 - Probar endpoints con `curl.exe "http://localhost:8080/api/..."`.
-- Tests: `.\mvnw.cmd test` (unas 80 pruebas, F1–F10). No necesitan el PostgreSQL local ni la PokeAPI: los controllers y servicios usan simulaciones, y las consultas SQL corren contra un PostgreSQL embebido (zonky). Se lanzan desde la terminal de la app, no desde el Bash del agente. Detalle en `docs/pruebas.md`.
+- Tests: `.\mvnw.cmd test` (unas 90 pruebas, F1–F10). No necesitan el PostgreSQL local ni la PokeAPI: los controllers y servicios usan simulaciones, y las consultas SQL corren contra un PostgreSQL embebido (zonky). Se lanzan desde la terminal de la app, no desde el Bash del agente. Detalle en `docs/pruebas.md`.
 
 ## Configuración y credenciales
 

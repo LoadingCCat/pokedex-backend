@@ -18,12 +18,17 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -151,6 +156,9 @@ public class PokemonService {
     private final EvolucionRepository evolucionRepository;
     private final RestTemplate restTemplate;
     private final TaskExecutor ejecutorImportacion;
+
+    /** Nombre en español de cada lugar por idPokeapi, de los títulos verificados de WikiDex (B.28). */
+    private final Map<Integer, String> nombresLugares = cargarNombresLugares();
 
     public PokemonService(PokemonRepository pokemonRepository, TipoRepository tipoRepository,
                           MovimientoRepository movimientoRepository, RutaRepository rutaRepository,
@@ -619,6 +627,13 @@ public class PokemonService {
             Ruta ruta = rutaRepository.findByIdPokeapi(idLugar).orElse(null);
             if (ruta != null) {
                 cache.existentes++;
+                // B.28: si todavía tiene el nombre automático en inglés, pasa al español. Una ruta
+                // renombrada con PUT no se toca
+                String enEspanol = nombreDelLugar(lugar);
+                if (!enEspanol.equals(ruta.getNombre()) && ruta.getNombre().equals(nombreEnIngles(lugar))) {
+                    ruta.setNombre(enEspanol);
+                    ruta = rutaRepository.save(ruta);
+                }
             } else {
                 ruta = new Ruta();
                 ruta.setIdPokeapi(idLugar);
@@ -637,22 +652,55 @@ public class PokemonService {
         }
     }
 
-    /** Nombre en español si existe; si no, en inglés ("Route 2" -> "Ruta 2"); si no, el slug. */
+    /**
+     * Nombre en español del lugar: el de la PokeAPI si lo tiene; si no, el de WikiDex
+     * (lugares-es.properties); si no, el automático en inglés.
+     */
     private String nombreDelLugar(Map<String, Object> lugar) {
-        String enIngles = null;
-        for (Map<String, Object> n : lista(lugar.get("names"))) {
-            String idioma = (String) mapa(n.get("language")).get("name");
-            if ("es".equals(idioma)) {
-                return (String) n.get("name");
-            }
-            if ("en".equals(idioma)) {
-                enIngles = (String) n.get("name");
-            }
+        String deLaPokeapi = nombreEnIdioma(lugar, "es");
+        if (deLaPokeapi != null) {
+            return deLaPokeapi;
         }
+        Object id = lugar.get("id");
+        String deWikidex = id instanceof Number numero ? nombresLugares.get(numero.intValue()) : null;
+        return deWikidex != null ? deWikidex : nombreEnIngles(lugar);
+    }
+
+    /** Nombre automático de antes de B.28: en inglés ("Route 2" -> "Ruta 2") o, si no hay, el slug. */
+    private String nombreEnIngles(Map<String, Object> lugar) {
+        String enIngles = nombreEnIdioma(lugar, "en");
         if (enIngles != null) {
             return enIngles.replaceFirst("^Route ", "Ruta ");
         }
         return capitalizar(((String) lugar.get("name")).replace('-', ' '));
+    }
+
+    private static String nombreEnIdioma(Map<String, Object> lugar, String idioma) {
+        for (Map<String, Object> n : lista(lugar.get("names"))) {
+            if (idioma.equals(mapa(n.get("language")).get("name"))) {
+                return (String) n.get("name");
+            }
+        }
+        return null;
+    }
+
+    /** Lee src/main/resources/lugares-es.properties (UTF-8). Si falta, se sigue con los nombres de la PokeAPI. */
+    private static Map<Integer, String> cargarNombresLugares() {
+        Map<Integer, String> nombres = new HashMap<>();
+        try (InputStream entrada = PokemonService.class.getResourceAsStream("/lugares-es.properties")) {
+            if (entrada == null) {
+                log.warn("No se encontró lugares-es.properties: los lugares sin nombre en español quedan en inglés");
+                return nombres;
+            }
+            Properties propiedades = new Properties();
+            propiedades.load(new InputStreamReader(entrada, StandardCharsets.UTF_8));
+            for (String clave : propiedades.stringPropertyNames()) {
+                nombres.put(Integer.valueOf(clave), propiedades.getProperty(clave));
+            }
+        } catch (IOException | NumberFormatException e) {
+            log.warn("No se pudo leer lugares-es.properties: {}", e.getMessage());
+        }
+        return nombres;
     }
 
     private String nombreDeRegion(Map<String, Object> lugar) {

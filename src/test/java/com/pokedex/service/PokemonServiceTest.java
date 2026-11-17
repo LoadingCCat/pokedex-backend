@@ -182,6 +182,72 @@ class PokemonServiceTest {
         assertThat(guardado().getRutas()).containsExactly(bosque);
     }
 
+    // ---------- B.28 · nombres de lugares en español ----------
+
+    /** Bulbasaur aparece en un área del lugar 155 (Viridian Forest), con los nombres que se pasen. */
+    private void lugarViridian(List<Map<String, Object>> nombres) {
+        pokemon(1, "bulbasaur", "Bulbasaur", "grass");
+        pokeapi.put(API + "/pokemon/1/encounters", List.of(Map.of(
+                "location_area", Map.of("name", "viridian-forest-area", "url", API + "/location-area/1"),
+                "version_details", List.of())));
+        pokeapi.put(API + "/location-area/1", Map.of("location", Map.of("url", API + "/location/155")));
+        pokeapi.put(API + "/location/155", Map.of("id", 155, "name", "viridian-forest", "names", nombres,
+                "region", Map.of("name", "kanto")));
+        when(rutaRepository.save(any(Ruta.class))).thenAnswer(i -> i.getArgument(0));
+    }
+
+    private static Ruta ruta(String nombre) {
+        Ruta ruta = new Ruta();
+        ruta.setIdPokeapi(155);
+        ruta.setNombre(nombre);
+        ruta.setRegion("Kanto");
+        return ruta;
+    }
+
+    @Test
+    void unLugarNuevoSinEspanolEnLaPokeapiTomaElNombreDeWikidex() {
+        lugarViridian(List.of(nombre("en", "Viridian Forest")));
+        when(rutaRepository.findByIdPokeapi(155)).thenReturn(Optional.empty());
+
+        servicio(new SyncTaskExecutor()).importarPokemonsMasivo(1);
+
+        assertThat(guardado().getRutas()).extracting(Ruta::getNombre).containsExactly("Bosque Verde");
+    }
+
+    @Test
+    void alReimportarUnaRutaConElNombreEnInglesPasaAlEspanol() {
+        lugarViridian(List.of(nombre("en", "Viridian Forest")));
+        Ruta existente = ruta("Viridian Forest");
+        when(rutaRepository.findByIdPokeapi(155)).thenReturn(Optional.of(existente));
+
+        servicio(new SyncTaskExecutor()).importarPokemonsMasivo(1);
+
+        assertThat(existente.getNombre()).isEqualTo("Bosque Verde");
+        verify(rutaRepository).save(existente);
+    }
+
+    @Test
+    void alReimportarNoSeTocaUnaRutaRenombradaConPut() {
+        lugarViridian(List.of(nombre("en", "Viridian Forest")));
+        Ruta renombrada = ruta("Mi bosque favorito");
+        when(rutaRepository.findByIdPokeapi(155)).thenReturn(Optional.of(renombrada));
+
+        servicio(new SyncTaskExecutor()).importarPokemonsMasivo(1);
+
+        assertThat(renombrada.getNombre()).isEqualTo("Mi bosque favorito");
+        verify(rutaRepository, never()).save(renombrada);
+    }
+
+    @Test
+    void elNombreEnEspanolDeLaPokeapiTienePrioridadSobreWikidex() {
+        lugarViridian(List.of(nombre("en", "Viridian Forest"), nombre("es", "Bosque de la PokeAPI")));
+        when(rutaRepository.findByIdPokeapi(155)).thenReturn(Optional.empty());
+
+        servicio(new SyncTaskExecutor()).importarPokemonsMasivo(1);
+
+        assertThat(guardado().getRutas()).extracting(Ruta::getNombre).containsExactly("Bosque de la PokeAPI");
+    }
+
     // ---------- B.18 · reimportar movimientos existentes ----------
 
     @Test
