@@ -115,14 +115,15 @@ Las listas son paginadas, con el mismo formato `{ content, page }` y los mismos 
 | GET | `/movimientos/buscar?nombre=...` | Búsqueda paginada por nombre (parcial, sin importar mayúsculas ni tildes); busca en `nombre` y en `nombreEs` (`trueno` encuentra `thunder-punch`, `psiquico` encuentra "Psíquico" y `puno` encuentra "Puño Trueno"). Nombre vacío → 400 |
 | GET | `/movimientos/categoria/{Físico\|Especial\|Estado}` | Filtrar por categoría (paginado) |
 | GET | `/movimientos/competitivos` | Movimientos con potencia > 80 (paginado) |
-| POST | `/movimientos` | Crear (`nombre`, `categoria`, `potencia`; `nombreEs` opcional) |
-| PUT | `/movimientos/{id}` | Actualizar (si no se envía `nombreEs`, se conserva el que tenía) |
+| POST | `/movimientos` | Crear (`nombre`, `categoria`, `potencia`; `nombreEs` y `tipo` opcionales; un `tipo` que no es uno de los 18 → 400) |
+| PUT | `/movimientos/{id}` | Actualizar (si no se envía `nombreEs` o `tipo`, se conserva el que tenía) |
 | DELETE | `/movimientos/{id}` | Eliminar |
 
 Ejemplo de movimiento:
 ```json
-{ "idMovimiento": 9, "nombre": "thunder-punch", "nombreEs": "Puño Trueno", "categoria": "Físico", "potencia": 75, "esCompetitivo": false }
+{ "idMovimiento": 9, "nombre": "thunder-punch", "nombreEs": "Puño Trueno", "tipo": "electric", "categoria": "Físico", "potencia": 75, "esCompetitivo": false }
 ```
+`tipo` es el tipo del movimiento, con el mismo nombre en inglés que los tipos de Pokémon (`electric`, `fire`…; ver `/tipos`). Es `null` en los movimientos creados a mano sin él y en los importados antes de que existiera el campo, hasta volver a importar. Al reimportar solo se llena si estaba en `null` (no pisa un `tipo` cambiado con PUT).
 `nombre` es el slug en inglés de la PokeAPI y `nombreEs` el nombre en español (o el de inglés si no hay traducción; `null` si el movimiento se creó a mano sin él o aún no se ha reimportado). Al reimportar, los movimientos que ya existen actualizan su `nombreEs`.
 
 `esCompetitivo` lo calcula el servidor: es `true` si la potencia es mayor a 80.

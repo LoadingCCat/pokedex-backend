@@ -33,6 +33,8 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 ## Back · pendiente
 - [ ] B.26 Pulir textos de `condicion` en las evoluciones (requiere reimportar): falta `min_steps` (Pawmot sale "Subiendo de nivel" en vez de caminar 1000 pasos), "Usando un movimiento, tras usar Puño Furia 20 veces" es redundante (Annihilape), Basculegion repite la condición por género, y las formas no regionales salen con el slug en inglés (Wormadam, Urshifu)
 
+- [ ] B.27 F4 · Campo `tipo` en `Movimiento` (importación, POST/PUT, contrato y pruebas) y reimportar las 9 generaciones para llenarlo
+
 ## Front (U3)
 <!-- Se detalla cuando el backend esté terminado. Pedir las tareas al agente en modo plan,
      a partir de docs/specs/ y docs/contratos/api.md. Antes: identidad visual en docs/diseno/
@@ -64,6 +66,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.22 Fase 4 · `/creditos`, tamaño del build, capturas de referencia, evaluación y bitácora
 - [x] FE.23 Fase 5 · Capturas del juego en la ficha: datos, sección y créditos, con la primera generación (Articuno, Zapdos, Moltres, Mewtwo y Mew)
 - [ ] FE.24 Fase 5 · Capturas del juego del resto de legendarios y singulares
+- [ ] FE.25 Fase 6 · Disco de MT del color del tipo en las tablas de movimientos (requiere B.27 y regenerar el mock)
 
 ## Nube (U6)
 <!-- Se detalla al iniciar la U6. -->

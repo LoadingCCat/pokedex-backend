@@ -10,6 +10,7 @@ Como fan de Pokémon, quiero consultar los movimientos y ver cuáles puede apren
 2. `GET /api/pokemons/{id}/movimientos`: los movimientos que puede aprender un Pokémon, ordenados por nombre.
 3. `POST`, `PUT /{id}` y `DELETE /{id}` sobre `/api/movimientos`.
 4. `esCompetitivo` lo calcula el servidor: `true` si `potencia > 80`.
+5. `tipo` (Fase 6 del front, discos de MT): el tipo del movimiento, sacado de `type` en `/move/{id}` de la PokeAPI, con el nombre en inglés de los tipos (`electric`). Acepta `null`. `POST` y `PUT` lo aceptan opcional y validan que sea uno de los 18 tipos (sin importar mayúsculas; se guarda en minúsculas); `PUT` sin `tipo` conserva el que tenía. Al reimportar, los movimientos existentes con `tipo` en `null` lo reciben; los que ya tienen uno no se tocan.
 
 ## Criterios de aceptación
 - [ ] `GET /api/movimientos/categoria/especial` solo devuelve movimientos con `categoria = "Especial"`.
@@ -26,6 +27,9 @@ Como fan de Pokémon, quiero consultar los movimientos y ver cuáles puede apren
 - [ ] `POST` con un nombre que ya existe (sin importar mayúsculas) responde 400.
 - [ ] `PUT /api/movimientos/{id}` con potencia 100 actualiza el movimiento y pone `esCompetitivo = true`.
 - [ ] `DELETE /api/movimientos/{id}` de un movimiento que aprenden varios Pokémon responde 204, y el movimiento desaparece de `/pokemons/{id}/movimientos`.
+- [ ] Tras reimportar, `GET /api/pokemons/25/movimientos` incluye `thunderbolt` con `tipo = "electric"`, y ningún movimiento importado queda con `tipo` en `null`.
+- [ ] `POST` con `"tipo": "FIRE"` guarda `tipo = "fire"`; con `"tipo": "luz"` responde 400.
+- [ ] `PUT` sin `tipo` conserva el que tenía.
 
 ## Fuera de alcance
 Cómo aprende cada Pokémon el movimiento (nivel, MT, tutor) y en qué juego. Nombres en español (F6).
