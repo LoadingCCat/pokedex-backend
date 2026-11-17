@@ -61,7 +61,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.19 Fase 2 · Mapas de las 9 regiones en P4 (`datos/imagenes.json`)
 - [x] FE.20 Fase 2 · Capturas de lugares en P5, empezando por Kanto
 - [x] FE.21 Fase 3 · Enlaces verificados a WikiDex (script + ficha, lugares y regiones)
-- [ ] FE.22 Fase 4 · `/creditos`, tamaño del build, capturas de referencia, evaluación y bitácora
+- [x] FE.22 Fase 4 · `/creditos`, tamaño del build, capturas de referencia, evaluación y bitácora
 
 ## Nube (U6)
 <!-- Se detalla al iniciar la U6. -->

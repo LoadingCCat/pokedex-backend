@@ -212,3 +212,57 @@ Configuración del backend en otro equipo (la torre) a partir del repositorio de
 | La terminal de VS Code no reconocía `git` porque se abrió antes de que se registraran las variables de entorno | Clonar con el botón de VS Code o usar Git Bash |
 | `application.properties` apunta a `pokedex_db` por defecto, pero la base se creó como `pokedex` | URL explícita en `application-local.properties` |
 | Intentó rellenar "Sesión anterior" con suposiciones que contradecían el historial: la entidad `Evolucion`, el 409 y la carga por lotes son del 2026-11-14, y el importador nunca usó DTOs | Se descartó su versión; la sección se completó con el resumen del chat de Claude de esa sesión (`0d0c892`) |
+
+---
+
+## 2026-11-16 · Claude Code (frontend, nostalgia: FE.14–FE.22)
+
+Continuación de la sesión del frontend. Ampliación por fases pedida por el usuario: en cada fase, primero los docs, después el plan, la aprobación y un commit por cambio, con lint, build, pruebas y revisión a 390 y 1280 px.
+
+### Prompts clave
+- *"Toques de nostalgia… por fases… Pregúntame antes de cualquier push. Es un proyecto universitario sin fines de lucro"* → Fase 0 (reglas en la identidad: un efecto destacado por pantalla, menos de 300 ms, nada con `prefers-reduced-motion`, sin 3D real, las imágenes nunca tapan el dato) y Fases 1–4.
+- *"Apruebo, sigue"* (una por fase) → implementación de lo planeado; *"Sí, push de ambos"* al final de cada fase.
+- Fase 1: sprites animados de Negro/Blanco al pasar el ratón, botón Escuchar (gritos de `PokeAPI/cries`), interruptor Shiny y barras que se llenan. La inclinación 3D con CSS se recomendó descartar (rompe la regla de un efecto por pantalla).
+- Fase 2: mapas de las 9 regiones y capturas de lugares, empezando por Kanto, desde WikiDex/Bulbagarden revisando su política.
+- Fase 3: "Ver en WikiDex ↗" verificado con un script que respete la wiki; lo no verificado, a la búsqueda.
+- Fase 4: `/creditos`, tamaño del build sin backend, capturas de referencia, evaluación y esta entrada.
+
+### Lo que hizo el agente
+| Cambio | Commit (front) |
+|---|---|
+| FE.14 · Docs: "Toques de nostalgia" en la identidad, ampliación y P6 en `pantallas.md` | `e7aff43` |
+| FE.15 · Sprite animado (#1–#649) al pasar el ratón por las tarjetas | `c3bfe21` |
+| FE.16 · Botón Escuchar con el grito, solo al pulsarlo | `ac5eb06` |
+| FE.17 · Interruptor Shiny (cambia la ilustración y su `alt`) | `de16e6b` |
+| FE.18 · Barras de estadísticas que se llenan en 280 ms al aparecer | `708ab9e` |
+| `sharp` (devDependency) y `scripts/imagenes.mjs`: 9 mapas y 28 capturas de Kanto de WikiDex en WebP (3,7 MB) con su fuente en `datos/imagenes.json` | `fe257e0`, `610c3cb` |
+| FE.19 · Mapas en `/regiones` y en cada región | `28dbd40` |
+| FE.20 · Capturas en `/rutas/[id]` (al lado en escritorio, debajo en móvil, panorámicas a todo el ancho) | `6b854f1` |
+| FE.21 · `scripts/enlaces-wikidex.mjs` (253 peticiones, una por segundo): Pokémon 1025/1025, lugares 529 exactos y 91 de búsqueda, regiones 9/9 | `11cc4f1` |
+| FE.21 · Componente `EnlaceExterno` y enlaces en la ficha, los lugares y las regiones | `67f0eea`, `a5da7c0` |
+| FE.22 · `/creditos` (37 imágenes, recursos de la PokeAPI, WikiDex y aviso de Nintendo) y enlace en el pie | `c944b63`, `63460c9` |
+| FE.22 · Capturas de referencia rehechas y evaluación con la rúbrica | `61201e4` |
+
+### Errores del agente y cómo se corrigieron
+| Problema | Cómo se detectó | Corrección |
+|---|---|---|
+| Al editar `tareas.md` con `Set-Content -Encoding utf8` de PowerShell, el archivo entero se reescribió con BOM | En el `git diff`, todo el archivo aparecía cambiado | Se recuperó la versión anterior con `git show` y la edición se hizo con `sed`; desde entonces, ediciones de docs con `sed` |
+| Bulbapedia devolvió un desafío anti-bots de Cloudflare a las peticiones automáticas | La respuesta no era JSON | Se paró sin intentar saltarlo y se usó WikiDex (anotado en `decisiones.md`); el script de enlaces también se detiene ante algo que no sea JSON |
+| El WebP con pérdida pesaba más que el original en mapas de pixel art | Comparando tamaños al generar | El script guarda el menor entre WebP con pérdida (calidad 80) y sin pérdida |
+| En el prototipo de enlaces, los títulos de la segunda ronda se compartían entre lugares de la misma región: "Lake Valor" acababa en "Templo Puntaneva" | Revisando ejemplos al azar del resultado | Cada lugar solo prueba los títulos que salen de sus propios candidatos |
+| Las rutas de Johto quedaban en búsqueda (WikiDex las titula "Ruta 29", sin región) y las Islas Sete no tenían categoría de región | Revisando la lista de lugares en búsqueda | Se prueba también "Ruta N" y se acepta la categoría "Archi7" para Kanto |
+| Las capturas de 390 px salían recortadas: Chrome sin interfaz tiene un ancho mínimo de ventana | Al ver las imágenes | Emulación de dispositivo por CDP (`setDeviceMetricsOverride`) |
+| La revisión automática de accesibilidad decía "0 h1": medía antes de que el contenido de `Suspense` apareciera | El `h1` sí estaba al mirar la página | Esperar a que haya un `h1` visible antes de medir |
+| La prueba de los enlaces importaba el JSON con el alias `@/`, que vitest no resuelve | Al correr `npm run test` | Import relativo |
+| Al rehacer las capturas desde el build local, el script se quedó esperando imágenes perezosas que nunca empezaban a cargar | Sin avance durante varios minutos | Imágenes forzadas a `eager` y un límite de 15 s de espera |
+
+### Otros hallazgos
+- El navegador integrado de la app hereda el `prefers-reduced-motion` de Windows del usuario, así que ahí los efectos están apagados (correcto). Se probaron con Chrome sin interfaz y la emulación de CDP.
+- WikiDex no da autor por archivo: `/creditos` enlaza a la página de cada archivo original en lugar de nombrar autores.
+- 91 lugares quedan con enlace de búsqueda; 18 son de Orre, que casi no tiene artículos.
+- Durante una compilación, la CPU estaba al 91 % por un `javaw` ajeno: los tiempos de build de esa sesión no son comparables.
+
+### Verificación
+- Vitest: 45 pruebas sin backend (las 26 de contrato se saltan sin `API_URL`). Build sin backend con 1035 páginas.
+- Tamaño del build sin backend, FE.13 → FE.22: estáticos 1071 → 1115 KB, JS del cliente 643 → 683 KB, servidor 382 → 389 MB, `public/` 0 → 3,8 MB (detalle en `decisiones.md`). El archivo de enlaces a WikiDex no llega al navegador.
+- Todos los criterios de la ampliación y de P6 en `pantallas.md`, revisados a 390 y 1280 px; el nombre accesible de cada enlace externo, comprobado en el navegador.
