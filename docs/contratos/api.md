@@ -228,3 +228,48 @@ Se revisan en este orden y se usa la primera que aplique:
 Legendario, Singular, Huevo, Evolución y los métodos de encuentro salen de la PokeAPI. Los iniciales y los fósiles están en una lista fija en `PokemonService`, porque la PokeAPI no los marca.
 - Las rutas importadas tienen `idPokeapi`; las creadas a mano con `POST /rutas` lo tienen en `null`.
 - La descripción viene de la Pokédex en español; si no existe, se usa la de inglés.
+
+---
+
+## Ampliación F11–F15 (aprobada, pendiente de implementar)
+
+Lo de esta sección **todavía no existe en la API**. Cada parte pasa a su sección de arriba cuando se implementa su tarea (B.29–B.38). Todo se **agrega**: los campos y endpoints actuales responden igual. Specs: `docs/specs/F11`–`F15`.
+
+### Filtros nuevos en `GET /pokemons` (F13, F14)
+| Parámetro | Qué filtra | Valor inválido |
+|---|---|---|
+| `tipo` (repetible, hasta 2) | `?tipo=fire&tipo=flying`: Pokémon que tienen **los dos** tipos. Con uno, igual que hoy. Valores vacíos o repetidos se ignoran | 3 o más → 400 |
+| `juego` | Slug de la versión (`red`, `heartgold`; ver `/juegos`): Pokémon presentes en ese juego (encuentros en la versión o aprendizaje en su grupo) | 400 con la lista de valores válidos |
+
+### Endpoints nuevos
+| Método | Ruta | Descripción | Spec |
+|---|---|---|---|
+| GET | `/pokemons/{id}/habilidades` | Arreglo ordenado por `slot` (404 si el Pokémon no existe) | F11 |
+| GET | `/pokemons/{id}/ubicaciones?juego=` | Encuentros por juego, con método, probabilidad y niveles (404 / 400) | F13 |
+| GET | `/juegos` | Juegos con datos, en orden de lanzamiento; arreglo sin paginar | F13 |
+| POST | `/auth/login` | `{ usuario, contrasena }` → `{ token, expiraEn, usuario, rol }` (401 / 400) | F15 |
+| POST | `/pokemons` | Crear Pokémon (ADMIN; 201, 400, 409) | F15 |
+| PUT | `/pokemons/{id}` | Editar Pokémon (ADMIN; marca `editadoAMano`) | F15 |
+| DELETE | `/pokemons/{id}` | Borrar Pokémon (ADMIN; 204; la reimportación no lo vuelve a crear) | F15 |
+| DELETE | `/rutas/{id}` | Borrar ruta (ADMIN; 204; la desvincula de los Pokémon y borra sus encuentros) | F15 |
+
+### Cambios que solo agregan
+- `GET /pokemons/{id}/movimientos` acepta `?juego=` y `?metodo=` (`nivel`, `maquina`, `tutor`, `huevo`, `otros`). **Sin parámetros devuelve los mismos elementos de hoy** (Pikachu: 109). Cada elemento suma `precision`, `metodo`, `nivel`, `metodos`, `etiqueta` y `juego` (F12):
+  ```json
+  { "idMovimiento": 9, "nombre": "thunder-punch", "nombreEs": "Puño Trueno", "tipo": "electric",
+    "categoria": "Físico", "potencia": 75, "esCompetitivo": false,
+    "precision": 100,
+    "metodo": { "clave": "tutor", "nombreEs": "Tutor" }, "nivel": null,
+    "metodos": [{ "clave": "tutor", "nombreEs": "Tutor", "nivel": null }],
+    "etiqueta": null,
+    "juego": { "clave": "scarlet-violet", "nombreEs": "Escarlata y Púrpura" } }
+  ```
+  Sin `juego`, se usa el grupo más reciente en el que el Pokémon aprende movimientos por nivel (nunca Champions). `etiqueta` ∈ `"Aventura"` (por nivel, > 1, en ese juego), `"Competitivo"` (potencia > 80), `"Ambos"` o `null`. Los valores del ejemplo son ilustrativos.
+- Movimiento: campo `precision` (0–100 o `null`), también en POST/PUT. Al reimportar solo se llena si está en `null`.
+- Pokémon: campo `editadoAMano` (`true` si se editó o se creó desde el panel; si no, `null` o `false`).
+- Errores de validación: campo opcional `campos` (`{ "ataque": "Debe estar entre 1 y 255" }`).
+
+### Autenticación (F15)
+- Todos los `GET` siguen siendo públicos, salvo `importar-rango` e `importar-todo`. `POST`, `PUT`, `DELETE` y la importación piden `Authorization: Bearer <token>` con el rol ADMIN.
+- Nuevos códigos: **401** (sin token, o con uno inválido o vencido) y **403** (token sin el rol ADMIN), con el formato de error de siempre.
+- **Aviso:** las importaciones por GET (uso interno) pasan a pedir token. El frontend publicado no se ve afectado: solo hace `GET` de consulta.

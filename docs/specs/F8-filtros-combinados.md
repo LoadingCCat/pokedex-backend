@@ -24,4 +24,4 @@ Como fan de Pokémon, quiero combinar filtros (por ejemplo, tipo fuego de la gen
 - [ ] `GET /api/pokemons?obtencion=xyz` responde 400 y el mensaje lista los valores válidos.
 
 ## Fuera de alcance
-Rangos de estadísticas (ej. `velocidad > 100`), operadores O entre filtros, filtrar por dos tipos a la vez (`?tipo=fire&tipo=flying`), filtrar por ruta (sigue en `/pokemons/ruta/{idRuta}`).
+Rangos de estadísticas (ej. `velocidad > 100`), operadores O entre filtros, filtrar por dos tipos a la vez (`?tipo=fire&tipo=flying`; desde la ampliación lo cubre F14), filtrar por ruta (sigue en `/pokemons/ruta/{idRuta}`).

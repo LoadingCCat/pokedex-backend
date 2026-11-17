@@ -76,5 +76,47 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.31 Capturas de los lugares de las demás regiones: 274 más, 348 de 620; 801 fichas con capturas
 - [x] FE.32 Sprite clásico pixelado (normal y shiny) junto a la ilustración de la ficha
 
+## Ampliación · requerimientos de la entrevista (F11–F15)
+<!-- Aprobada el 2026-11-17 (Fase 0). Plan: PROMPT-ampliacion.md. Cada fase se aprueba antes de empezarla.
+     Al final de cada fase: .\mvnw.cmd test y npm run test completos, con el total reportado (antes: 87 + 58 = 145).
+     Antes de cualquier reimportación: pg_dump y avisar dónde quedó el respaldo. -->
+- [x] Fase 0 · Specs F11–F15, contrato (sección "Ampliación"), `pantallas.md` (P7, P8), tareas y decisiones; medición en la PokeAPI (≈ 630 000 filas de aprendizaje y ≈ 60 000 encuentros para los 1025)
+
+**Fase 1 · F14 Filtro por dos tipos**
+- [ ] B.29 F14 · `tipo` repetible (hasta 2, Y) en `GET /pokemons`; 3 o más → 400; pruebas
+- [ ] FE.33 F14 · Selector "Tipo 2" en P1, chips, mock y pruebas
+
+**Fase 2 · F15 Autenticación y panel**
+- [ ] B.30 F15 · Spring Security + JWT (oauth2-resource-server), tabla `usuario` (BCrypt), administrador inicial desde `ADMIN_USERNAME`/`ADMIN_PASSWORD`, `JWT_SECRETO`, CORS; 401/403 con el formato de error; las pruebas de escritura existentes usan un usuario ADMIN simulado
+- [ ] B.31 F15 · `DELETE /rutas/{id}` (desvincula Pokémon y encuentros)
+- [ ] B.32 F15 · `POST`/`PUT`/`DELETE /pokemons`, `editadoAMano`, `pokemon_excluido` y la reimportación que los respeta; errores con `campos`; colección de Postman en `docs/postman/` (login con `{{token}}` y crear, editar y borrar)
+- [ ] FE.34 F15 · `/login`, route handler de sesión (cookie `httpOnly`), `proxy.ts` y aviso en modo mock
+- [ ] FE.35 F15 · `/admin` Pokémon (listado, búsqueda, crear, editar y eliminar con confirmación; validación y 400 por campo)
+- [ ] FE.36 F15 · `/admin` Movimientos
+- [ ] FE.37 F15 · `/admin` Rutas
+
+**Fase 3 · F11–F13 en el backend**
+- [ ] B.33 F11 · `Habilidad`, `PokemonHabilidad`, importación y `GET /pokemons/{id}/habilidades`
+- [ ] B.34 F13 · `Juego` (versiones y grupos) y `GET /juegos`
+- [ ] B.35 F12 · `Aprendizaje` (`SEQUENCE`, `hibernate.jdbc.batch_size`, `order_inserts`, `order_updates`), `Movimiento.precision`, `/movimientos?juego=&metodo=` y la etiqueta
+- [ ] B.36 F13 · `Encuentro`, `GET /pokemons/{id}/ubicaciones` y el filtro `juego`
+- [ ] B.37 Respaldo con `pg_dump` y una sola reimportación de las 9 generaciones: 1025 importados, 0 fallidos, cuántas habilidades, encuentros y filas de aprendizaje, y **cuánto tardó**
+- [ ] B.38 Quitar `pokemon_movimiento` (código y tabla, a mano, tras el respaldo)
+
+**Fase 4 · F11–F13 en el frontend**
+- [ ] FE.38 Mock regenerado y partido por Pokémon (`datos/mock/pokemon/{id}.json`, carga bajo demanda) y `lib/api`
+- [ ] FE.39 F11 · Habilidades en la ficha
+- [ ] FE.40 F13 · Selector de juego en la URL (P1 y P2)
+- [ ] FE.41 F12 · Tabla de movimientos con método, nivel, precisión, etiqueta y filtros
+- [ ] FE.42 F13 · Ubicaciones por juego con probabilidad, método y niveles
+- [ ] FE.43 Pruebas de contrato (mock contra la API real) ampliadas
+
+**Fase 5 · Mediciones (RNF-01, RNF-03)**
+- [ ] FE.44 Lighthouse (móvil y escritorio) del catálogo, una búsqueda y una ficha: tiempo hasta interactiva y si queda por debajo de 2 s
+- [ ] FE.45 Playwright a 360, 768 y 1080 px (catálogo, ficha, regiones, `/login`, `/admin`): sin scroll horizontal; correcciones; `pokedex-frontend/docs/mediciones.md`
+
+**Fase 6 · Cierre**
+- [ ] B.39 `producto.md`, `arquitectura.md`, `pruebas.md` (totales), README y CLAUDE.md de los dos repos y `BITACORA_IA.md`; total de pruebas de las dos suites
+
 ## Nube (U6)
 <!-- Se detalla al iniciar la U6. -->
