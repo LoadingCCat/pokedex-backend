@@ -309,3 +309,17 @@ Continuación de la sesión anterior, con el mismo método por fases (docs → p
 - Backend: 83 pruebas; criterios de B.27 con `curl.exe` (`"FIRE"` → `fire`, `"luz"` → 400, PUT sin `tipo` lo conserva).
 - Frontend: 46 pruebas sin backend y 72 con `API_URL` (las 26 de contrato contra la API real); build sin backend con 1035 páginas; `public/` en 6,7 MB.
 - Criterios de las Fases 5 y 6 en `pantallas.md`, revisados a 390 y 1280 px.
+
+### Continuación: FE.26 y FE.27 (2026-11-17)
+- *"Bitácora y mejoras"* y *"y termina los lugares que faltan"* → FE.26 (mejoras 1–5, 7 y 8 de la evaluación) y FE.27 (46 lugares más de Kanto, 74 de 88).
+- Commits del front: `f4c5822` (ficha y cadena evolutiva), `c3652a0` (filtros en móvil), `385f62b` (enlaces y mapa), `712c8c5` y `6b3348d` (lugares).
+
+| Problema | Cómo se detectó | Corrección |
+|---|---|---|
+| Con 224 px, las condiciones de Leafeon y Sylveon seguían en 4–5 líneas | Midiendo líneas con Chrome sin interfaz | Columna de 288 px en tableta y 384 en escritorio: 2 y 3 líneas |
+| El botón "Filtros (n)" también salía en escritorio: el `inline-flex` del botón base ganaba a `hidden` | Medición en 1280 px | Variantes (`md:hidden`), que se generan después de las utilidades base |
+| `sed` sin nombre de archivo en un bucle (no marcó los criterios) | El propio `sed` avisó "no input files" | Se repitió con el archivo |
+| Una variable `original` del script de imágenes chocaba con otra ya declarada | `node --check` | Renombrada |
+| 9 capturas de pixel art (8 de la Fase 5) se habían guardado con pérdida | Leyendo la cabecera de cada WebP (`VP8` frente a `VP8L`) | El pixel art va siempre sin pérdida |
+| El servidor de desarrollo no recogió el cambio de `FiguraCreditada` y servía la versión anterior | Mirando el HTML con `curl` | Reinicio del servidor de desarrollo |
+| Las imágenes medían 2 px menos que su escala (478 en vez de 480) por el borde del bloque | Medición del `img` | La columna suma los 2 px del borde |
