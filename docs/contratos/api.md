@@ -140,6 +140,8 @@ Ejemplo de movimiento:
 | POST | `/rutas` | Crear (`nombre`, `region`, `descripcion`) |
 | PUT | `/rutas/{id}` | Actualizar |
 
+El `nombre` de las rutas importadas está en español cuando se pudo verificar (de la PokeAPI o del artículo de WikiDex: "Bosque Verde", "Calle Victoria"); unos 90 lugares sin artículo verificado siguen en inglés. El campo no cambia de forma: solo su valor, tras reimportar.
+
 ## Tipos — `/tipos`
 | Método | Ruta | Descripción |
 |---|---|---|

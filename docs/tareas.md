@@ -31,6 +31,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] B.19 Pruebas automáticas de F1–F10 (80): controllers con `@WebMvcTest`, servicios con simulaciones y consultas SQL contra PostgreSQL embebido; sin PostgreSQL local ni PokeAPI (`docs/pruebas.md`)
 
 ## Back · pendiente
+- [ ] B.28 F6 · Nombres de lugares en español desde los títulos verificados de WikiDex (sin pisar los renombrados con PUT) y reimportar
 - [ ] B.26 Pulir textos de `condicion` en las evoluciones (requiere reimportar): falta `min_steps` (Pawmot sale "Subiendo de nivel" en vez de caminar 1000 pasos), "Usando un movimiento, tras usar Puño Furia 20 veces" es redundante (Annihilape), Basculegion repite la condición por género, y las formas no regionales salen con el slug en inglés (Wormadam, Urshifu)
 
 - [x] B.27 F4 · Campo `tipo` en `Movimiento` (importación, POST/PUT, contrato y pruebas). Reimportadas las 9 generaciones: 1025 importados, 0 fallidos; los 797 movimientos tienen `tipo`
@@ -69,6 +70,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.25 Fase 6 · Disco de MT del color del tipo en las tablas de movimientos (requiere B.27 y regenerar el mock)
 - [x] FE.26 Mejoras de la evaluación de la rúbrica (puntos 1–5, 7 y 8)
 - [x] FE.27 Capturas de los lugares de Kanto que faltan: 46 más, 74 de 88 (los 14 restantes no tienen capturas útiles en WikiDex)
+- [ ] FE.28 Mock regenerado con los lugares en español y docs del front al día (requiere B.28)
 
 ## Nube (U6)
 <!-- Se detalla al iniciar la U6. -->
