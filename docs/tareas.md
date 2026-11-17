@@ -67,6 +67,8 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.23 Fase 5 · Capturas del juego en la ficha: datos, sección y créditos, con la primera generación (Articuno, Zapdos, Moltres, Mewtwo y Mew)
 - [x] FE.24 Fase 5 · Capturas del juego del resto de legendarios y singulares: 87 capturas de 52 de los 94 (los demás no tienen en WikiDex capturas de cómo se consiguen)
 - [x] FE.25 Fase 6 · Disco de MT del color del tipo en las tablas de movimientos (requiere B.27 y regenerar el mock)
+- [ ] FE.26 Mejoras de la evaluación de la rúbrica (puntos 1–5, 7 y 8)
+- [ ] FE.27 Capturas de los lugares de Kanto que faltan (criterio ampliado a pixel art de RFVH y HGSS)
 
 ## Nube (U6)
 <!-- Se detalla al iniciar la U6. -->
