@@ -27,9 +27,9 @@ Como fan de Pokémon, quiero consultar los movimientos y ver cuáles puede apren
 - [ ] `POST` con un nombre que ya existe (sin importar mayúsculas) responde 400.
 - [ ] `PUT /api/movimientos/{id}` con potencia 100 actualiza el movimiento y pone `esCompetitivo = true`.
 - [ ] `DELETE /api/movimientos/{id}` de un movimiento que aprenden varios Pokémon responde 204, y el movimiento desaparece de `/pokemons/{id}/movimientos`.
-- [ ] Tras reimportar, `GET /api/pokemons/25/movimientos` incluye `thunderbolt` con `tipo = "electric"`, y ningún movimiento importado queda con `tipo` en `null`.
-- [ ] `POST` con `"tipo": "FIRE"` guarda `tipo = "fire"`; con `"tipo": "luz"` responde 400.
-- [ ] `PUT` sin `tipo` conserva el que tenía.
+- [x] Tras reimportar, `GET /api/pokemons/25/movimientos` incluye `thunderbolt` con `tipo = "electric"`, y ningún movimiento importado queda con `tipo` en `null`.
+- [x] `POST` con `"tipo": "FIRE"` guarda `tipo = "fire"`; con `"tipo": "luz"` responde 400.
+- [x] `PUT` sin `tipo` conserva el que tenía.
 
 ## Fuera de alcance
 Cómo aprende cada Pokémon el movimiento (nivel, MT, tutor) y en qué juego. Nombres en español (F6).

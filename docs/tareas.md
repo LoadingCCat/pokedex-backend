@@ -33,7 +33,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 ## Back · pendiente
 - [ ] B.26 Pulir textos de `condicion` en las evoluciones (requiere reimportar): falta `min_steps` (Pawmot sale "Subiendo de nivel" en vez de caminar 1000 pasos), "Usando un movimiento, tras usar Puño Furia 20 veces" es redundante (Annihilape), Basculegion repite la condición por género, y las formas no regionales salen con el slug en inglés (Wormadam, Urshifu)
 
-- [ ] B.27 F4 · Campo `tipo` en `Movimiento` (importación, POST/PUT, contrato y pruebas) y reimportar las 9 generaciones para llenarlo
+- [x] B.27 F4 · Campo `tipo` en `Movimiento` (importación, POST/PUT, contrato y pruebas). Reimportadas las 9 generaciones: 1025 importados, 0 fallidos; los 797 movimientos tienen `tipo`
 
 ## Front (U3)
 <!-- Se detalla cuando el backend esté terminado. Pedir las tareas al agente en modo plan,
