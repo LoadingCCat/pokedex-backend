@@ -39,7 +39,7 @@ Todos son opcionales y se combinan con **Y**. Ejemplo: `/pokemons?tipo=fire&gene
 |---|---|---|
 | `nombre` | Texto parcial, sin importar mayúsculas ni tildes, en `nombre` o `nombreEs` | — |
 | `generacion` | 1 a 9 | 400 |
-| `tipo` | Nombre del tipo en inglés (`fire`, `water`…), sin importar mayúsculas. Un solo tipo por petición | Tipo inexistente → 200 con `content` vacío |
+| `tipo` | Nombre del tipo en inglés (`fire`, `water`…), sin importar mayúsculas. Se puede repetir hasta 2 veces (F14): `?tipo=fire&tipo=flying` devuelve los Pokémon que tienen **los dos**. Un valor vacío o repetido (`fire` y `FIRE`) cuenta una vez. | Tipo inexistente → 200 con `content` vacío; 3 o más tipos distintos → 400 |
 | `region` | Nativos de la región **o** que aparecen en alguna de sus rutas (igual que `/pokemons/region/{nombre}`) | Región inexistente → `content` vacío |
 | `obtencion` | Forma de obtención, con o sin tilde (`fosil` = `Fósil`) | 400 con la lista de valores válidos |
 
@@ -235,10 +235,9 @@ Legendario, Singular, Huevo, Evolución y los métodos de encuentro salen de la 
 
 Lo de esta sección **todavía no existe en la API**. Cada parte pasa a su sección de arriba cuando se implementa su tarea (B.29–B.38). Todo se **agrega**: los campos y endpoints actuales responden igual. Specs: `docs/specs/F11`–`F15`.
 
-### Filtros nuevos en `GET /pokemons` (F13, F14)
+### Filtro nuevo en `GET /pokemons` (F13)
 | Parámetro | Qué filtra | Valor inválido |
 |---|---|---|
-| `tipo` (repetible, hasta 2) | `?tipo=fire&tipo=flying`: Pokémon que tienen **los dos** tipos. Con uno, igual que hoy. Valores vacíos o repetidos se ignoran | 3 o más → 400 |
 | `juego` | Slug de la versión (`red`, `heartgold`; ver `/juegos`): Pokémon presentes en ese juego (encuentros en la versión o aprendizaje en su grupo) | 400 con la lista de valores válidos |
 
 ### Endpoints nuevos

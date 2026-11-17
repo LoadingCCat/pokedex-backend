@@ -30,11 +30,12 @@ public final class PokemonFiltros {
     /**
      * @param nombre     texto parcial; se busca en nombre (slug) y en nombreEs
      * @param generacion 1 a 9
-     * @param tipo       nombre del tipo en inglés (fire, water...)
+     * @param tipos      nombres de tipo en inglés (fire, water...); el Pokémon debe tener todos (F14).
+     *                   Vacía o null = sin filtro de tipo. El controller ya limita a 2 y quita repetidos
      * @param region     Pokémon nativos de la región o que aparecen en alguna de sus rutas
      * @param obtencion  valor exacto de tipoObtencion (ya normalizado por el controller)
      */
-    public static Specification<Pokemon> con(String nombre, Integer generacion, String tipo,
+    public static Specification<Pokemon> con(String nombre, Integer generacion, List<String> tipos,
                                              String region, String obtencion) {
         return (pokemon, consulta, cb) -> {
             List<Predicate> condiciones = new ArrayList<>();
@@ -49,13 +50,14 @@ public final class PokemonFiltros {
             if (generacion != null) {
                 condiciones.add(cb.equal(pokemon.get("generacion"), generacion));
             }
-            if (tipo != null) {
+            // Un EXISTS por tipo: con dos (fire y flying) el Pokémon debe tener ambos (F14)
+            for (String tipo : tipos == null ? List.<String>of() : tipos) {
                 Subquery<Integer> conTipo = consulta.subquery(Integer.class);
                 Root<Pokemon> otro = conTipo.from(Pokemon.class);
-                Join<Pokemon, Tipo> tipos = otro.join("tipos");
+                Join<Pokemon, Tipo> suyos = otro.join("tipos");
                 conTipo.select(cb.literal(1)).where(
                         cb.equal(otro.get("idPokedex"), pokemon.get("idPokedex")),
-                        cb.equal(cb.lower(tipos.get("nombre")), tipo.toLowerCase()));
+                        cb.equal(cb.lower(suyos.get("nombre")), tipo.toLowerCase()));
                 condiciones.add(cb.exists(conTipo));
             }
             if (region != null) {

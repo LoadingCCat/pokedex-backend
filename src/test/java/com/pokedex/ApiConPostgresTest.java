@@ -223,6 +223,57 @@ class ApiConPostgresTest {
                 .andExpect(jsonPath("$.page.totalElements").value(0));
     }
 
+    // ---------- F14 · filtro por dos tipos ----------
+
+    /** Charizard (#6) y Moltres (#146) son fuego/volador; Pidgey (#16), normal/volador. */
+    private void datosDeDosTipos() {
+        Tipo fire = tipoRepository.findByNombre("fire");
+        Tipo flying = tipoRepository.save(new Tipo("flying"));
+        Tipo normal = tipoRepository.save(new Tipo("normal"));
+        Ruta bosque = rutaRepository.findByIdPokeapi(1).orElseThrow();
+        Ruta ruta1 = rutaRepository.findByIdPokeapi(2).orElseThrow();
+        pokemon(6, "charizard", "Charizard", 1, "Kanto", "Evolución", 100, List.of(fire, flying), List.of(bosque, ruta1));
+        pokemon(146, "moltres", "Moltres", 1, "Kanto", "Legendario", 90, List.of(fire, flying), List.of());
+        pokemon(16, "pidgey", "Pidgey", 1, "Kanto", "Salvaje", 56, List.of(normal, flying), List.of(ruta1));
+    }
+
+    @Test
+    void dosTiposDevuelveSoloLosQueTienenAmbos() throws Exception {
+        datosDeDosTipos();
+        mvc.perform(get("/api/pokemons?tipo=fire&tipo=flying"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[*].idPokedex", contains(6, 146)))
+                .andExpect(jsonPath("$.page.totalElements").value(2));
+        // El orden de los tipos no importa
+        mvc.perform(get("/api/pokemons?tipo=flying&tipo=FIRE"))
+                .andExpect(jsonPath("$.content[*].idPokedex", contains(6, 146)));
+    }
+
+    @Test
+    void unSoloTipoSigueIgualYLosRepetidosOVaciosCuentanUnaVez() throws Exception {
+        datosDeDosTipos();
+        String unTipo = mvc.perform(get("/api/pokemons?tipo=fire")).andReturn().getResponse().getContentAsString();
+        String repetido = mvc.perform(get("/api/pokemons?tipo=fire&tipo=fire")).andReturn().getResponse().getContentAsString();
+        String conVacio = mvc.perform(get("/api/pokemons?tipo=&tipo=fire")).andReturn().getResponse().getContentAsString();
+        String endpoint = mvc.perform(get("/api/pokemons/tipo/fire")).andReturn().getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(repetido).isEqualTo(unTipo);
+        org.assertj.core.api.Assertions.assertThat(conVacio).isEqualTo(unTipo);
+        org.assertj.core.api.Assertions.assertThat(unTipo).isEqualTo(endpoint);
+        mvc.perform(get("/api/pokemons?tipo=fire"))
+                .andExpect(jsonPath("$.content[*].idPokedex", contains(4, 6, 146, 155)));
+    }
+
+    @Test
+    void dosTiposSeCombinanConOtrosFiltrosYOrdenSinDuplicados() throws Exception {
+        datosDeDosTipos();
+        // Charizard está en dos rutas de Kanto: debe salir una sola vez
+        mvc.perform(get("/api/pokemons?tipo=fire&tipo=flying&region=kanto&generacion=1&sort=velocidad,desc"))
+                .andExpect(jsonPath("$.content[*].idPokedex", contains(6, 146)))
+                .andExpect(jsonPath("$.page.totalElements").value(2));
+        mvc.perform(get("/api/pokemons?tipo=fire&tipo=flying&obtencion=legendario"))
+                .andExpect(jsonPath("$.content[*].idPokedex", contains(146)));
+    }
+
     @Test
     void cadaFiltroDaLoMismoQueSuEndpointDeUnSoloFiltro() throws Exception {
         String porParametro = mvc.perform(get("/api/pokemons?region=kanto")).andReturn().getResponse().getContentAsString();

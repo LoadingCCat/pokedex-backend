@@ -83,8 +83,8 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] Fase 0 · Specs F11–F15, contrato (sección "Ampliación"), `pantallas.md` (P7, P8), tareas y decisiones; medición en la PokeAPI (≈ 630 000 filas de aprendizaje y ≈ 60 000 encuentros para los 1025)
 
 **Fase 1 · F14 Filtro por dos tipos**
-- [ ] B.29 F14 · `tipo` repetible (hasta 2, Y) en `GET /pokemons`; 3 o más → 400; pruebas
-- [ ] FE.33 F14 · Selector "Tipo 2" en P1, chips, mock y pruebas
+- [x] B.29 F14 · `tipo` repetible (hasta 2, Y) en `GET /pokemons`; 3 o más → 400; 6 pruebas nuevas (93 en total)
+- [x] FE.33 F14 · Selector "Tipo 2" en P1, chips, mock y pruebas (7 nuevas; 3 consultas más en la prueba de contrato)
 
 **Fase 2 · F15 Autenticación y panel**
 - [ ] B.30 F15 · Spring Security + JWT (oauth2-resource-server), tabla `usuario` (BCrypt), administrador inicial desde `ADMIN_USERNAME`/`ADMIN_PASSWORD`, `JWT_SECRETO`, CORS; 401/403 con el formato de error; las pruebas de escritura existentes usan un usuario ADMIN simulado

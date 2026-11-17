@@ -1,6 +1,6 @@
 # F14 · Filtro por dos tipos
 
-**Estado:** Pendiente
+**Estado:** Implementada (B.29, FE.33) · criterios con pruebas automáticas (ver `docs/pruebas.md`)
 
 ## Historia
 Como fan de Pokémon, quiero filtrar por dos tipos a la vez (por ejemplo, Fuego/Volador) para encontrar los Pokémon que tienen esa combinación (RF-08 de la entrevista).
@@ -15,12 +15,12 @@ Como fan de Pokémon, quiero filtrar por dos tipos a la vez (por ejemplo, Fuego/
 7. `GET /api/pokemons/tipo/{t}` no cambia.
 
 ## Criterios de aceptación
-- [ ] `GET /api/pokemons?tipo=fire&tipo=flying` incluye Charizard (#6) y Moltres (#146), y no incluye a Charmander (#4) ni a Pidgey (#16).
-- [ ] `?tipo=flying&tipo=fire` da el mismo `totalElements` que `?tipo=fire&tipo=flying`.
-- [ ] `GET /api/pokemons?tipo=fire` da el mismo total que antes del cambio.
-- [ ] `?tipo=fire&tipo=flying&tipo=water` → 400 con un mensaje que explica el límite.
-- [ ] `?tipo=fire&tipo=fire` da lo mismo que `?tipo=fire`. `?tipo=&tipo=fire` también.
-- [ ] `?tipo=fire&tipo=flying&generacion=1&sort=velocidad,desc` combina los filtros, sin duplicados en `totalElements`.
+- [x] `GET /api/pokemons?tipo=fire&tipo=flying` incluye Charizard (#6) y Moltres (#146), y no incluye a Charmander (#4) ni a Pidgey (#16).
+- [x] `?tipo=flying&tipo=fire` da el mismo `totalElements` que `?tipo=fire&tipo=flying`.
+- [x] `GET /api/pokemons?tipo=fire` da el mismo total que antes del cambio.
+- [x] `?tipo=fire&tipo=flying&tipo=water` → 400 con un mensaje que explica el límite.
+- [x] `?tipo=fire&tipo=fire` da lo mismo que `?tipo=fire`. `?tipo=&tipo=fire` también.
+- [x] `?tipo=fire&tipo=flying&generacion=1&sort=velocidad,desc` combina los filtros, sin duplicados en `totalElements`.
 - [ ] Front (P1): un segundo selector "Tipo 2", desactivado hasta elegir el primero. La URL queda como `?tipo=fire&tipo=flying`, los dos tipos salen como chips, y el total coincide con la API.
 
 ## Fuera de alcance

@@ -266,6 +266,36 @@ class PokemonControllerTest {
         assertThat(pagina.getValue().getSort()).isEqualTo(Sort.by(Sort.Direction.DESC, "velocidad"));
     }
 
+    // ---------- F14 · filtro por dos tipos ----------
+
+    @Test
+    void tresTiposDistintosResponde400() throws Exception {
+        mvc.perform(get("/api/pokemons?tipo=fire&tipo=flying&tipo=water"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.mensaje").value(containsString("como mucho 2 tipos")));
+        verify(pokemonRepository, never()).findAll(any(Pageable.class));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void tiposRepetidosOVaciosNoCuentanParaElLimite() throws Exception {
+        when(pokemonRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(paginaCon());
+
+        // fire y FIRE son el mismo tipo, y el vacío se ignora: quedan 2
+        mvc.perform(get("/api/pokemons?tipo=fire&tipo=FIRE&tipo=&tipo=flying"))
+                .andExpect(status().isOk());
+        verify(pokemonRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void soloTiposVaciosRespondeComoElListadoNormal() throws Exception {
+        when(pokemonRepository.findAll(any(Pageable.class))).thenReturn(paginaCon());
+
+        mvc.perform(get("/api/pokemons?tipo=&tipo=  ")).andExpect(status().isOk());
+        verify(pokemonRepository).findAll(any(Pageable.class));
+    }
+
     @Test
     void filtroGeneracionInvalidoResponde400() throws Exception {
         mvc.perform(get("/api/pokemons?generacion=10")).andExpect(status().isBadRequest());

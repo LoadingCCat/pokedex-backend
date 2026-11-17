@@ -29,6 +29,7 @@ public class PokemonController {
 
     private static final int MAX_GENERACION = 9;
     private static final int MAX_MOVIMIENTOS = 900;
+    private static final int MAX_TIPOS = 2;
 
     private final PokemonRepository pokemonRepository;
     private final RutaRepository rutaRepository;
@@ -57,15 +58,16 @@ public class PokemonController {
     // GET /api/pokemons?page=0&size=20&sort=idPokedex
     // Filtros opcionales que se combinan con Y: ?nombre=&generacion=&tipo=&region=&obtencion=
     // Ej. /api/pokemons?tipo=fire&generacion=1. Un filtro vacío (?tipo=) se ignora.
+    // tipo se puede repetir hasta 2 veces (F14): ?tipo=fire&tipo=flying = tiene los dos.
     @GetMapping
     public Page<Pokemon> listarPokemons(@RequestParam(required = false) String nombre,
                                         @RequestParam(required = false) Integer generacion,
-                                        @RequestParam(required = false) String tipo,
+                                        @RequestParam(required = false) List<String> tipo,
                                         @RequestParam(required = false) String region,
                                         @RequestParam(required = false) String obtencion,
                                         @SortDefault("idPokedex") Pageable pageable) {
         nombre = limpiar(nombre);
-        tipo = limpiar(tipo);
+        List<String> tipos = limpiarTipos(tipo);
         region = limpiar(region);
         obtencion = limpiar(obtencion);
         if (generacion != null) {
@@ -74,15 +76,36 @@ public class PokemonController {
         if (obtencion != null) {
             obtencion = normalizarObtencion(obtencion);
         }
-        if (nombre == null && generacion == null && tipo == null && region == null && obtencion == null) {
+        if (nombre == null && generacion == null && tipos.isEmpty() && region == null && obtencion == null) {
             return pokemonRepository.findAll(pageable);
         }
-        return pokemonRepository.findAll(PokemonFiltros.con(nombre, generacion, tipo, region, obtencion), pageable);
+        return pokemonRepository.findAll(PokemonFiltros.con(nombre, generacion, tipos, region, obtencion), pageable);
     }
 
     /** Quita espacios; un filtro vacío o en blanco cuenta como no enviado. */
     private static String limpiar(String valor) {
         return valor == null || valor.isBlank() ? null : valor.trim();
+    }
+
+    /**
+     * Tipos del filtro (F14): sin vacíos y sin repetidos (sin importar mayúsculas).
+     * Más de 2 distintos → 400. Lista vacía = sin filtro de tipo.
+     */
+    private static List<String> limpiarTipos(List<String> valores) {
+        if (valores == null) {
+            return List.of();
+        }
+        List<String> tipos = valores.stream()
+                .map(PokemonController::limpiar)
+                .filter(java.util.Objects::nonNull)
+                .map(String::toLowerCase)
+                .distinct()
+                .toList();
+        if (tipos.size() > MAX_TIPOS) {
+            throw new BadRequestException("Se pueden filtrar como mucho " + MAX_TIPOS
+                    + " tipos a la vez (por ejemplo ?tipo=fire&tipo=flying)");
+        }
+        return tipos;
     }
 
     private static void validarGeneracion(int generacion) {
