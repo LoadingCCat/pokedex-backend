@@ -74,6 +74,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [ ] FE.29 Capturas de la elección del inicial en la ficha de los 29 iniciales
 - [ ] FE.30 Captura del lugar donde aparece en las fichas sin capturas propias
 - [ ] FE.31 Capturas de los lugares de las demás regiones (mismo método que FE.27)
+- [ ] FE.32 Sprite clásico pixelado (normal y shiny) junto a la ilustración de la ficha
 
 ## Nube (U6)
 <!-- Se detalla al iniciar la U6. -->
