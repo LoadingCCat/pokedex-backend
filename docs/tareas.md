@@ -70,7 +70,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.25 Fase 6 · Disco de MT del color del tipo en las tablas de movimientos (requiere B.27 y regenerar el mock)
 - [x] FE.26 Mejoras de la evaluación de la rúbrica (puntos 1–5, 7 y 8)
 - [x] FE.27 Capturas de los lugares de Kanto que faltan: 46 más, 74 de 88 (los 14 restantes no tienen capturas útiles en WikiDex)
-- [ ] FE.28 Mock regenerado con los lugares en español y docs del front al día (requiere B.28)
+- [x] FE.28 Mock regenerado con los lugares en español y docs del front al día
 - [ ] FE.29 Capturas de la elección del inicial en la ficha de los 29 iniciales
 - [ ] FE.30 Captura del lugar donde aparece en las fichas sin capturas propias
 - [ ] FE.31 Capturas de los lugares de las demás regiones (mismo método que FE.27)
