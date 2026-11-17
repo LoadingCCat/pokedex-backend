@@ -24,6 +24,11 @@ public class Movimiento {
     @Column(name = "nombre_es", length = 100)
     private String nombreEs;
 
+    // Tipo del movimiento en inglés, como Tipo.nombre ("electric"), de /move/{id} -> type.
+    // null si se creó a mano sin él o se importó antes de que existiera el campo
+    @Column(length = 20)
+    private String tipo;
+
     @Column(nullable = false, length = 50)
     private String categoria;
 

@@ -44,6 +44,7 @@ class MovimientoControllerTest {
         m.setIdMovimiento(9);
         m.setNombre("thunder-punch");
         m.setNombreEs("Puño Trueno");
+        m.setTipo("electric");
         m.setCategoria("Físico");
         m.setPotencia(75);
         m.setEsCompetitivo(false);
@@ -119,6 +120,22 @@ class MovimientoControllerTest {
     }
 
     @Test
+    void crearConTipoLoGuardaEnMinusculas() throws Exception {
+        devolverLoQueSeGuarda();
+
+        crear("{\"nombre\":\"x\",\"tipo\":\" FIRE \",\"categoria\":\"Especial\",\"potencia\":10}")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tipo").value("fire"));
+    }
+
+    @Test
+    void crearConUnTipoQueNoExisteResponde400() throws Exception {
+        crear("{\"nombre\":\"x\",\"tipo\":\"luz\",\"categoria\":\"Especial\",\"potencia\":10}")
+                .andExpect(status().isBadRequest());
+        verify(movimientoRepository, never()).save(any());
+    }
+
+    @Test
     void crearIgnoraElIdEnviado() throws Exception {
         devolverLoQueSeGuarda();
 
@@ -149,7 +166,7 @@ class MovimientoControllerTest {
     }
 
     @Test
-    void actualizarSinNombreEsConservaElAnterior() throws Exception {
+    void actualizarSinNombreEsNiTipoConservaLosAnteriores() throws Exception {
         when(movimientoRepository.findById(9)).thenReturn(Optional.of(truenoPuno()));
         devolverLoQueSeGuarda();
 
@@ -157,6 +174,7 @@ class MovimientoControllerTest {
                         .content("{\"nombre\":\"thunder-punch\",\"categoria\":\"Físico\",\"potencia\":100}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nombreEs").value("Puño Trueno"))
+                .andExpect(jsonPath("$.tipo").value("electric"))
                 .andExpect(jsonPath("$.potencia").value(100))
                 .andExpect(jsonPath("$.esCompetitivo").value(true));
     }

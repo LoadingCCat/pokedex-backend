@@ -191,7 +191,7 @@ class PokemonServiceTest {
         editadoConPut.setCategoria("Especial");
         editadoConPut.setPotencia(50);
         when(movimientoRepository.findFirstByNombreIgnoreCase("pound")).thenReturn(Optional.of(editadoConPut));
-        pokeapi.put(API + "/move/1", Map.of("name", "pound", "power", 40,
+        pokeapi.put(API + "/move/1", Map.of("name", "pound", "power", 40, "type", Map.of("name", "normal"),
                 "damage_class", Map.of("name", "physical"), "names", List.of(nombre("es", "Destructor"))));
 
         ResultadoImportacion resultado = servicio(new SyncTaskExecutor()).importarMovimientosMasivo(1);
@@ -200,12 +200,33 @@ class PokemonServiceTest {
         assertThat(editadoConPut.getNombreEs()).isEqualTo("Destructor");
         assertThat(editadoConPut.getCategoria()).isEqualTo("Especial");
         assertThat(editadoConPut.getPotencia()).isEqualTo(50);
+        // No tenía tipo: se llena al reimportar
+        assertThat(editadoConPut.getTipo()).isEqualTo("normal");
+    }
+
+    @Test
+    void alReimportarNoSePisaUnTipoQueYaTenia() {
+        Movimiento conTipo = new Movimiento();
+        conTipo.setNombre("pound");
+        conTipo.setNombreEs("Destructor");
+        conTipo.setCategoria("Físico");
+        conTipo.setPotencia(40);
+        conTipo.setTipo("fighting");
+        when(movimientoRepository.findFirstByNombreIgnoreCase("pound")).thenReturn(Optional.of(conTipo));
+        pokeapi.put(API + "/move/1", Map.of("name", "pound", "power", 40, "type", Map.of("name", "normal"),
+                "damage_class", Map.of("name", "physical"), "names", List.of(nombre("es", "Destructor"))));
+
+        servicio(new SyncTaskExecutor()).importarMovimientosMasivo(1);
+
+        assertThat(conTipo.getTipo()).isEqualTo("fighting");
+        // Nada cambió: no se guarda
+        verify(movimientoRepository, never()).save(any(Movimiento.class));
     }
 
     @Test
     void unMovimientoNuevoSeCreaConCategoriaTraducidaYEsCompetitivo() {
         when(movimientoRepository.findFirstByNombreIgnoreCase("hyper-beam")).thenReturn(Optional.empty());
-        pokeapi.put(API + "/move/1", Map.of("name", "hyper-beam", "power", 150,
+        pokeapi.put(API + "/move/1", Map.of("name", "hyper-beam", "power", 150, "type", Map.of("name", "normal"),
                 "damage_class", Map.of("name", "special"), "names", List.of(nombre("es", "Hiperrayo"))));
 
         servicio(new SyncTaskExecutor()).importarMovimientosMasivo(1);
@@ -215,6 +236,7 @@ class PokemonServiceTest {
         assertThat(captor.getValue().getCategoria()).isEqualTo("Especial");
         assertThat(captor.getValue().getNombreEs()).isEqualTo("Hiperrayo");
         assertThat(captor.getValue().getEsCompetitivo()).isTrue();
+        assertThat(captor.getValue().getTipo()).isEqualTo("normal");
     }
 
     // ---------- F10 · importación en segundo plano ----------

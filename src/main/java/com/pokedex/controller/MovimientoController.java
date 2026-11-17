@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Set;
 
 @RestController
@@ -18,6 +19,10 @@ import java.util.Set;
 public class MovimientoController {
 
     private static final Set<String> CATEGORIAS = Set.of("Físico", "Especial", "Estado");
+    // Los 18 tipos, con el nombre en inglés de la PokeAPI (como Tipo.nombre)
+    private static final List<String> TIPOS = List.of("normal", "fighting", "flying", "poison", "ground",
+            "rock", "bug", "ghost", "steel", "fire", "water", "grass", "electric", "psychic", "ice", "dragon",
+            "dark", "fairy");
 
     private final MovimientoRepository movimientoRepository;
 
@@ -80,9 +85,12 @@ public class MovimientoController {
         existente.setNombre(datos.getNombre());
         existente.setCategoria(datos.getCategoria());
         existente.setPotencia(datos.getPotencia());
-        // nombreEs es opcional: si no viene, se conserva el que ya tenía
+        // nombreEs y tipo son opcionales: si no vienen, se conserva el que ya tenía
         if (datos.getNombreEs() != null) {
             existente.setNombreEs(datos.getNombreEs());
+        }
+        if (datos.getTipo() != null) {
+            existente.setTipo(datos.getTipo());
         }
         prepararCampos(existente);
         return movimientoRepository.save(existente);
@@ -114,6 +122,10 @@ public class MovimientoController {
         if (movimiento.getPotencia() != null && movimiento.getPotencia() < 0) {
             throw new BadRequestException("La potencia no puede ser negativa");
         }
+        String tipo = movimiento.getTipo();
+        if (tipo != null && !tipo.isBlank() && !TIPOS.contains(tipo.trim().toLowerCase())) {
+            throw new BadRequestException("El tipo debe ser uno de: " + String.join(", ", TIPOS));
+        }
     }
 
     /** Normaliza el texto y calcula esCompetitivo (true si la potencia es mayor a 80). */
@@ -122,6 +134,10 @@ public class MovimientoController {
         if (movimiento.getNombreEs() != null) {
             String nombreEs = movimiento.getNombreEs().trim();
             movimiento.setNombreEs(nombreEs.isEmpty() ? null : nombreEs);
+        }
+        if (movimiento.getTipo() != null) {
+            String tipo = movimiento.getTipo().trim().toLowerCase();
+            movimiento.setTipo(tipo.isEmpty() ? null : tipo);
         }
         String categoria = movimiento.getCategoria().trim();
         movimiento.setCategoria(CATEGORIAS.stream()

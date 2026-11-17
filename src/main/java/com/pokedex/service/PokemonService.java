@@ -381,11 +381,11 @@ public class PokemonService {
                 movimiento = movimientoRepository.findFirstByNombreIgnoreCase(nombre).orElse(null);
                 if (movimiento != null) {
                     cache.movimientosExistentes++;
-                    // Ya existe: solo se refresca su nombre en español (una vez por importación)
+                    // Ya existe: se refresca su nombre en español y, si no tenía, su tipo (una vez por importación)
                     try {
-                        movimiento = actualizarNombreEs(movimiento, getJson(url));
+                        movimiento = actualizarDatosImportados(movimiento, getJson(url));
                     } catch (Exception e) {
-                        log.warn("No se pudo actualizar el nombre en español del movimiento {}: {}",
+                        log.warn("No se pudo actualizar el nombre en español o el tipo del movimiento {}: {}",
                                 nombre, e.getMessage());
                     }
                 } else {
@@ -1028,8 +1028,8 @@ public class PokemonService {
                 String nombre = (String) datos.get("name");
                 Movimiento existente = movimientoRepository.findFirstByNombreIgnoreCase(nombre).orElse(null);
                 if (existente != null) {
-                    // Ya existe: no se vuelve a crear, pero sí se refresca su nombre en español
-                    actualizarNombreEs(existente, datos);
+                    // Ya existe: no se vuelve a crear, pero se refresca su nombre en español y, si no tenía, su tipo
+                    actualizarDatosImportados(existente, datos);
                     omitidos++;
                     continue;
                 }
@@ -1056,6 +1056,7 @@ public class PokemonService {
         Movimiento movimiento = new Movimiento();
         movimiento.setNombre((String) datos.get("name"));
         movimiento.setNombreEs(nombreEnEspanol(datos.get("names")));
+        movimiento.setTipo((String) mapa(datos.get("type")).get("name"));
         movimiento.setCategoria(traducirCategoria(claseDanio != null ? claseDanio : "physical"));
         movimiento.setPotencia(potencia);
         movimiento.setEsCompetitivo(potencia > 80);
@@ -1063,16 +1064,26 @@ public class PokemonService {
     }
 
     /**
-     * Pone el nombre en español a un movimiento que ya existe, a partir del JSON de /move/{id}.
-     * Solo guarda si cambió; el resto de campos no se toca (pueden haberse editado con PUT).
+     * Actualiza un movimiento que ya existe a partir del JSON de /move/{id}: el nombre en español
+     * siempre, y el tipo solo si no tenía (no pisa uno cambiado con PUT; categoría y potencia no se
+     * tocan por lo mismo). Solo guarda si algo cambió.
      */
-    private Movimiento actualizarNombreEs(Movimiento movimiento, Map<String, Object> datos) {
-        String nombreEs = datos != null ? nombreEnEspanol(datos.get("names")) : null;
-        if (nombreEs == null || nombreEs.equals(movimiento.getNombreEs())) {
+    private Movimiento actualizarDatosImportados(Movimiento movimiento, Map<String, Object> datos) {
+        if (datos == null) {
             return movimiento;
         }
-        movimiento.setNombreEs(nombreEs);
-        return movimientoRepository.save(movimiento);
+        boolean cambio = false;
+        String nombreEs = nombreEnEspanol(datos.get("names"));
+        if (nombreEs != null && !nombreEs.equals(movimiento.getNombreEs())) {
+            movimiento.setNombreEs(nombreEs);
+            cambio = true;
+        }
+        String tipo = (String) mapa(datos.get("type")).get("name");
+        if (movimiento.getTipo() == null && tipo != null) {
+            movimiento.setTipo(tipo);
+            cambio = true;
+        }
+        return cambio ? movimientoRepository.save(movimiento) : movimiento;
     }
 
     /** Busca en "names" el nombre en español; si no existe, el de inglés; si tampoco, null. */
