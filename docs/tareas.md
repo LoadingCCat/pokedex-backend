@@ -73,7 +73,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.28 Mock regenerado con los lugares en español y docs del front al día
 - [x] FE.29 Capturas de la elección del inicial en la ficha de los 29 iniciales
 - [x] FE.30 Captura del lugar donde aparece en las fichas sin capturas propias
-- [ ] FE.31 Capturas de los lugares de las demás regiones (mismo método que FE.27)
+- [x] FE.31 Capturas de los lugares de las demás regiones: 274 más, 348 de 620; 801 fichas con capturas
 - [x] FE.32 Sprite clásico pixelado (normal y shiny) junto a la ilustración de la ficha
 
 ## Nube (U6)
