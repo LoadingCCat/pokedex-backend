@@ -3,7 +3,9 @@ package com.pokedex.controller;
 import com.pokedex.entity.Ruta;
 import com.pokedex.repository.RutaRepository;
 import com.pokedex.service.PokemonService;
+import com.pokedex.ConSeguridad;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -31,6 +33,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Criterios de F5 en el controller de rutas (sin PostgreSQL). */
 @WebMvcTest(RutaController.class)
+@ConSeguridad
+// Las pruebas de escritura de F1–F14 corren como ADMIN; las de 401/403 están en SeguridadControllerTest (F15)
+@WithMockUser(roles = "ADMIN")
 class RutaControllerTest {
 
     @Autowired

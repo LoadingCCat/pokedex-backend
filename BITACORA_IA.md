@@ -340,3 +340,15 @@ Continuación de la sesión anterior, con el mismo método por fases (docs → p
 | La captura de doble pantalla de Hoenn (400 × 480) se recortaba a 384 px | Medición del `img` | El recorte solo se aplica al pixel art de lugares |
 | El primer intento de consulta de candidatas de iniciales tardó más de 10 min (Pikachu y Eevee tienen miles de imágenes en WikiDex) | El comando pasó a segundo plano | Se esperó; no se repitió |
 - FE.31 (front `f60b378`): 274 lugares más de las otras regiones, elegidos con un filtro por nombre de archivo y revisados en hojas de contacto; 801 fichas con capturas. Errores corregidos: la primera selección incluía capturas con Pokémon, objetos ocultos, diálogos y mapas montados de 3DS (se endureció el filtro dos veces y se quitaron 10 a mano), y el pixel art de origen JPG se inflaba al guardarlo sin pérdida (Ruta 23 de Teselia: 3,5 MB → 613 KB). Un `sed` con `ó` en la expresión falló ("unterminated address regex") y se editó con Node.
+
+### Ampliación F11–F15 (2026-11-17)
+- *"Lee PROMPT-ampliacion.md y empieza por la Fase 0"* → medición en la PokeAPI (≈ 630 000 filas de aprendizaje, ≈ 60 000 encuentros), specs F11–F15, contrato, pantallas, tareas y decisiones. Commits: back `20332b5`, front `cccca29`.
+- *"Aprobado"* (Fase 1) → B.29 y FE.33, filtro por dos tipos. Commits: back `584ad67`, front `6120a09`.
+- *"Apruebo"* (Fase 2) → B.30, Spring Security + JWT.
+
+| Problema | Cómo se detectó | Corrección |
+|---|---|---|
+| **Se mostró una línea de `application-local.properties` (la contraseña de PostgreSQL)**: un `grep` para buscar credenciales filtradas recorrió todo `src/` sin excluir ese archivo | La salida del propio `grep` | Se avisó al usuario y se le recomendó cambiar la contraseña. El archivo sigue fuera de git. Regla nueva en `CLAUDE.md`: toda búsqueda sobre `src/` excluye ese archivo |
+| El `awk` que quitó la clase auxiliar de roles de `SeguridadConfig` se llevó también la llave de cierre de la clase | Revisando el final del archivo antes de compilar | Se repuso la llave |
+| `next start` en el puerto 3100 falló (`EADDRINUSE`): lo ocupaba otro proceso, y Playwright cargó esa página | La notificación del proceso en segundo plano | Se usó el 3217; el proceso ajeno no se tocó |
+| No hay Python en el equipo, y un heredoc de Bash con comillas y acentos graves falló | Errores de la terminal | Se editó con Edit y con scripts de Node en archivo |

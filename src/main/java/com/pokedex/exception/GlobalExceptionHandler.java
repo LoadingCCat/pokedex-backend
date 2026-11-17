@@ -80,6 +80,14 @@ public class GlobalExceptionHandler {
                 "El método " + ex.getMethod() + " no está soportado en esta ruta", request);
     }
 
+    // 401: usuario o contraseña incorrectos en POST /api/auth/login (F15). Los 401 y 403 por
+    // falta de token o de rol los responde ErroresSeguridad, con este mismo formato
+    @ExceptionHandler(NoAutorizadoException.class)
+    public ResponseEntity<Map<String, Object>> manejarNoAutorizado(NoAutorizadoException ex,
+                                                                   HttpServletRequest request) {
+        return construir(HttpStatus.UNAUTHORIZED, "No autorizado", ex.getMessage(), request);
+    }
+
     // 409: la operación choca con el estado actual (ej. ya hay una importación en curso)
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<Map<String, Object>> manejarConflicto(ConflictException ex, HttpServletRequest request) {

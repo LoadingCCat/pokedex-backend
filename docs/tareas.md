@@ -87,7 +87,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.33 F14 · Selector "Tipo 2" en P1, chips, mock y pruebas (7 nuevas; 3 consultas más en la prueba de contrato)
 
 **Fase 2 · F15 Autenticación y panel**
-- [ ] B.30 F15 · Spring Security + JWT (oauth2-resource-server), tabla `usuario` (BCrypt), administrador inicial desde `ADMIN_USERNAME`/`ADMIN_PASSWORD`, `JWT_SECRETO`, CORS; 401/403 con el formato de error; las pruebas de escritura existentes usan un usuario ADMIN simulado
+- [x] B.30 F15 · Spring Security + JWT (oauth2-resource-server), tabla `usuario` (BCrypt), administrador inicial desde `ADMIN_USERNAME`/`ADMIN_PASSWORD`, `JWT_SECRETO`, CORS; 401/403 con el formato de error; las pruebas de escritura existentes usan un usuario ADMIN simulado. 14 pruebas nuevas (107)
 - [ ] B.31 F15 · `DELETE /rutas/{id}` (desvincula Pokémon y encuentros)
 - [ ] B.32 F15 · `POST`/`PUT`/`DELETE /pokemons`, `editadoAMano`, `pokemon_excluido` y la reimportación que los respeta; errores con `campos`; colección de Postman en `docs/postman/` (login con `{{token}}` y crear, editar y borrar)
 - [ ] FE.34 F15 · `/login`, route handler de sesión (cookie `httpOnly`), `proxy.ts` y aviso en modo mock

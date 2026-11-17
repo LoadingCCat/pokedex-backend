@@ -40,11 +40,12 @@ El proyecto sigue Spec-Driven Development (SDD): primero el documento, después 
 - Llenar o actualizar la BD (tarda minutos; se puede repetir, no duplica):
   `POST http://localhost:8080/api/pokemons/importar-rango?total=151&movimientos=0` (todos: `total=1025`, unos 20 min). Responde 202 al instante; el avance, en `GET http://localhost:8080/api/pokemons/importacion`
 - Probar endpoints con `curl.exe "http://localhost:8080/api/..."`.
-- Tests: `.\mvnw.cmd test` (unas 90 pruebas, F1–F10). No necesitan el PostgreSQL local ni la PokeAPI: los controllers y servicios usan simulaciones, y las consultas SQL corren contra un PostgreSQL embebido (zonky). Se lanzan desde la terminal de la app, no desde el Bash del agente. Detalle en `docs/pruebas.md`.
+- Tests: `.\mvnw.cmd test` (107 pruebas, F1–F15). Los `@WebMvcTest` llevan `@ConSeguridad` (reglas reales + secreto de prueba) y, los de escritura, `@WithMockUser(roles = "ADMIN")`. No necesitan el PostgreSQL local ni la PokeAPI: los controllers y servicios usan simulaciones, y las consultas SQL corren contra un PostgreSQL embebido (zonky). Se lanzan desde la terminal de la app, no desde el Bash del agente. Detalle en `docs/pruebas.md`.
 
 ## Configuración y credenciales
 
-- Las credenciales de PostgreSQL van en `src/main/resources/application-local.properties`, que está en `.gitignore`. **Nunca** subirlo ni copiar su contenido a otro archivo. Plantilla: `application-local.properties.example`.
+- Las credenciales de PostgreSQL van en `src/main/resources/application-local.properties`, que está en `.gitignore`. **Nunca** leerlo, mostrarlo, subirlo ni copiar su contenido a otro archivo (tampoco con un `grep` sobre `src/`: hay que excluirlo). Plantilla: `application-local.properties.example`.
+- F15: en ese mismo archivo (o como variables de entorno) van `JWT_SECRETO` (al menos 32 caracteres; **sin él el servidor no arranca**), `ADMIN_USERNAME` y `ADMIN_PASSWORD` (el administrador se crea al arrancar si no existe) y, opcional, `CORS_ORIGENES`.
 - `spring.jpa.hibernate.ddl-auto=update`: Hibernate agrega columnas y tablas nuevas, pero no borra ni renombra. Los campos nuevos deben aceptar `null` (los registros existentes quedan vacíos hasta reimportar). Renombrar o borrar columnas requiere hacerlo a mano en la BD.
 - `spring.jpa.open-in-view=true` es necesario: las relaciones lazy (`tipos`, `rutas`) se cargan al convertir a JSON.
 - `hibernate.default_batch_fetch_size=50` resuelve el N+1 de los listados. **No** usar `@EntityGraph` / `JOIN FETCH` sobre `tipos` y `rutas` a la vez: son `List` y causan `MultipleBagFetchException`, y con paginación Hibernate paginaría en memoria.
@@ -54,13 +55,16 @@ El proyecto sigue Spec-Driven Development (SDD): primero el documento, después 
 ```
 com.pokedex/
 ├── PokedexBackendApplication   # arranque + bean RestTemplate (timeouts 5 s conexión / 15 s lectura)
-├── config/CorsConfig           # CORS abierto ("*") en /api/** para desarrollo
-├── controller/                 # Pokemon, Movimiento, Ruta, Tipo — validan la entrada y lanzan excepciones propias
-├── entity/                     # Pokemon, Movimiento, Ruta, Tipo, Evolucion
+├── config/SeguridadConfig      # F15: Spring Security sin sesión, JWT HS256 (oauth2-resource-server), reglas
+│                               #   (GET públicos; escrituras e importación, ADMIN), BCrypt y CORS (CORS_ORIGENES)
+├── config/ErroresSeguridad     # 401/403 con el mismo JSON de error que GlobalExceptionHandler
+├── controller/                 # Pokemon, Movimiento, Ruta, Tipo, Auth (login) — validan la entrada y lanzan excepciones propias
+├── entity/                     # Pokemon, Movimiento, Ruta, Tipo, Evolucion, Usuario (BCrypt)
 ├── exception/                  # GlobalExceptionHandler + BadRequest / ResourceNotFound / Conflict
 ├── repository/                 # Spring Data JPA
 └── service/                    # PokemonService: toda la importación desde la PokeAPI
                                 # EvolucionService: arma el árbol de la cadena evolutiva desde la BD
+                                # ServicioToken (JWT del login) y AdministradorInicial (crea el ADMIN al arrancar)
 ```
 
 ## Modelo de datos (lo que no es obvio)
@@ -79,9 +83,11 @@ com.pokedex/
 - Listas de Pokémon, movimientos y rutas paginadas con `?page=&size=&sort=` (por defecto 20, máximo 200; sin `sort`, los Pokémon se ordenan por `idPokedex` y movimientos y rutas por `nombre`, con `@SortDefault`, no `@PageableDefault`, que cambia el tamaño a 10). Siguen como arreglo: `/pokemons/{id}/movimientos`, `/rutas/regiones`, `/tipos`. Formato fijo (`serialization-mode=via-dto`):
   `{ "content": [...], "page": { "size", "number", "totalElements", "totalPages" } }`
 - `GET /pokemons` acepta filtros opcionales combinados con Y (`nombre`, `generacion`, `tipo`, `region`, `obtencion`), armados en `repository/PokemonFiltros` (`Specification` con `EXISTS`, sin `JOIN`). Un filtro nuevo se agrega ahí, no como otra `@Query`.
-- Todos los errores salen de `GlobalExceptionHandler` con el mismo JSON: `{ timestamp, status, error, mensaje, path }`.
+- Seguridad (F15): todos los `GET` son públicos salvo la importación; `POST`, `PUT`, `DELETE` y la importación piden `Authorization: Bearer <token>` con rol ADMIN (token de `POST /api/auth/login`). Las reglas están en `SeguridadConfig`: un endpoint de escritura nuevo queda protegido sin hacer nada.
+- Todos los errores salen de `GlobalExceptionHandler` (y los 401/403 de los filtros, de `ErroresSeguridad`) con el mismo JSON: `{ timestamp, status, error, mensaje, path }`.
   - 400 `BadRequestException`, parámetros/JSON inválidos, `sort` por un campo inexistente
   - 404 `ResourceNotFoundException`, URL inexistente
+  - 401 sin token o con uno inválido, o `NoAutorizadoException` (login) · 403 sin el rol ADMIN
   - 405 método no permitido · 409 `ConflictException` (p. ej. importación ya en curso)
   - 500: mensaje genérico; el detalle solo va al log. No exponer `ex.getMessage()` en el 500.
 - Los controllers nunca dejan escapar excepciones sin tratar: validan y lanzan las excepciones propias.

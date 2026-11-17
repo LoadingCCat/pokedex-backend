@@ -2,7 +2,9 @@ package com.pokedex.controller;
 
 import com.pokedex.entity.Movimiento;
 import com.pokedex.repository.MovimientoRepository;
+import com.pokedex.ConSeguridad;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -31,6 +33,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /** Criterios de F4 y F6 en el controller de movimientos (sin PostgreSQL). */
 @WebMvcTest(MovimientoController.class)
+@ConSeguridad
+// Las pruebas de escritura de F1–F14 corren como ADMIN; las de 401/403 están en SeguridadControllerTest (F15)
+@WithMockUser(roles = "ADMIN")
 class MovimientoControllerTest {
 
     @Autowired

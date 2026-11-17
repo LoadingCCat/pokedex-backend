@@ -10,7 +10,10 @@ import com.pokedex.service.EvolucionService;
 import com.pokedex.service.EvolucionService.EtapaEvolucion;
 import com.pokedex.service.PokemonService;
 import com.pokedex.service.ProgresoImportacion;
+import com.pokedex.ConSeguridad;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -45,6 +48,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * códigos HTTP). Los repositorios y servicios están simulados: no se necesita PostgreSQL.
  */
 @WebMvcTest(PokemonController.class)
+@ConSeguridad
+// Las pruebas de escritura de F1–F14 corren como ADMIN; las de 401/403 están en SeguridadControllerTest (F15)
+@WithMockUser(roles = "ADMIN")
 class PokemonControllerTest {
 
     @Autowired
@@ -385,5 +391,28 @@ class PokemonControllerTest {
         ProgresoImportacion progreso = new ProgresoImportacion();
         progreso.iniciar(total);
         return progreso.instantanea();
+    }
+
+    // ---------- F15 · sin sesión ----------
+
+    @Test
+    @WithAnonymousUser
+    void sinSesionLosGetDePokemonSonPublicos() throws Exception {
+        when(pokemonRepository.findAll(any(Pageable.class))).thenReturn(paginaCon());
+        when(pokemonRepository.findById(25)).thenReturn(Optional.of(new Pokemon()));
+        when(pokemonService.progresoImportacion()).thenReturn(new ProgresoImportacion().instantanea());
+
+        mvc.perform(get("/api/pokemons")).andExpect(status().isOk());
+        mvc.perform(get("/api/pokemons/25")).andExpect(status().isOk());
+        mvc.perform(get("/api/pokemons/importacion")).andExpect(status().isOk());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void sinSesionLaImportacionResponde401AunqueSeaGet() throws Exception {
+        mvc.perform(get("/api/pokemons/importar-rango?total=1")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/pokemons/importar-todo")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/pokemons/importar-rango?total=1")).andExpect(status().isUnauthorized());
+        verify(pokemonService, never()).iniciarImportacion(anyInt(), anyInt());
     }
 }

@@ -28,8 +28,8 @@ Formato de una respuesta paginada (siempre igual):
 | GET | `/pokemons/{id}` | Detalle (404 si no existe) |
 | GET | `/pokemons/{id}/movimientos` | Movimientos que puede aprender, ordenados por nombre (404 si el Pokémon no existe) |
 | GET | `/pokemons/{id}/evoluciones` | Cadena evolutiva completa a la que pertenece el Pokémon (404 si no existe); ver abajo |
-| GET/POST | `/pokemons/importar-rango?total=N&movimientos=M` | Inicia la importación desde la PokeAPI en segundo plano: responde 202 al instante (409 si ya hay una en curso). Uso interno |
-| GET/POST | `/pokemons/importar-todo` | Igual, importación rápida (50 + 50). Uso interno |
+| GET/POST | `/pokemons/importar-rango?total=N&movimientos=M` | Inicia la importación desde la PokeAPI en segundo plano: responde 202 al instante (409 si ya hay una en curso). Uso interno; **ADMIN** |
+| GET/POST | `/pokemons/importar-todo` | Igual, importación rápida (50 + 50). Uso interno; **ADMIN** |
 | GET | `/pokemons/importacion` | Progreso de la importación en curso o de la última (ver "Formato de los demás recursos"). Uso interno |
 
 ### Filtros combinados en `GET /pokemons`
@@ -115,9 +115,9 @@ Las listas son paginadas, con el mismo formato `{ content, page }` y los mismos 
 | GET | `/movimientos/buscar?nombre=...` | Búsqueda paginada por nombre (parcial, sin importar mayúsculas ni tildes); busca en `nombre` y en `nombreEs` (`trueno` encuentra `thunder-punch`, `psiquico` encuentra "Psíquico" y `puno` encuentra "Puño Trueno"). Nombre vacío → 400 |
 | GET | `/movimientos/categoria/{Físico\|Especial\|Estado}` | Filtrar por categoría (paginado) |
 | GET | `/movimientos/competitivos` | Movimientos con potencia > 80 (paginado) |
-| POST | `/movimientos` | Crear (`nombre`, `categoria`, `potencia`; `nombreEs` y `tipo` opcionales; un `tipo` que no es uno de los 18 → 400) |
-| PUT | `/movimientos/{id}` | Actualizar (si no se envía `nombreEs` o `tipo`, se conserva el que tenía) |
-| DELETE | `/movimientos/{id}` | Eliminar |
+| POST | `/movimientos` | **ADMIN.** Crear (`nombre`, `categoria`, `potencia`; `nombreEs` y `tipo` opcionales; un `tipo` que no es uno de los 18 → 400) |
+| PUT | `/movimientos/{id}` | **ADMIN.** Actualizar (si no se envía `nombreEs` o `tipo`, se conserva el que tenía) |
+| DELETE | `/movimientos/{id}` | **ADMIN.** Eliminar |
 
 Ejemplo de movimiento:
 ```json
@@ -137,8 +137,8 @@ Ejemplo de movimiento:
 | GET | `/rutas/regiones` | Nombres de las regiones de origen (Kanto … Paldea); arreglo, sin paginar |
 | GET | `/rutas/region/{nombre}` | Rutas de una región (paginado) |
 | GET | `/rutas/{id}` | Detalle (404 si no existe) |
-| POST | `/rutas` | Crear (`nombre`, `region`, `descripcion`) |
-| PUT | `/rutas/{id}` | Actualizar |
+| POST | `/rutas` | **ADMIN.** Crear (`nombre`, `region`, `descripcion`) |
+| PUT | `/rutas/{id}` | **ADMIN.** Actualizar |
 
 El `nombre` de las rutas importadas está en español cuando se pudo verificar (de la PokeAPI o del artículo de WikiDex: "Bosque Verde", "Calle Victoria"); unos 90 lugares sin artículo verificado siguen en inglés. El campo no cambia de forma: solo su valor, tras reimportar.
 
@@ -182,6 +182,21 @@ La importación corre en segundo plano (F10). `estado` es `sin-iniciar` (nada de
 
 En `resultados`, `importados` son los registros creados, `omitidos` los que ya existían y `fallidos` los que no se pudieron traer de la PokeAPI. En `pokemons` y `cadenas-evolutivas`, `importados` también cuenta los que solo se actualizaron. Los números del ejemplo son ilustrativos.
 
+## Autenticación — `/auth` (F15)
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/auth/login` | `{ "usuario", "contrasena" }` → 200 `{ "token", "expiraEn", "usuario", "rol" }`. Credenciales incorrectas → 401 ("Usuario o contraseña incorrectos", sin decir cuál falló). Campo vacío o sin cuerpo → 400 |
+
+```json
+{ "token": "eyJhbGciOiJIUzI1NiJ9...", "expiraEn": "2026-11-17T18:30:00Z", "usuario": "admin", "rol": "ADMIN" }
+```
+- El token es un JWT HS256 que dura 2 horas. Se envía en la cabecera `Authorization: Bearer <token>`.
+- **Públicos (sin token):** todos los `GET`, salvo `importar-rango` e `importar-todo`, y `POST /auth/login`. El frontend de consulta no cambia.
+- **Solo ADMIN:** `POST`, `PUT` y `DELETE` (movimientos, rutas…) y la importación, también por GET. Sin token, o con uno inválido o vencido → **401**; con un token sin el rol ADMIN → **403**. Los dos con el formato de error de siempre.
+- Un `GET` público con un token inválido también responde 401: si se envía `Authorization`, tiene que ser válido.
+- **CORS:** el navegador solo puede llamar a la API desde los orígenes de `CORS_ORIGENES` (por defecto `http://localhost:3000` y `http://127.0.0.1:3000`). Antes era `*`. Las llamadas desde un servidor (como los route handlers de Next.js) no dependen de CORS.
+
 ## Errores
 
 Todos los errores devuelven el mismo formato:
@@ -198,6 +213,8 @@ Todos los errores devuelven el mismo formato:
 | Código | Cuándo |
 |---|---|
 | 400 | Parámetro inválido o faltante, JSON mal formado, datos inválidos en POST/PUT, `sort` por un campo que no existe |
+| 401 | Falta el token, es inválido o venció; o usuario o contraseña incorrectos en el login (F15) |
+| 403 | El token es válido, pero sin el rol ADMIN (F15) |
 | 404 | La URL no existe o el ID no existe |
 | 405 | Método HTTP no permitido en esa ruta |
 | 409 | Se pidió una importación mientras otra sigue en curso |
@@ -246,7 +263,6 @@ Lo de esta sección **todavía no existe en la API**. Cada parte pasa a su secci
 | GET | `/pokemons/{id}/habilidades` | Arreglo ordenado por `slot` (404 si el Pokémon no existe) | F11 |
 | GET | `/pokemons/{id}/ubicaciones?juego=` | Encuentros por juego, con método, probabilidad y niveles (404 / 400) | F13 |
 | GET | `/juegos` | Juegos con datos, en orden de lanzamiento; arreglo sin paginar | F13 |
-| POST | `/auth/login` | `{ usuario, contrasena }` → `{ token, expiraEn, usuario, rol }` (401 / 400) | F15 |
 | POST | `/pokemons` | Crear Pokémon (ADMIN; 201, 400, 409) | F15 |
 | PUT | `/pokemons/{id}` | Editar Pokémon (ADMIN; marca `editadoAMano`) | F15 |
 | DELETE | `/pokemons/{id}` | Borrar Pokémon (ADMIN; 204; la reimportación no lo vuelve a crear) | F15 |
@@ -268,7 +284,4 @@ Lo de esta sección **todavía no existe en la API**. Cada parte pasa a su secci
 - Pokémon: campo `editadoAMano` (`true` si se editó o se creó desde el panel; si no, `null` o `false`).
 - Errores de validación: campo opcional `campos` (`{ "ataque": "Debe estar entre 1 y 255" }`).
 
-### Autenticación (F15)
-- Todos los `GET` siguen siendo públicos, salvo `importar-rango` e `importar-todo`. `POST`, `PUT`, `DELETE` y la importación piden `Authorization: Bearer <token>` con el rol ADMIN.
-- Nuevos códigos: **401** (sin token, o con uno inválido o vencido) y **403** (token sin el rol ADMIN), con el formato de error de siempre.
-- **Aviso:** las importaciones por GET (uso interno) pasan a pedir token. El frontend publicado no se ve afectado: solo hace `GET` de consulta.
+Ya implementado: la autenticación (B.30), en la sección "Autenticación" de arriba.

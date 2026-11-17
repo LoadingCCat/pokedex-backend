@@ -4,11 +4,13 @@ import com.pokedex.entity.Movimiento;
 import com.pokedex.entity.Pokemon;
 import com.pokedex.entity.Ruta;
 import com.pokedex.entity.Tipo;
+import com.pokedex.entity.Usuario;
 import com.pokedex.repository.EvolucionRepository;
 import com.pokedex.repository.MovimientoRepository;
 import com.pokedex.repository.PokemonRepository;
 import com.pokedex.repository.RutaRepository;
 import com.pokedex.repository.TipoRepository;
+import com.pokedex.repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -24,6 +27,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -40,6 +44,10 @@ class ApiConPostgresTest {
     @DynamicPropertySource
     static void baseDeDatos(DynamicPropertyRegistry propiedades) {
         PostgresEmbebido.registrar(propiedades);
+        // F15: secreto y administrador inicial solo de prueba (pisan los de application-local)
+        propiedades.add("pokedex.seguridad.jwt-secreto", () -> ConSeguridad.SECRETO_DE_PRUEBA);
+        propiedades.add("pokedex.seguridad.admin-usuario", () -> "admin-prueba");
+        propiedades.add("pokedex.seguridad.admin-contrasena", () -> "clave-de-prueba");
     }
 
     @Autowired
@@ -279,6 +287,38 @@ class ApiConPostgresTest {
         String porParametro = mvc.perform(get("/api/pokemons?region=kanto")).andReturn().getResponse().getContentAsString();
         String porEndpoint = mvc.perform(get("/api/pokemons/region/kanto")).andReturn().getResponse().getContentAsString();
         org.assertj.core.api.Assertions.assertThat(porParametro).isEqualTo(porEndpoint);
+    }
+
+    // ---------- F15 · autenticación de punta a punta ----------
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Test
+    void elAdministradorInicialIniciaSesionYSoloConSuTokenSePuedeEscribir() throws Exception {
+        // Lo creó AdministradorInicial al arrancar, con la contraseña cifrada
+        Usuario admin = usuarioRepository.findByUsuario("admin-prueba").orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(admin.getContrasena()).isNotEqualTo("clave-de-prueba").startsWith("$2");
+
+        String ruta = """
+                {"nombre": "Ruta de prueba F15", "region": "Kanto", "descripcion": "x"}""";
+        mvc.perform(post("/api/rutas").contentType(MediaType.APPLICATION_JSON).content(ruta))
+                .andExpect(status().isUnauthorized());
+
+        String respuesta = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"usuario": "admin-prueba", "contrasena": "clave-de-prueba"}"""))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String token = respuesta.replaceAll(".*\"token\":\"([^\"]+)\".*", "$1");
+
+        mvc.perform(post("/api/rutas").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content(ruta))
+                .andExpect(status().isCreated());
+        // Los GET siguen sin pedir token
+        mvc.perform(get("/api/rutas/region/kanto"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page.totalElements").value(3));
     }
 
     // ---------- F5 · rutas ----------

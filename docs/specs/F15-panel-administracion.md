@@ -1,6 +1,6 @@
 # F15 · Panel de administración y autenticación
 
-**Estado:** Pendiente
+**Estado:** En progreso (B.30 hecha: autenticación)
 
 ## Historia
 Como administrador, quiero iniciar sesión y gestionar Pokémon, movimientos y rutas desde un panel, sin que nadie más pueda modificar los datos (RF-11, RF-12 y RNF-05 de la entrevista).
@@ -42,16 +42,16 @@ Como administrador, quiero iniciar sesión y gestionar Pokémon, movimientos y r
 - **Sin backend:** sin `API_URL` (sitio de Vercel con mock), `/login` y `/admin` muestran el aviso "La administración solo funciona con la API local" y no fallan; `proxy.ts` no redirige.
 
 ## Criterios de aceptación
-- [ ] `POST /api/auth/login` con credenciales correctas → 200 con `token`. Con una contraseña incorrecta → 401. Con un campo vacío → 400.
-- [ ] `POST /api/movimientos` sin token → 401. Con un token sin ADMIN → 403. Con ADMIN → 201.
-- [ ] `GET /api/pokemons`, `GET /api/pokemons/25` y `GET /api/movimientos` sin token → 200.
-- [ ] Un token vencido o firmado con otro secreto → 401.
-- [ ] `GET /api/pokemons/importar-rango?total=1` sin token → 401.
+- [x] `POST /api/auth/login` con credenciales correctas → 200 con `token`. Con una contraseña incorrecta → 401. Con un campo vacío → 400.
+- [x] `POST /api/movimientos` sin token → 401. Con un token sin ADMIN → 403. Con ADMIN → 201.
+- [x] `GET /api/pokemons`, `GET /api/pokemons/25` y `GET /api/movimientos` sin token → 200.
+- [x] Un token vencido o firmado con otro secreto → 401.
+- [x] `GET /api/pokemons/importar-rango?total=1` sin token → 401.
 - [ ] `PUT /api/pokemons/25` con `"ataque": 300` o `"ataque": "abc"` → 400, con `campos.ataque`. Uno válido → 200 y `editadoAMano: true`.
 - [ ] `POST /api/pokemons` con un `idPokedex` existente → 409.
 - [ ] Reimportar no pisa los cambios de un Pokémon editado ni resucita uno borrado (prueba con la PokeAPI simulada).
 - [ ] `DELETE /api/rutas/{id}` → 204, y ningún Pokémon la lista después.
-- [ ] El administrador inicial se crea desde `ADMIN_USERNAME`/`ADMIN_PASSWORD`, y un grep del repo no encuentra credenciales ni el secreto.
+- [x] El administrador inicial se crea desde `ADMIN_USERNAME`/`ADMIN_PASSWORD`, y un grep del repo no encuentra credenciales ni el secreto.
 - [ ] La colección de Postman funciona de punta a punta: login → crear → editar → borrar, sin escribir el token a mano.
 - [ ] Front: `/admin` sin sesión redirige a `/login`. Tras iniciar sesión, vuelve a `/admin`.
 - [ ] Front: escribir "abc" en una estadística no envía el formulario y marca el error junto al campo. Un 400 del servidor también aparece junto a su campo.

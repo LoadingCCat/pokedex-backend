@@ -5,3 +5,10 @@ spring.datasource.password=tu_contraseña_de_postgres
 
 # Pon en true si quieres ver las consultas SQL en la consola
 spring.jpa.show-sql=false
+
+# Panel de administración (F15). Secreto del token: al menos 32 caracteres al azar,
+# por ejemplo el resultado de:  [Convert]::ToBase64String((1..48 | % { Get-Random -Max 256 }))
+JWT_SECRETO=cambia_esto_por_un_secreto_largo_de_al_menos_32_caracteres
+# Usuario administrador que se crea al arrancar si no existe
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=cambia_esta_contraseña
