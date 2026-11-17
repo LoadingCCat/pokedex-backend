@@ -7,6 +7,7 @@ import com.pokedex.exception.ConflictException;
 import com.pokedex.repository.EvolucionRepository;
 import com.pokedex.repository.MovimientoRepository;
 import com.pokedex.repository.PokemonRepository;
+import com.pokedex.repository.RutaExcluidaRepository;
 import com.pokedex.repository.RutaRepository;
 import com.pokedex.repository.TipoRepository;
 import com.pokedex.service.PokemonService.ResultadoImportacion;
@@ -48,6 +49,7 @@ class PokemonServiceTest {
     private final MovimientoRepository movimientoRepository = mock(MovimientoRepository.class);
     private final RutaRepository rutaRepository = mock(RutaRepository.class);
     private final EvolucionRepository evolucionRepository = mock(EvolucionRepository.class);
+    private final RutaExcluidaRepository rutaExcluidaRepository = mock(RutaExcluidaRepository.class);
     private final RestTemplate restTemplate = mock(RestTemplate.class);
 
     /** URL → respuesta simulada de la PokeAPI. Una RuntimeException se lanza en vez de responder. */
@@ -73,7 +75,7 @@ class PokemonServiceTest {
 
     private PokemonService servicio(TaskExecutor ejecutor) {
         return new PokemonService(pokemonRepository, tipoRepository, movimientoRepository, rutaRepository,
-                evolucionRepository, restTemplate, ejecutor);
+                evolucionRepository, rutaExcluidaRepository, restTemplate, ejecutor);
     }
 
     // ---------- datos de ejemplo de la PokeAPI ----------
@@ -246,6 +248,19 @@ class PokemonServiceTest {
         servicio(new SyncTaskExecutor()).importarPokemonsMasivo(1);
 
         assertThat(guardado().getRutas()).extracting(Ruta::getNombre).containsExactly("Bosque de la PokeAPI");
+    }
+
+    // ---------- F15 · un lugar borrado a mano no se vuelve a crear ----------
+
+    @Test
+    void alReimportarNoSeVuelveACrearUnLugarBorradoAMano() {
+        lugarViridian(List.of(nombre("en", "Viridian Forest")));
+        when(rutaExcluidaRepository.existsById(155)).thenReturn(true);
+
+        servicio(new SyncTaskExecutor()).importarPokemonsMasivo(1);
+
+        verify(rutaRepository, never()).save(any(Ruta.class));
+        assertThat(guardado().getRutas()).isEmpty();
     }
 
     // ---------- B.18 · reimportar movimientos existentes ----------

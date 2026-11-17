@@ -1,8 +1,10 @@
 package com.pokedex.controller;
 
 import com.pokedex.entity.Ruta;
+import com.pokedex.entity.RutaExcluida;
 import com.pokedex.exception.BadRequestException;
 import com.pokedex.exception.ResourceNotFoundException;
+import com.pokedex.repository.RutaExcluidaRepository;
 import com.pokedex.repository.RutaRepository;
 import com.pokedex.service.PokemonService;
 import org.springframework.data.domain.Page;
@@ -10,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.SortDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,10 +22,13 @@ import java.util.List;
 public class RutaController {
 
     private final RutaRepository rutaRepository;
+    private final RutaExcluidaRepository rutaExcluidaRepository;
     private final PokemonService pokemonService;
 
-    public RutaController(RutaRepository rutaRepository, PokemonService pokemonService) {
+    public RutaController(RutaRepository rutaRepository, RutaExcluidaRepository rutaExcluidaRepository,
+                          PokemonService pokemonService) {
         this.rutaRepository = rutaRepository;
+        this.rutaExcluidaRepository = rutaExcluidaRepository;
         this.pokemonService = pokemonService;
     }
 
@@ -73,6 +79,21 @@ public class RutaController {
         existente.setRegion(datos.getRegion().trim());
         existente.setDescripcion(datos.getDescripcion());
         return rutaRepository.save(existente);
+    }
+
+    // DELETE /api/rutas/{id}  (F15, solo ADMIN) -> 204
+    // Primero la quita de los Pokémon; si es un lugar importado, lo anota en ruta_excluida para que
+    // la reimportación no lo vuelva a crear (no se pisan los cambios hechos a mano).
+    @DeleteMapping("/{id}")
+    @Transactional
+    public ResponseEntity<Void> eliminarRuta(@PathVariable Integer id) {
+        Ruta ruta = buscar(id);
+        rutaRepository.desvincularDePokemons(id);
+        if (ruta.getIdPokeapi() != null) {
+            rutaExcluidaRepository.save(new RutaExcluida(ruta.getIdPokeapi()));
+        }
+        rutaRepository.delete(ruta);
+        return ResponseEntity.noContent().build();
     }
 
     private Ruta buscar(Integer id) {

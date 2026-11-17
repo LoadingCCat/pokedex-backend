@@ -25,6 +25,12 @@ public interface RutaRepository extends JpaRepository<Ruta, Integer> {
     @Query("SELECT r FROM Pokemon p JOIN p.rutas r WHERE p.idPokedex = :idPokedex")
     List<Ruta> buscarPorPokemon(@Param("idPokedex") Integer idPokedex);
 
+    // Quita la ruta de todos los Pokémon que aparecen en ella (necesario antes de borrarla, F15)
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM pokemon_ruta WHERE id_ruta = :idRuta", nativeQuery = true)
+    int desvincularDePokemons(@Param("idRuta") Integer idRuta);
+
     // ---- Limpieza de las rutas de ejemplo que creaba la versión anterior del importador ----
     // Primero se quitan los vínculos con Pokémon y luego las rutas.
     // Las rutas creadas a mano con POST no se tocan (no tienen esa descripción).

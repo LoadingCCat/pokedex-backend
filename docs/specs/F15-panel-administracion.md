@@ -1,6 +1,6 @@
 # F15 · Panel de administración y autenticación
 
-**Estado:** En progreso (B.30 hecha: autenticación)
+**Estado:** En progreso (B.30 autenticación y B.31 borrar rutas, hechas)
 
 ## Historia
 Como administrador, quiero iniciar sesión y gestionar Pokémon, movimientos y rutas desde un panel, sin que nadie más pueda modificar los datos (RF-11, RF-12 y RNF-05 de la entrevista).
@@ -25,7 +25,7 @@ Como administrador, quiero iniciar sesión y gestionar Pokémon, movimientos y r
 4. **CORS:** se permite `http://localhost:3000` con la cabecera `Authorization`. La lista de orígenes se puede configurar.
 5. **Gestión (RF-11):**
    - Movimientos: el CRUD de F4, ahora protegido.
-   - Rutas: el CRUD de F5 y, además, `DELETE /api/rutas/{id}` → 204. Borra antes sus filas de `pokemon_ruta` y de `encuentro` (F13).
+   - Rutas: el CRUD de F5 y, además, `DELETE /api/rutas/{id}` → 204. Borra antes sus filas de `pokemon_ruta` (y de `encuentro`, cuando exista con F13). Si era un lugar importado, guarda su `idPokeapi` en `ruta_excluida`, y la reimportación lo salta.
    - Pokémon:
      - `PUT /api/pokemons/{id}` edita `nombreEs`, las 6 estadísticas (enteros de 1 a 255), `altura` y `peso` (≥ 0), `tipoObtencion` (uno de los 9 valores), `formaObtencion`, `tipos` (1 o 2 de los 18) y `rutas` (ids que existan). Marca `editadoAMano = true`.
      - `POST /api/pokemons` crea uno con un `idPokedex` libre mayor que 0 (si ya existe → 409) y `nombre` (slug) obligatorio, con las mismas validaciones. Responde 201 y queda `editadoAMano`.
@@ -50,7 +50,7 @@ Como administrador, quiero iniciar sesión y gestionar Pokémon, movimientos y r
 - [ ] `PUT /api/pokemons/25` con `"ataque": 300` o `"ataque": "abc"` → 400, con `campos.ataque`. Uno válido → 200 y `editadoAMano: true`.
 - [ ] `POST /api/pokemons` con un `idPokedex` existente → 409.
 - [ ] Reimportar no pisa los cambios de un Pokémon editado ni resucita uno borrado (prueba con la PokeAPI simulada).
-- [ ] `DELETE /api/rutas/{id}` → 204, y ningún Pokémon la lista después.
+- [x] `DELETE /api/rutas/{id}` → 204, y ningún Pokémon la lista después; un lugar importado borrado no vuelve al reimportar.
 - [x] El administrador inicial se crea desde `ADMIN_USERNAME`/`ADMIN_PASSWORD`, y un grep del repo no encuentra credenciales ni el secreto.
 - [ ] La colección de Postman funciona de punta a punta: login → crear → editar → borrar, sin escribir el token a mano.
 - [ ] Front: `/admin` sin sesión redirige a `/login`. Tras iniciar sesión, vuelve a `/admin`.

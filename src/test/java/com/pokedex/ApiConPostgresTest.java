@@ -8,6 +8,7 @@ import com.pokedex.entity.Usuario;
 import com.pokedex.repository.EvolucionRepository;
 import com.pokedex.repository.MovimientoRepository;
 import com.pokedex.repository.PokemonRepository;
+import com.pokedex.repository.RutaExcluidaRepository;
 import com.pokedex.repository.RutaRepository;
 import com.pokedex.repository.TipoRepository;
 import com.pokedex.repository.UsuarioRepository;
@@ -26,6 +27,7 @@ import java.util.List;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -74,6 +76,7 @@ class ApiConPostgresTest {
         rutaRepository.deleteAll();
         tipoRepository.deleteAll();
         evolucionRepository.deleteAll();
+        rutaExcluidaRepository.deleteAll();
 
         Tipo electric = tipoRepository.save(new Tipo("electric"));
         Tipo fire = tipoRepository.save(new Tipo("fire"));
@@ -293,6 +296,29 @@ class ApiConPostgresTest {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+    @Autowired
+    private RutaExcluidaRepository rutaExcluidaRepository;
+
+    private String tokenAdmin() throws Exception {
+        String respuesta = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"usuario\": \"admin-prueba\", \"contrasena\": \"clave-de-prueba\"}"))
+                .andReturn().getResponse().getContentAsString();
+        return respuesta.replaceAll(".*\"token\":\"([^\"]+)\".*", "$1");
+    }
+
+    @Test
+    void borrarUnaRutaLaQuitaDeSusPokemonYLaExcluyeDeLaReimportacion() throws Exception {
+        Integer idBosque = rutaRepository.findByIdPokeapi(1).orElseThrow().getIdRuta();
+
+        mvc.perform(delete("/api/rutas/" + idBosque).header("Authorization", "Bearer " + tokenAdmin()))
+                .andExpect(status().isNoContent());
+
+        mvc.perform(get("/api/rutas/" + idBosque)).andExpect(status().isNotFound());
+        // Pikachu estaba en el Bosque y en la Ruta 29: le queda una
+        mvc.perform(get("/api/pokemons/25"))
+                .andExpect(jsonPath("$.rutas[*].nombre", contains("Ruta 29")));
+        org.assertj.core.api.Assertions.assertThat(rutaExcluidaRepository.existsById(1)).isTrue();
+    }
 
     @Test
     void elAdministradorInicialIniciaSesionYSoloConSuTokenSePuedeEscribir() throws Exception {

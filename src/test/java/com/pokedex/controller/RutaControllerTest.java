@@ -1,10 +1,13 @@
 package com.pokedex.controller;
 
 import com.pokedex.entity.Ruta;
+import com.pokedex.entity.RutaExcluida;
+import com.pokedex.repository.RutaExcluidaRepository;
 import com.pokedex.repository.RutaRepository;
 import com.pokedex.service.PokemonService;
 import com.pokedex.ConSeguridad;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +28,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -45,6 +49,8 @@ class RutaControllerTest {
     private RutaRepository rutaRepository;
     @MockitoBean
     private PokemonService pokemonService;
+    @MockitoBean
+    private RutaExcluidaRepository rutaExcluidaRepository;
 
     @Test
     void listadoPaginadoOrdenadoPorNombre() throws Exception {
@@ -115,5 +121,57 @@ class RutaControllerTest {
         mvc.perform(put("/api/rutas/999").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nombre\":\"Ruta X\",\"region\":\"Kanto\"}"))
                 .andExpect(status().isNotFound());
+    }
+
+    // ---------- F15 · borrar rutas ----------
+
+    private static Ruta rutaGuardada(int id, Integer idPokeapi) {
+        Ruta ruta = new Ruta();
+        ruta.setIdRuta(id);
+        ruta.setNombre("Bosque Verde");
+        ruta.setRegion("Kanto");
+        ruta.setIdPokeapi(idPokeapi);
+        return ruta;
+    }
+
+    @Test
+    void borrarUnLugarImportadoLoDesvinculaYLoExcluyeDeLaReimportacion() throws Exception {
+        Ruta bosque = rutaGuardada(3, 321);
+        when(rutaRepository.findById(3)).thenReturn(Optional.of(bosque));
+
+        mvc.perform(delete("/api/rutas/3")).andExpect(status().isNoContent());
+
+        verify(rutaRepository).desvincularDePokemons(3);
+        ArgumentCaptor<RutaExcluida> excluida = ArgumentCaptor.forClass(RutaExcluida.class);
+        verify(rutaExcluidaRepository).save(excluida.capture());
+        assertThat(excluida.getValue().getIdPokeapi()).isEqualTo(321);
+        verify(rutaRepository).delete(bosque);
+    }
+
+    @Test
+    void borrarUnaRutaCreadaAManoNoAnotaNadaParaLaReimportacion() throws Exception {
+        Ruta propia = rutaGuardada(700, null);
+        when(rutaRepository.findById(700)).thenReturn(Optional.of(propia));
+
+        mvc.perform(delete("/api/rutas/700")).andExpect(status().isNoContent());
+
+        verify(rutaRepository).desvincularDePokemons(700);
+        verify(rutaExcluidaRepository, never()).save(any());
+        verify(rutaRepository).delete(propia);
+    }
+
+    @Test
+    void borrarUnaRutaInexistenteResponde404() throws Exception {
+        when(rutaRepository.findById(999)).thenReturn(Optional.empty());
+
+        mvc.perform(delete("/api/rutas/999")).andExpect(status().isNotFound());
+        verify(rutaRepository, never()).desvincularDePokemons(any());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void borrarSinSesionResponde401() throws Exception {
+        mvc.perform(delete("/api/rutas/3")).andExpect(status().isUnauthorized());
+        verify(rutaRepository, never()).delete(any(Ruta.class));
     }
 }

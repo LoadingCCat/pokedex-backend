@@ -139,6 +139,7 @@ Ejemplo de movimiento:
 | GET | `/rutas/{id}` | Detalle (404 si no existe) |
 | POST | `/rutas` | **ADMIN.** Crear (`nombre`, `region`, `descripcion`) |
 | PUT | `/rutas/{id}` | **ADMIN.** Actualizar |
+| DELETE | `/rutas/{id}` | **ADMIN.** Eliminar (204; 404 si no existe). La quita de los Pokémon que aparecían en ella. Si era un lugar importado (`idPokeapi`), la reimportación no lo vuelve a crear |
 
 El `nombre` de las rutas importadas está en español cuando se pudo verificar (de la PokeAPI o del artículo de WikiDex: "Bosque Verde", "Calle Victoria"); unos 90 lugares sin artículo verificado siguen en inglés. El campo no cambia de forma: solo su valor, tras reimportar.
 
@@ -266,7 +267,6 @@ Lo de esta sección **todavía no existe en la API**. Cada parte pasa a su secci
 | POST | `/pokemons` | Crear Pokémon (ADMIN; 201, 400, 409) | F15 |
 | PUT | `/pokemons/{id}` | Editar Pokémon (ADMIN; marca `editadoAMano`) | F15 |
 | DELETE | `/pokemons/{id}` | Borrar Pokémon (ADMIN; 204; la reimportación no lo vuelve a crear) | F15 |
-| DELETE | `/rutas/{id}` | Borrar ruta (ADMIN; 204; la desvincula de los Pokémon y borra sus encuentros) | F15 |
 
 ### Cambios que solo agregan
 - `GET /pokemons/{id}/movimientos` acepta `?juego=` y `?metodo=` (`nivel`, `maquina`, `tutor`, `huevo`, `otros`). **Sin parámetros devuelve los mismos elementos de hoy** (Pikachu: 109). Cada elemento suma `precision`, `metodo`, `nivel`, `metodos`, `etiqueta` y `juego` (F12):

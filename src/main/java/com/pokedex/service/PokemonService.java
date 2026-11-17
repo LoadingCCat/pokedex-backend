@@ -9,6 +9,7 @@ import com.pokedex.exception.ConflictException;
 import com.pokedex.repository.EvolucionRepository;
 import com.pokedex.repository.MovimientoRepository;
 import com.pokedex.repository.PokemonRepository;
+import com.pokedex.repository.RutaExcluidaRepository;
 import com.pokedex.repository.RutaRepository;
 import com.pokedex.repository.TipoRepository;
 import org.slf4j.Logger;
@@ -133,6 +134,7 @@ public class PokemonService {
         // Rutas
         final Map<String, Ruta> porArea = new HashMap<>();      // nombre del área -> Ruta
         final Map<String, Ruta> porLugar = new HashMap<>();     // URL del lugar   -> Ruta
+        final Set<String> areasExcluidas = new HashSet<>();     // URL del área de un lugar borrado a mano (F15)
         int creadas = 0;
         int existentes = 0;
         int fallidas = 0;
@@ -154,6 +156,7 @@ public class PokemonService {
     private final MovimientoRepository movimientoRepository;
     private final RutaRepository rutaRepository;
     private final EvolucionRepository evolucionRepository;
+    private final RutaExcluidaRepository rutaExcluidaRepository;
     private final RestTemplate restTemplate;
     private final TaskExecutor ejecutorImportacion;
 
@@ -162,7 +165,8 @@ public class PokemonService {
 
     public PokemonService(PokemonRepository pokemonRepository, TipoRepository tipoRepository,
                           MovimientoRepository movimientoRepository, RutaRepository rutaRepository,
-                          EvolucionRepository evolucionRepository, RestTemplate restTemplate,
+                          EvolucionRepository evolucionRepository, RutaExcluidaRepository rutaExcluidaRepository,
+                          RestTemplate restTemplate,
                           @Qualifier("applicationTaskExecutor") TaskExecutor ejecutorImportacion) {
         this.ejecutorImportacion = ejecutorImportacion;
         this.pokemonRepository = pokemonRepository;
@@ -170,6 +174,7 @@ public class PokemonService {
         this.movimientoRepository = movimientoRepository;
         this.rutaRepository = rutaRepository;
         this.evolucionRepository = evolucionRepository;
+        this.rutaExcluidaRepository = rutaExcluidaRepository;
         this.restTemplate = restTemplate;
     }
 
@@ -486,7 +491,7 @@ public class PokemonService {
             Map<String, Object> area = mapa(encuentro.get("location_area"));
             String nombreArea = (String) area.get("name");
             String urlArea = (String) area.get("url");
-            if (nombreArea == null || urlArea == null) {
+            if (nombreArea == null || urlArea == null || cache.areasExcluidas.contains(urlArea)) {
                 continue;
             }
             Ruta ruta = cache.porArea.get(nombreArea);
@@ -623,6 +628,13 @@ public class PokemonService {
 
             Map<String, Object> lugar = getJson(urlLugar);
             Integer idLugar = ((Number) lugar.get("id")).intValue();
+
+            // F15: un lugar borrado a mano con DELETE /rutas/{id} no se vuelve a crear
+            if (rutaExcluidaRepository.existsById(idLugar)) {
+                cache.areasExcluidas.add(urlArea);
+                cache.existentes++;
+                return null;
+            }
 
             Ruta ruta = rutaRepository.findByIdPokeapi(idLugar).orElse(null);
             if (ruta != null) {
