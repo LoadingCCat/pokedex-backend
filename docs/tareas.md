@@ -31,7 +31,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] B.19 Pruebas automáticas de F1–F10 (80): controllers con `@WebMvcTest`, servicios con simulaciones y consultas SQL contra PostgreSQL embebido; sin PostgreSQL local ni PokeAPI (`docs/pruebas.md`)
 
 ## Back · pendiente
-- [ ] B.28 F6 · Nombres de lugares en español desde los títulos verificados de WikiDex (sin pisar los renombrados con PUT) y reimportar
+- [x] B.28 F6 · Nombres de lugares en español desde los títulos verificados de WikiDex (sin pisar los renombrados con PUT). Reimportadas las 9 generaciones: 0 fallidos, 240 lugares pasan a español
 - [ ] B.26 Pulir textos de `condicion` en las evoluciones (requiere reimportar): falta `min_steps` (Pawmot sale "Subiendo de nivel" en vez de caminar 1000 pasos), "Usando un movimiento, tras usar Puño Furia 20 veces" es redundante (Annihilape), Basculegion repite la condición por género, y las formas no regionales salen con el slug en inglés (Wormadam, Urshifu)
 
 - [x] B.27 F4 · Campo `tipo` en `Movimiento` (importación, POST/PUT, contrato y pruebas). Reimportadas las 9 generaciones: 1025 importados, 0 fallidos; los 797 movimientos tienen `tipo`

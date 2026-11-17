@@ -23,9 +23,9 @@ Como fan hispanohablante, quiero ver los nombres de los Pokémon y de los movimi
 - [ ] Un movimiento que ya existía antes del cambio tiene `nombreEs` después de reimportar, y su `categoria` y `potencia` no cambian.
 - [ ] `PUT /api/movimientos/{id}` sin `nombreEs` conserva el `nombreEs` anterior.
 - [ ] `POST /api/movimientos` con `"nombreEs": "   "` (solo espacios) lo guarda como `null`.
-- [ ] Tras reimportar, la ruta con `idPokeapi = 155` (Viridian Forest) se llama "Bosque Verde", la de Victory Road de Kanto "Calle Victoria" y la Ruta 10 de Kanto "Ruta 10".
-- [ ] Una ruta renombrada con `PUT` conserva su nombre al reimportar.
-- [ ] Ningún nombre de ruta acaba en "(Kanto)" ni lleva "/".
+- [x] Tras reimportar, la ruta con `idPokeapi = 155` (Viridian Forest) se llama "Bosque Verde", la de Victory Road de Kanto "Calle Victoria" y la Ruta 10 de Kanto "Ruta 10".
+- [x] Una ruta renombrada con `PUT` conserva su nombre al reimportar (prueba automática `alReimportarNoSeTocaUnaRutaRenombradaConPut`).
+- [x] Ningún nombre de ruta acaba en "(Kanto)" ni lleva "/".
 
 ## Fuera de alcance
 Traducir los tipos (el frontend ya muestra sus etiquetas en español) y la descripción de las rutas. La búsqueda sin importar tildes está en F9.
