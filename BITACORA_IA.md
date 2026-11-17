@@ -266,3 +266,46 @@ Continuación de la sesión del frontend. Ampliación por fases pedida por el us
 - Vitest: 45 pruebas sin backend (las 26 de contrato se saltan sin `API_URL`). Build sin backend con 1035 páginas.
 - Tamaño del build sin backend, FE.13 → FE.22: estáticos 1071 → 1115 KB, JS del cliente 643 → 683 KB, servidor 382 → 389 MB, `public/` 0 → 3,8 MB (detalle en `decisiones.md`). El archivo de enlaces a WikiDex no llega al navegador.
 - Todos los criterios de la ampliación y de P6 en `pantallas.md`, revisados a 390 y 1280 px; el nombre accesible de cada enlace externo, comprobado en el navegador.
+
+---
+
+## 2026-11-17 · Claude Code (frontend y backend: FE.23–FE.25 y B.27)
+
+Continuación de la sesión anterior, con el mismo método por fases (docs → plan → aprobación → un commit por cambio, con lint, build, pruebas y revisión a 390 y 1280 px).
+
+### Prompts clave
+- *"A esto me refiero con capturas del juego en la página"* (con una galería de WikiDex: "Capturar a Mew" en la Isla Suprema) y *"En la ficha"* → Fase 5: sección "Cómo se consigue en el juego" en la ficha de legendarios y singulares.
+- *"Los movimientos en el juego son en un disco, podrías agregarlo al apartado de movimientos"* y *"Por tipo (con backend)"* → Fase 6: campo `tipo` en `Movimiento` (cambia el contrato) y un disco de MT del color del tipo en las tablas.
+- *"Sí, FE.24"* → el resto de legendarios y singulares.
+
+### Lo que hizo el agente
+| Cambio | Commit |
+|---|---|
+| FE.23 · Capturas del juego de Articuno, Zapdos, Moltres, Mewtwo y Mew (`scripts/imagenes.mjs` con apartado `pokemon`); pixel art de GB/GBA/DS a 2× pixelado, sin pérdida | front `a991708` |
+| FE.23 · Sección en la ficha (dos por fila) y grupo "Capturas de Pokémon" en `/creditos` | front `c2c5653`, `ef39c28` |
+| B.27 · `Movimiento.tipo` (importación, POST/PUT con validación de los 18 tipos, reimportación que solo llena los `null`), 5 pruebas nuevas, contrato y spec F4 | back `cfdecff`, `1cad1c3` |
+| B.27 · Reimportación de las 9 generaciones: 1025 importados, 0 fallidos; 797 movimientos con `tipo` | back `1b8f1a9` |
+| FE.25 · Mock regenerado con `tipo`; disco de MT (SVG propio) y columna Tipo en las tablas | front `f96fddc`, `0b62f66` |
+| FE.24 · 87 capturas de 52 de los 94 legendarios y singulares; las de 3DS a su tamaño | front `6d6b85d` |
+
+### Errores del agente y cómo se corrigieron
+| Problema | Cómo se detectó | Corrección |
+|---|---|---|
+| El filtro de spin-offs (`/GO/i`) descartaba "Heart**Go**ld", y al arreglarlo con `sed` se perdieron las `\b` del regex | Faltaban capturas de HGSS evidentes ("Batalla contra Articuno HGSS") y luego salían spin-offs | Script nuevo con una lista de juegos de la serie principal en lugar de una de exclusión |
+| Los reemplazos de varias líneas en Java no se aplicaron (los archivos tienen CRLF) y uno dejó el controller con finales mezclados | Al buscar los cambios con `grep` y con `file` | `git checkout` de los tres archivos y un script que normaliza a LF, reemplaza y vuelve a CRLF; la herramienta Edit dejó el controller en LF y se le devolvió el CRLF |
+| La tabla de movimientos desbordaba a 390 px (45 px en la ficha) al añadir el disco y la columna Tipo | Medición de `scrollWidth` con Chrome sin interfaz | En móvil, Tipo y Competitivo van en texto bajo el nombre y el disco baja a 16 px |
+| Las capturas de 3DS (400 px) se ampliaban a 512, en contra de la spec | Revisando los tamaños medidos de Latias | `Math.min(ancho, 512)` para las que no son pixel art |
+| Pies de foto con nombres sin comprobar: "Parque Ramanas" (en español es Parque Hansa) y "templo de la Corona Nívea" | Consulta a la API de WikiDex antes de generar los datos | Corregidos; los pies se basan en el artículo donde WikiDex usa cada imagen |
+| El servidor de desarrollo seguía mostrando el mock anterior ("Sin tipo") tras regenerarlo | Revisión en el navegador | Reinicio del servidor de desarrollo (el mock se cachea en memoria) |
+
+### Otros hallazgos
+- La sección de captura del ejemplo del usuario está en el artículo del lugar, no del Pokémon; en una muestra de 8 lugares de legendarios solo 1 la tenía. Las categorías de WikiDex (una por Pokémon + "Capturas de <juego>") cubren mucho más, pero mezclan spin-offs, demostraciones de movimientos y escaneos: se eligió a mano.
+- 42 de los 94 legendarios y singulares no tienen en WikiDex capturas de cómo se consiguen; su ficha no muestra la sección.
+- Con la reimportación cambió el peso de Dipplin (#1011) de 9,7 a 4,4 kg: lo corrigió la PokeAPI.
+- Un Minecraft abierto (7,4 GB) dejaba la CPU al 100 %: pruebas y builds muy lentos. No se tocó.
+- El panel del navegador de la app, oculto, deja las páginas a medio revelar (el contenido de `Suspense` queda en un `div` oculto): la verificación se hizo con Chrome sin interfaz por CDP.
+
+### Verificación
+- Backend: 83 pruebas; criterios de B.27 con `curl.exe` (`"FIRE"` → `fire`, `"luz"` → 400, PUT sin `tipo` lo conserva).
+- Frontend: 46 pruebas sin backend y 72 con `API_URL` (las 26 de contrato contra la API real); build sin backend con 1035 páginas; `public/` en 6,7 MB.
+- Criterios de las Fases 5 y 6 en `pantallas.md`, revisados a 390 y 1280 px.
