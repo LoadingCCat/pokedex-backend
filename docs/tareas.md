@@ -92,7 +92,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] B.32 F15 · `POST`/`PUT`/`DELETE /pokemons`, `editadoAMano`, `pokemon_excluido` y la reimportación que los respeta; errores con `campos`; colección de Postman en `docs/postman/` (login con `{{token}}` y crear, editar y borrar; 15 peticiones). 16 pruebas nuevas (129)
 - [x] FE.34 F15 · `/login`, route handler de sesión (cookie `httpOnly`), `proxy.ts` y aviso en modo mock. 3 pruebas nuevas; el login de punta a punta queda por comprobar con el backend reiniciado
 - [x] FE.35 F15 · `/admin` Pokémon (listado, búsqueda, crear, editar y eliminar con confirmación; validación y 400 por campo). 5 pruebas nuevas de la validación; la prueba de punta a punta con el backend queda al final de FE.37
-- [ ] FE.36 F15 · `/admin` Movimientos
+- [x] FE.36 F15 · `/admin` Movimientos (listado con búsqueda, crear, editar y eliminar; sin precisión hasta B.35). 2 pruebas nuevas
 - [ ] FE.37 F15 · `/admin` Rutas
 
 **Fase 3 · F11–F13 en el backend**
