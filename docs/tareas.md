@@ -93,9 +93,9 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.34 F15 · `/login`, route handler de sesión (cookie `httpOnly`), `proxy.ts` y aviso en modo mock. 3 pruebas nuevas; el login de punta a punta queda por comprobar con el backend reiniciado
 - [x] FE.35 F15 · `/admin` Pokémon (listado, búsqueda, crear, editar y eliminar con confirmación; validación y 400 por campo). 5 pruebas nuevas de la validación; la prueba de punta a punta con el backend queda al final de FE.37
 - [x] FE.36 F15 · `/admin` Movimientos (listado con búsqueda, crear, editar y eliminar; sin precisión hasta B.35). 2 pruebas nuevas
-- [ ] FE.37 F15 · `/admin` Rutas
+- [x] FE.37 F15 · `/admin` Rutas (listado por región, porque la API no busca rutas por nombre; crear, editar y eliminar). 1 prueba nueva. Frontend: 69 pruebas (+29 de contrato con `API_URL`)
 
-**Fase 3 · F11–F13 en el backend**
+**Fase 3 · F11–F13 en el backend** — siguiente fase (después de la sustentación)
 - [ ] B.33 F11 · `Habilidad`, `PokemonHabilidad`, importación y `GET /pokemons/{id}/habilidades`
 - [ ] B.34 F13 · `Juego` (versiones y grupos) y `GET /juegos`
 - [ ] B.35 F12 · `Aprendizaje` (`SEQUENCE`, `hibernate.jdbc.batch_size`, `order_inserts`, `order_updates`), `Movimiento.precision`, `/movimientos?juego=&metodo=` y la etiqueta
@@ -103,13 +103,20 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [ ] B.37 Respaldo con `pg_dump` y una sola reimportación de las 9 generaciones: 1025 importados, 0 fallidos, cuántas habilidades, encuentros y filas de aprendizaje, y **cuánto tardó**
 - [ ] B.38 Quitar `pokemon_movimiento` (código y tabla, a mano, tras el respaldo)
 
-**Fase 4 · F11–F13 en el frontend**
+**Fase 4 · F11–F13 en el frontend** — siguiente fase (después de la sustentación): depende de la Fase 3
 - [ ] FE.38 Mock regenerado y partido por Pokémon (`datos/mock/pokemon/{id}.json`, carga bajo demanda) y `lib/api`
 - [ ] FE.39 F11 · Habilidades en la ficha
 - [ ] FE.40 F13 · Selector de juego en la URL (P1 y P2)
 - [ ] FE.41 F12 · Tabla de movimientos con método, nivel, precisión, etiqueta y filtros
 - [ ] FE.42 F13 · Ubicaciones por juego con probabilidad, método y niveles
 - [ ] FE.43 Pruebas de contrato (mock contra la API real) ampliadas
+
+**Antes de la sustentación · F19 Debilidades y naturalezas (datos fijos, sin reimportar)**
+- [ ] FE.46 F19 · Spec F19 en `docs/specs/` y la ficha y P11 `/naturalezas` en `pantallas.md`
+- [ ] FE.47 F19 · Debilidades y resistencias en la ficha, calculadas con la tabla fija de efectividad de tipos
+- [ ] FE.48 F19 · Página `/naturalezas` con las 25 naturalezas desde un archivo de datos fijo
+
+**Ampliación 2 · F16–F18 (`PROMPT-ampliacion-2.md`: formas alternativas, objetos y captura)** — siguiente fase (después de la sustentación)
 
 **Fase 5 · Mediciones (RNF-01, RNF-03)**
 - [ ] FE.44 Lighthouse (móvil y escritorio) del catálogo, una búsqueda y una ficha: tiempo hasta interactiva y si queda por debajo de 2 s
