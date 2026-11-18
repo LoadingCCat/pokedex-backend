@@ -119,8 +119,8 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 **Ampliación 2 · F16–F18 (`PROMPT-ampliacion-2.md`: formas alternativas, objetos y captura)** — siguiente fase (después de la sustentación)
 
 **Fase 5 · Mediciones (RNF-01, RNF-03)**
-- [ ] FE.44 Lighthouse (móvil y escritorio) del catálogo, una búsqueda y una ficha: tiempo hasta interactiva y si queda por debajo de 2 s
-- [ ] FE.45 Playwright a 360, 768 y 1080 px (catálogo, ficha, regiones, `/login`, `/admin`): sin scroll horizontal; correcciones; `pokedex-frontend/docs/mediciones.md`
+- [x] FE.44 Lighthouse (móvil y escritorio) del catálogo, una búsqueda y una ficha: tiempo hasta interactiva y si queda por debajo de 2 s → `pokedex-frontend/docs/mediciones.md`: escritorio, catálogo 1,3 s y búsqueda 0,9 s (cumplen), ficha 2,1 s; móvil simulado 3,6–5,1 s (no cumple). Accesibilidad 100
+- [x] FE.45 Playwright a 360, 768 y 1080 px (catálogo, ficha, regiones, `/login`, `/admin`): sin scroll horizontal; correcciones; `pokedex-frontend/docs/mediciones.md` → 55 de 55 sin scroll (también 375 y 1280); se corrigió la navegación, que se salía a 360 px con «Naturalezas». Falta `/admin` con datos (necesita el backend)
 
 **Fase 6 · Cierre**
 - [ ] B.39 `producto.md`, `arquitectura.md`, `pruebas.md` (totales), README y CLAUDE.md de los dos repos y `BITACORA_IA.md`; total de pruebas de las dos suites

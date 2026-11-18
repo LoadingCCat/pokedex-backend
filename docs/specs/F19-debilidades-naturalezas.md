@@ -17,7 +17,7 @@ Como jugador, quiero ver en la ficha a qué tipos es débil o resistente un Pok�
 - [x] `/pokemon/94` (Gengar, Fantasma/Veneno): ×0 Normal y Lucha; ×2 Tierra, Psíquico, Fantasma y Siniestro; ×½ Planta y Hada; ×¼ Bicho y Veneno.
 - [x] Prueba automática: la tabla tiene 18 × 18 entradas y los tres casos anteriores dan esos grupos.
 - [x] `/naturalezas` lista 25 naturalezas; «Firme» sube Ataque y baja Ataque especial; «Miedosa» sube Velocidad y baja Ataque; hay 5 neutras.
-- [ ] Las dos funcionan en el build sin `API_URL` y sin scroll horizontal a 360 px.
+- [x] Las dos funcionan en el build sin `API_URL` y sin scroll horizontal a 360 px.
 
 ## Fuera de alcance
 Habilidades que cambian la efectividad, Teratipos, sabores favoritos de las naturalezas, calcular estadísticas finales (IV/EV) y guardar estos datos en el backend.
