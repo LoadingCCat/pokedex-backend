@@ -112,7 +112,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [ ] FE.43 Pruebas de contrato (mock contra la API real) ampliadas
 
 **Antes de la sustentación · F19 Debilidades y naturalezas (datos fijos, sin reimportar)**
-- [ ] FE.46 F19 · Spec F19 en `docs/specs/` y la ficha y P11 `/naturalezas` en `pantallas.md`
+- [x] FE.46 F19 · Spec F19 en `docs/specs/` y la ficha y P11 `/naturalezas` en `pantallas.md`
 - [ ] FE.47 F19 · Debilidades y resistencias en la ficha, calculadas con la tabla fija de efectividad de tipos
 - [ ] FE.48 F19 · Página `/naturalezas` con las 25 naturalezas desde un archivo de datos fijo
 
