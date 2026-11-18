@@ -25,7 +25,7 @@ Este repositorio cubre el **backend**: una API REST estable que el frontend pued
 | F8 | Filtros combinados | Hecha |
 | F9 | Búsqueda sin importar tildes | Hecha |
 | F10 | Importación en segundo plano con progreso | Hecha |
-| F19 | Debilidades, resistencias y naturalezas (datos fijos del frontend) | En progreso |
+| F19 | Debilidades, resistencias y naturalezas (datos fijos del frontend) | Hecha |
 
 ## Fuera del MVP
 - Autenticación y roles: login, registro de usuarios externos y favoritos por cuenta.

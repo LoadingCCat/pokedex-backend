@@ -113,8 +113,8 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 
 **Antes de la sustentación · F19 Debilidades y naturalezas (datos fijos, sin reimportar)**
 - [x] FE.46 F19 · Spec F19 en `docs/specs/` y la ficha y P11 `/naturalezas` en `pantallas.md`
-- [ ] FE.47 F19 · Debilidades y resistencias en la ficha, calculadas con la tabla fija de efectividad de tipos
-- [ ] FE.48 F19 · Página `/naturalezas` con las 25 naturalezas desde un archivo de datos fijo
+- [x] FE.47 F19 · Debilidades y resistencias en la ficha, calculadas con la tabla fija de efectividad de tipos. 5 pruebas
+- [x] FE.48 F19 · Página `/naturalezas` con las 25 naturalezas desde un archivo de datos fijo. 3 pruebas. Frontend: 77 pruebas (+29 de contrato con `API_URL`)
 
 **Ampliación 2 · F16–F18 (`PROMPT-ampliacion-2.md`: formas alternativas, objetos y captura)** — siguiente fase (después de la sustentación)
 

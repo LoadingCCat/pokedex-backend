@@ -1,6 +1,6 @@
 # F19 · Debilidades, resistencias y naturalezas
 
-**Estado:** En progreso (solo frontend: FE.46–FE.48)
+**Estado:** Implementada (solo frontend: FE.46–FE.48)
 
 ## Historia
 Como jugador, quiero ver en la ficha a qué tipos es débil o resistente un Pokémon y consultar qué hace cada naturaleza, para armar mi equipo sin salir de la Pokédex.
@@ -12,11 +12,11 @@ Como jugador, quiero ver en la ficha a qué tipos es débil o resistente un Pok�
 4. **Naturalezas (P11, `/naturalezas`):** las 25 naturalezas desde `datos/naturalezas.json` (nombre en español, slug en inglés, estadística que sube y la que baja). Tabla con «Naturaleza», «Sube (+10 %)» y «Baja (−10 %)»; las 5 neutras dicen «—» en las dos columnas y se indica que no cambian nada. Se enlaza desde la navegación principal.
 
 ## Criterios de aceptación
-- [ ] `/pokemon/6` (Charizard, Fuego/Volador): ×4 Roca; ×2 Agua y Eléctrico; ×½ Fuego, Lucha, Acero y Hada; ×¼ Planta y Bicho; ×0 Tierra.
-- [ ] `/pokemon/25` (Pikachu): ×2 Tierra; ×½ Eléctrico, Volador y Acero; sin inmunidades.
-- [ ] `/pokemon/94` (Gengar, Fantasma/Veneno): ×0 Normal y Lucha; ×2 Tierra, Psíquico, Fantasma y Siniestro; ×¼ Bicho.
-- [ ] Prueba automática: la tabla tiene 18 × 18 entradas y los tres casos anteriores dan esos grupos.
-- [ ] `/naturalezas` lista 25 naturalezas; «Firme» sube Ataque y baja Ataque especial; «Miedosa» sube Velocidad y baja Ataque; hay 5 neutras.
+- [x] `/pokemon/6` (Charizard, Fuego/Volador): ×4 Roca; ×2 Agua y Eléctrico; ×½ Fuego, Lucha, Acero y Hada; ×¼ Planta y Bicho; ×0 Tierra.
+- [x] `/pokemon/25` (Pikachu): ×2 Tierra; ×½ Eléctrico, Volador y Acero; sin inmunidades.
+- [x] `/pokemon/94` (Gengar, Fantasma/Veneno): ×0 Normal y Lucha; ×2 Tierra, Psíquico, Fantasma y Siniestro; ×½ Planta y Hada; ×¼ Bicho y Veneno.
+- [x] Prueba automática: la tabla tiene 18 × 18 entradas y los tres casos anteriores dan esos grupos.
+- [x] `/naturalezas` lista 25 naturalezas; «Firme» sube Ataque y baja Ataque especial; «Miedosa» sube Velocidad y baja Ataque; hay 5 neutras.
 - [ ] Las dos funcionan en el build sin `API_URL` y sin scroll horizontal a 360 px.
 
 ## Fuera de alcance
