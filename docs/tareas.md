@@ -95,7 +95,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.36 F15 · `/admin` Movimientos (listado con búsqueda, crear, editar y eliminar; sin precisión hasta B.35). 2 pruebas nuevas
 - [x] FE.37 F15 · `/admin` Rutas (listado por región, porque la API no busca rutas por nombre; crear, editar y eliminar). 1 prueba nueva. Frontend: 69 pruebas (+29 de contrato con `API_URL`)
 
-**Fase 3 · F11–F13 en el backend** — siguiente fase (después de la sustentación)
+**Fase 3 · F11–F13 en el backend** — **siguiente fase** (después de la sustentación)
 - [ ] B.33 F11 · `Habilidad`, `PokemonHabilidad`, importación y `GET /pokemons/{id}/habilidades`
 - [ ] B.34 F13 · `Juego` (versiones y grupos) y `GET /juegos`
 - [ ] B.35 F12 · `Aprendizaje` (`SEQUENCE`, `hibernate.jdbc.batch_size`, `order_inserts`, `order_updates`), `Movimiento.precision`, `/movimientos?juego=&metodo=` y la etiqueta
@@ -103,7 +103,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [ ] B.37 Respaldo con `pg_dump` y una sola reimportación de las 9 generaciones: 1025 importados, 0 fallidos, cuántas habilidades, encuentros y filas de aprendizaje, y **cuánto tardó**
 - [ ] B.38 Quitar `pokemon_movimiento` (código y tabla, a mano, tras el respaldo)
 
-**Fase 4 · F11–F13 en el frontend** — siguiente fase (después de la sustentación): depende de la Fase 3
+**Fase 4 · F11–F13 en el frontend** — **siguiente fase** (después de la sustentación): depende de la Fase 3
 - [ ] FE.38 Mock regenerado y partido por Pokémon (`datos/mock/pokemon/{id}.json`, carga bajo demanda) y `lib/api`
 - [ ] FE.39 F11 · Habilidades en la ficha
 - [ ] FE.40 F13 · Selector de juego en la URL (P1 y P2)
@@ -116,7 +116,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.47 F19 · Debilidades y resistencias en la ficha, calculadas con la tabla fija de efectividad de tipos. 5 pruebas
 - [x] FE.48 F19 · Página `/naturalezas` con las 25 naturalezas desde un archivo de datos fijo. 3 pruebas. Frontend: 77 pruebas (+29 de contrato con `API_URL`)
 
-**Ampliación 2 · F16–F18 (`PROMPT-ampliacion-2.md`: formas alternativas, objetos y captura)** — siguiente fase (después de la sustentación)
+**Ampliación 2 · F16–F18 (`PROMPT-ampliacion-2.md`: formas alternativas, objetos y captura)** — **siguiente fase** (después de la sustentación)
 
 **Fase 5 · Mediciones (RNF-01, RNF-03)**
 - [x] FE.44 Lighthouse (móvil y escritorio) del catálogo, una búsqueda y una ficha: tiempo hasta interactiva y si queda por debajo de 2 s → `pokedex-frontend/docs/mediciones.md`: escritorio, catálogo 1,3 s y búsqueda 0,9 s (cumplen), ficha 2,1 s; móvil simulado 3,6–5,1 s (no cumple). Accesibilidad 100
@@ -125,5 +125,47 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 **Fase 6 · Cierre**
 - [ ] B.39 `producto.md`, `arquitectura.md`, `pruebas.md` (totales), README y CLAUDE.md de los dos repos y `BITACORA_IA.md`; total de pruebas de las dos suites
 
+## Siguiente fase · F11–F13 y F16–F18
+<!-- Quedan como "siguiente fase" (después de la sustentación): no se tocan mientras dure el plan de abajo.
+     Detalle arriba: Fase 3 y Fase 4 (F11–F13: B.33–B.38 y FE.38–FE.43) y "Ampliación 2" (F16–F18).
+     Retomarlas solo cuando la F20 y la entrega (U6) estén cerradas; B.37 sigue siendo la única reimportación. -->
+
+## Plan Claude Code · F20, interventoría y entrega (U4–U6)
+<!-- Plan: PLAN_CLAUDE_CODE.md (raíz de Pokedex+). Una tarea a la vez, un commit por tarea, con aprobación antes del commit.
+     Al terminar cada fase: .\mvnw.cmd test y npm run test, con los totales reportados (partida: 129 + 77). -->
+
+**Fase 1 · Planos (solo docs)**
+- [ ] B.40 F20 · Decisiones, spec `F20-identificacion-pokemon.md` y contrato (`POST /pokemons/identificar`, `GET /health`, errores 422, 429 y 502)
+- [x] B.41 Modelo de datos (`docs/datos/modelo.md`) y skill `backend-seguro` adaptada a Spring Boot, con su sección en `CLAUDE.md`
+- [x] B.42 Tareas del plan en este archivo (B.40 en adelante y FE.49 en adelante); F11–F13 y F16–F18 como "siguiente fase"
+
+**Fase 2 · Backend de F20**
+- [ ] B.43 Base para la nube: `GET /api/health`, `server.port=${PORT:8080}`, `forward-headers-strategy`, límites de `multipart` y `permitAll()` en `POST /api/pokemons/identificar`
+- [ ] B.44 Servicio de visión: `ServicioVision`, `ServicioVisionMock` (perfil `e2e` y pruebas) y `ServicioVisionGemini` (`GEMINI_API_KEY`, `GEMINI_MODELO`, timeouts 5 s / 20 s; sin clave → 502, sin fallar al arrancar)
+- [ ] B.45 Validación de la foto (presente, no vacía, máx. 5 MB, JPEG/PNG/WEBP por los primeros bytes) y límite de 10 por minuto por IP; pruebas de 400 y 429
+- [ ] B.46 Similares en PostgreSQL (tipo compartido con `EXISTS`, cercanía de total, misma generación; siempre 3); pruebas en `ApiConPostgresTest`
+- [ ] B.47 `IdentificacionService`, `POST /api/pokemons/identificar` y 422, 429 y 502 en `GlobalExceptionHandler`; una prueba de integración por criterio de F20
+
+**Fase 4 · Interventoría (U5)**
+- [ ] B.48 Auditoría en sesión limpia, sin modificar archivos → `docs/calidad/interventoria.md` (hallazgo | archivo:línea | severidad | cómo comprobarlo | corrección)
+- [ ] B.49 Corrección de los hallazgos: causa raíz, prueba de regresión y commit `fix: … (closes #n)`; pendientes justificados (incl. `ddl-auto=update` frente a Flyway)
+- [ ] B.50 Interventoría cruzada: hallazgos del otro equipo como issues con `.github/ISSUE_TEMPLATE/interventoria.md`
+
+**Fase 5 · Entrega de llaves (U6)**
+- [ ] B.51 Docker: `Dockerfile` multi-stage (JDK 21 → JRE 21, usuario sin privilegios, `chmod +x mvnw`) y `.dockerignore`
+- [ ] B.52 CI del backend (`.github/workflows/ci.yml`: Java 21, `./mvnw -B test` y `package`) y protección de `main` (PR + check `ci`)
+- [ ] B.53 Entornos y datos: Neon `dev` y `prod` (`unaccent`, `pg_dump`/`pg_restore`) y dos servicios Render con sus variables (solo nombres en los docs)
+- [ ] B.54 Lanzamiento con rollback: rama → PR → CI → preview → merge → producción; simulacro de "Rollback" en Render
+- [ ] B.55 `docs/operacion/despliegue.md`, "Arquitectura desplegada" en `arquitectura.md`, README con la URL de producción y métricas del módulo en `BITACORA_IA.md`
+
+**Frontend (repo `pokedex-frontend`)**
+- [ ] FE.49 F20 · Capa de datos: tipos, `identificar()`, server action o route handler hacia `API_URL`, espera de 70 s en las lecturas ("despertando el servidor…") y mock "no disponible"
+- [ ] FE.50 F20 · Pantalla `/identificar`: `SelectorFoto`, reducción a 1024 px en JPEG, estado de carga, tarjeta del identificado y 3 similares, mensajes 400/422/429/502, aviso "la foto no se guarda" y enlace en la cabecera; pruebas en Vitest
+- [ ] FE.51 Playwright: `playwright.config.ts`, script `test:e2e` y suites `catalogo`, `ficha`, `identificar`, `admin` y `responsive` (credenciales en `.env.test`, fuera de Git)
+- [ ] FE.52 CI del frontend (Node 22, `npm ci`, `lint`, `test`, `build`) y protección de `main`
+- [ ] FE.53 Vercel: `API_URL` en Production (API de prod) y en Preview (API de dev)
+- [ ] FE.54 Simulacro de despliegue roto e Instant Rollback en Vercel
+- [ ] FE.55 README del frontend con la URL de producción
+
 ## Nube (U6)
-<!-- Se detalla al iniciar la U6. -->
+<!-- Se detalla al iniciar la U6. El detalle de la entrega está en "Plan Claude Code · Fase 5" (B.51–B.55, FE.52–FE.55). -->
