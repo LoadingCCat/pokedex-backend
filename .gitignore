@@ -34,3 +34,6 @@ build/
 
 ### Configuración local (credenciales) ###
 src/main/resources/application-local.properties
+
+# Configuración local de Claude Code
+.claude/launch.json
