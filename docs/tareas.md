@@ -135,7 +135,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
      Al terminar cada fase: .\mvnw.cmd test y npm run test, con los totales reportados (partida: 129 + 77). -->
 
 **Fase 1 · Planos (solo docs)**
-- [ ] B.40 F20 · Decisiones, spec `F20-identificacion-pokemon.md` y contrato (`POST /pokemons/identificar`, `GET /health`, errores 422, 429 y 502)
+- [x] B.40 F20 · Decisiones, spec `F20-identificacion-pokemon.md` y contrato (`POST /pokemons/identificar`, `GET /health`, errores 422, 429 y 502)
 - [x] B.41 Modelo de datos (`docs/datos/modelo.md`) y skill `backend-seguro` adaptada a Spring Boot, con su sección en `CLAUDE.md`
 - [x] B.42 Tareas del plan en este archivo (B.40 en adelante y FE.49 en adelante); F11–F13 y F16–F18 como "siguiente fase"
 
