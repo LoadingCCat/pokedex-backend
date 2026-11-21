@@ -83,7 +83,9 @@ com.pokedex/
 - Listas de Pokémon, movimientos y rutas paginadas con `?page=&size=&sort=` (por defecto 20, máximo 200; sin `sort`, los Pokémon se ordenan por `idPokedex` y movimientos y rutas por `nombre`, con `@SortDefault`, no `@PageableDefault`, que cambia el tamaño a 10). Siguen como arreglo: `/pokemons/{id}/movimientos`, `/rutas/regiones`, `/tipos`. Formato fijo (`serialization-mode=via-dto`):
   `{ "content": [...], "page": { "size", "number", "totalElements", "totalPages" } }`
 - `GET /pokemons` acepta filtros opcionales combinados con Y (`nombre`, `generacion`, `tipo`, `region`, `obtencion`), armados en `repository/PokemonFiltros` (`Specification` con `EXISTS`, sin `JOIN`). Un filtro nuevo se agrega ahí, no como otra `@Query`.
-- Seguridad (F15): todos los `GET` son públicos salvo la importación; `POST`, `PUT`, `DELETE` y la importación piden `Authorization: Bearer <token>` con rol ADMIN (token de `POST /api/auth/login`). Las reglas están en `SeguridadConfig`: un endpoint de escritura nuevo queda protegido sin hacer nada.
+- Seguridad (F15): todos los `GET` son públicos salvo la importación; `POST`, `PUT`, `DELETE` y la importación piden `Authorization: Bearer <token>` con rol ADMIN (token de `POST /api/auth/login`). Las reglas están en `SeguridadConfig`.
+  - Hay **dos excepciones públicas de escritura**, declaradas a propósito allí: `POST /api/auth/login` y `POST /api/pokemons/identificar` (F20; todavía no está en el código, se declara en la tarea 2.1).
+  - Cualquier otro endpoint de escritura nuevo queda protegido por defecto (`anyRequest().hasRole(ADMIN)`). Una excepción pública nueva se declara en `SeguridadConfig`, con spec y prueba; nunca por omisión.
 - Todos los errores salen de `GlobalExceptionHandler` (y los 401/403 de los filtros, de `ErroresSeguridad`) con el mismo JSON: `{ timestamp, status, error, mensaje, path }`.
   - 400 `BadRequestException`, parámetros/JSON inválidos, `sort` por un campo inexistente
   - 404 `ResourceNotFoundException`, URL inexistente
@@ -91,6 +93,13 @@ com.pokedex/
   - 405 método no permitido · 409 `ConflictException` (p. ej. importación ya en curso)
   - 500: mensaje genérico; el detalle solo va al log. No exponer `ex.getMessage()` en el 500.
 - Los controllers nunca dejan escapar excepciones sin tratar: validan y lanzan las excepciones propias.
+
+## Backend seguro
+
+La skill `backend-seguro` (`.claude/skills/backend-seguro/SKILL.md`) **se aplica siempre que se tocan datos**: controllers, servicios, repositorios, entidades, `SeguridadConfig`, `GlobalExceptionHandler`, configuración o subida de archivos. Va junto con `nuevo-endpoint`. Al terminar, el informe lista qué criterios cubre el cambio y cómo probar un caso de error sin usar el formulario.
+
+- El modelo de datos, las restricciones reales y quién escribe cada tabla están en `docs/datos/modelo.md`. Si cambias una entidad, una restricción o una regla de negocio, actualízalo en el mismo commit.
+- Los secretos solo van en variables de entorno, y en los docs solo su nombre.
 
 ## Importación desde la PokeAPI (`PokemonService`)
 

@@ -26,6 +26,7 @@ Este repositorio cubre el **backend**: una API REST estable que el frontend pued
 | F9 | Búsqueda sin importar tildes | Hecha |
 | F10 | Importación en segundo plano con progreso | Hecha |
 | F19 | Debilidades, resistencias y naturalezas (datos fijos del frontend) | Hecha |
+| F20 | Identificar un Pokémon por foto y ver 3 similares | Pendiente |
 
 ## Fuera del MVP
 - Autenticación y roles: login, registro de usuarios externos y favoritos por cuenta.
