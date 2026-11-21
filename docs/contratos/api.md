@@ -209,10 +209,66 @@ En `resultados`, `importados` son los registros creados, `omitidos` los que ya e
 { "token": "eyJhbGciOiJIUzI1NiJ9...", "expiraEn": "2026-11-17T18:30:00Z", "usuario": "admin", "rol": "ADMIN" }
 ```
 - El token es un JWT HS256 que dura 2 horas. Se envía en la cabecera `Authorization: Bearer <token>`.
-- **Públicos (sin token):** todos los `GET`, salvo `importar-rango` e `importar-todo`, y `POST /auth/login`. El frontend de consulta no cambia.
-- **Solo ADMIN:** `POST`, `PUT` y `DELETE` (movimientos, rutas…) y la importación, también por GET. Sin token, o con uno inválido o vencido → **401**; con un token sin el rol ADMIN → **403**. Los dos con el formato de error de siempre.
+- **Públicos (sin token):** todos los `GET` (incluido `GET /health`), salvo `importar-rango` e `importar-todo`, y `POST /auth/login` y `POST /pokemons/identificar` (F20). El frontend de consulta no cambia.
+- **Solo ADMIN:** `POST`, `PUT` y `DELETE` (movimientos, rutas…; salvo `POST /auth/login` y `POST /pokemons/identificar`) y la importación, también por GET. Sin token, o con uno inválido o vencido → **401**; con un token sin el rol ADMIN → **403**. Los dos con el formato de error de siempre.
 - Un `GET` público con un token inválido también responde 401: si se envía `Authorization`, tiene que ser válido.
 - **CORS:** el navegador solo puede llamar a la API desde los orígenes de `CORS_ORIGENES` (por defecto `http://localhost:3000` y `http://127.0.0.1:3000`). Antes era `*`. Las llamadas desde un servidor (como los route handlers de Next.js) no dependen de CORS.
+
+## Identificar por foto — `POST /pokemons/identificar` (F20)
+
+**Quién:** cualquiera, sin token. Límite: 10 peticiones por minuto por IP.
+
+**Entrada:** `multipart/form-data` con un único campo:
+
+| Campo | Tipo | Regla |
+|---|---|---|
+| `foto` | archivo | Obligatorio. JPEG, PNG o WEBP, comprobado por los primeros bytes del archivo (no solo por `Content-Type`). Máximo 5 MB |
+
+**200 OK**
+```json
+{
+  "identificado": {
+    "idPokedex": 4,
+    "nombre": "charmander",
+    "nombreEs": "Charmander",
+    "tipos": [{ "id": 2, "nombre": "fire" }],
+    "totalEstadisticas": 309,
+    "imagenUrl": "https://…"
+  },
+  "confianza": 0.93,
+  "similares": [
+    { "idPokedex": 155, "nombre": "cyndaquil", "nombreEs": "Cyndaquil", "tipos": [{ "id": 2, "nombre": "fire" }], "totalEstadisticas": 309, "imagenUrl": "https://…", "motivo": "Comparte el tipo Fuego y tiene el mismo total" },
+    { "idPokedex": 390, "nombre": "chimchar",  "nombreEs": "Chimchar",  "tipos": [{ "id": 2, "nombre": "fire" }], "totalEstadisticas": 309, "imagenUrl": "https://…", "motivo": "Comparte el tipo Fuego y tiene el mismo total" },
+    { "idPokedex": 255, "nombre": "torchic",   "nombreEs": "Torchic",   "tipos": [{ "id": 2, "nombre": "fire" }], "totalEstadisticas": 310, "imagenUrl": "https://…", "motivo": "Comparte el tipo Fuego y su total difiere en 1" }
+  ]
+}
+```
+- `tipos` tiene la misma forma que en el detalle del Pokémon: `[{ "id", "nombre" }]`. Los `id` del ejemplo son ilustrativos.
+- `identificado` y `similares` se leen de PostgreSQL. La IA solo aporta el slug y la confianza.
+- `similares` tiene siempre 3 elementos y nunca incluye al identificado (criterios en F20). Los números del ejemplo son ilustrativos.
+- La foto no se guarda.
+
+**Errores** (con el formato de error de siempre):
+
+| Código | Cuándo | `mensaje` |
+|---|---|---|
+| 400 | Falta `foto`, está vacía o el `multipart` está mal formado | «Envía una foto en el campo foto» |
+| 400 | No es JPEG, PNG ni WEBP | «La foto debe ser JPG, PNG o WEBP» |
+| 400 | Pesa más de 5 MB | «La foto pesa más de 5 MB» |
+| 422 | La IA no reconoce un Pokémon, su confianza es menor que 0,6 o el slug no existe en la base | «No reconocimos un Pokémon en la foto. Prueba con otra más clara» |
+| 429 | Más de 10 peticiones por minuto desde la misma IP | «Demasiadas fotos seguidas. Espera un minuto» |
+| 502 | El servicio de visión no respondió a tiempo, falló o no está configurado | «El reconocimiento no está disponible en este momento» |
+
+Ningún mensaje incluye la clave, la URL del proveedor, la respuesta cruda de la IA ni trazas: eso va solo al log.
+
+## Salud — `GET /health`
+
+Público, no consulta la base. Sirve para despertar el servidor en Render y para el monitoreo.
+
+**200 OK**
+```json
+{ "estado": "ok" }
+```
 
 ## Errores
 
@@ -235,7 +291,10 @@ Todos los errores devuelven el mismo formato:
 | 404 | La URL no existe o el ID no existe |
 | 405 | Método HTTP no permitido en esa ruta |
 | 409 | Se pidió una importación mientras otra sigue en curso, o se creó un Pokémon con un número ocupado |
+| 422 | La petición es válida, pero no se pudo procesar: p. ej., no hay un Pokémon en la foto (F20) |
+| 429 | Demasiadas peticiones: más de 10 fotos por minuto desde la misma IP (F20) |
 | 500 | Error inesperado del servidor (el detalle solo queda en el log, no en la respuesta) |
+| 502 | Falló un servicio externo: el servicio de visión no respondió, falló o no está configurado (F20) |
 
 ## Notas sobre los datos
 
