@@ -9,6 +9,9 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -25,6 +28,8 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    private static final String MENSAJE_SIN_FOTO = "Envía una foto en el campo foto";
 
     // 404: la URL no existe (ej. una ruta mal escrita en el frontend)
     @ExceptionHandler(NoResourceFoundException.class)
@@ -80,6 +85,44 @@ public class GlobalExceptionHandler {
                                                                    HttpServletRequest request) {
         return construir(HttpStatus.BAD_REQUEST, "Petición inválida",
                 "El cuerpo de la petición no es un JSON válido", request);
+    }
+
+    // 400 (F20): falta la parte "foto" del multipart o el multipart llegó mal formado
+    @ExceptionHandler({MissingServletRequestPartException.class, MultipartException.class})
+    public ResponseEntity<Map<String, Object>> manejarMultipartInvalido(Exception ex, HttpServletRequest request) {
+        // MaxUploadSizeExceededException es un MultipartException: se atiende en su propio método
+        return construir(HttpStatus.BAD_REQUEST, "Petición inválida", MENSAJE_SIN_FOTO, request);
+    }
+
+    // 400 (F20): el servidor cortó la subida por pasar max-file-size / max-request-size (no es un 500)
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> manejarSubidaMuyGrande(MaxUploadSizeExceededException ex,
+                                                                      HttpServletRequest request) {
+        return construir(HttpStatus.BAD_REQUEST, "Petición inválida", "La foto pesa más de 5 MB", request);
+    }
+
+    // 422 (F20): no hay Pokémon en la foto, confianza baja o slug que no está en la base
+    @ExceptionHandler(PokemonNoReconocidoException.class)
+    public ResponseEntity<Map<String, Object>> manejarNoReconocido(PokemonNoReconocidoException ex,
+                                                                   HttpServletRequest request) {
+        return construir(HttpStatus.UNPROCESSABLE_ENTITY, "No se pudo procesar", ex.getMessage(), request);
+    }
+
+    // 429 (F20): más de 10 fotos por minuto desde la misma IP
+    @ExceptionHandler(LimiteExcedidoException.class)
+    public ResponseEntity<Map<String, Object>> manejarLimiteExcedido(LimiteExcedidoException ex,
+                                                                     HttpServletRequest request) {
+        return construir(HttpStatus.TOO_MANY_REQUESTS, "Demasiadas peticiones", ex.getMessage(), request);
+    }
+
+    // 502 (F20): el servicio de visión falló o no está configurado. El mensaje es fijo: nunca la
+    // clave, la URL del proveedor ni la respuesta cruda; lo que haya va solo al log (sin traza)
+    @ExceptionHandler(VisionNoDisponibleException.class)
+    public ResponseEntity<Map<String, Object>> manejarVisionNoDisponible(VisionNoDisponibleException ex,
+                                                                         HttpServletRequest request) {
+        log.warn("Servicio de visión no disponible en {}: {}", request.getRequestURI(), ex.getMessage());
+        return construir(HttpStatus.BAD_GATEWAY, "Servicio externo no disponible",
+                "El reconocimiento no está disponible en este momento", request);
     }
 
     // 405: método HTTP no permitido (ej. DELETE sobre un endpoint que solo acepta GET)

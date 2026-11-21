@@ -144,7 +144,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] B.44 Servicio de visión: `ServicioVision`, `ServicioVisionMock` (perfil `e2e` y pruebas) y `ServicioVisionGemini` (`GEMINI_API_KEY`, `GEMINI_MODELO`, timeouts 5 s / 20 s; sin clave → 502, sin fallar al arrancar)
 - [x] B.45 Validación de la foto (presente, no vacía, máx. 5 MB, JPEG/PNG/WEBP por los primeros bytes) y límite de 10 por minuto por IP; pruebas de 400 y 429
 - [x] B.46 Similares en PostgreSQL (tipo compartido con `EXISTS`, cercanía de total, misma generación; siempre 3); pruebas en `ApiConPostgresTest`
-- [ ] B.47 `IdentificacionService`, `POST /api/pokemons/identificar` y 422, 429 y 502 en `GlobalExceptionHandler`; una prueba de integración por criterio de F20
+- [x] B.47 `IdentificacionService`, `POST /api/pokemons/identificar` y 422, 429 y 502 en `GlobalExceptionHandler`; una prueba de integración por criterio de F20
 
 **Fase 4 · Interventoría (U5)**
 - [ ] B.48 Auditoría en sesión limpia, sin modificar archivos → `docs/calidad/interventoria.md` (hallazgo | archivo:línea | severidad | cómo comprobarlo | corrección)

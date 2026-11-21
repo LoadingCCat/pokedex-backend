@@ -26,6 +26,13 @@ public interface PokemonRepository extends JpaRepository<Pokemon, Integer>, JpaS
     )
     Page<Pokemon> buscarPorNombre(@Param("nombre") String nombre, Pageable pageable);
 
+    // F20: el slug que devuelve la IA, sin importar mayúsculas ni tildes. List y no Optional,
+    // porque nombre no es único en la BD; se toma el de menor idPokedex.
+    @Query("SELECT p FROM Pokemon p "
+         + "WHERE LOWER(function('unaccent', p.nombre)) = LOWER(function('unaccent', :slug)) "
+         + "ORDER BY p.idPokedex")
+    List<Pokemon> buscarPorSlug(@Param("slug") String slug, Pageable pageable);
+
     Page<Pokemon> findByGeneracion(Integer generacion, Pageable pageable);
 
     // Ej. /obtencion/legendario, /obtencion/inicial

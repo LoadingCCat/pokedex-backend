@@ -38,4 +38,22 @@ No se usa H2: no tiene `unaccent` y obligaría a probar consultas distintas a la
 | F9 Sin tildes | `psiquico`, `psíquico`, `puno` = `puño` (con `totalElements`), `pikachú`, `flabébé`, filtro combinado, extensión creada por `schema.sql` | Reiniciar el servidor real dos veces |
 | F10 Segundo plano | 202 al instante, 409 mientras corre, `terminada` con los 5 resultados, aceptar otra al terminar, `error` libera el bloqueo, ejecutor que rechaza la tarea, estados y porcentaje de `ProgresoImportacion` | La importación real de las 1025 en segundo plano |
 
+## F20 · Identificar por foto (B.43–B.47)
+
+La visión va simulada (`ServicioVisionMock`, perfil `e2e`): las pruebas no salen a internet ni gastan cuota. `IdentificacionApiTest` (`@SpringBootTest` + MockMvc + PostgreSQL embebido) prueba el endpoint de punta a punta; cada prueba usa su propia IP, porque el límite es un contador único de la aplicación. MockMvc no aplica los límites de tamaño de Tomcat, así que `MaxUploadSizeExceededException`, `MultipartException` y `MissingServletRequestPartException` se prueban llamando al manejador (`ManejoMultipartTest`).
+
+| Criterio de F20 | Prueba automática |
+|---|---|
+| Éxito: 200 con el Pokémon de PostgreSQL y 3 similares distintos | `IdentificacionApiTest.exitoDevuelveElIdentificadoYTresSimilaresDistintosConSuMotivo` (forma `tipos: [{ id, nombre }]`, `motivo`, la visión se llamó 1 vez) |
+| Similares bien elegidos (mismo tipo, de menor a mayor diferencia) | `IdentificacionApiTest.similaresComparTenTipoYVanDeMenorAMayorDiferenciaDeTotal`; la consulta, en `ApiConPostgresTest` (`charmanderTiene3SimilaresConTipoCompartido…`, `losPokemonConEstadisticasIncompletas…`) |
+| Sin token → 200 | `IdentificacionApiTest.sinTokenResponde200`; la regla pública, en `HealthControllerTest` |
+| Sin foto o vacía → 400, sin llamar a la visión | `IdentificacionApiTest`: `sinElCampoFotoResponde400`, `conUnCampoConOtroNombreResponde400`, `fotoVaciaResponde400`; `ManejoMultipartTest` (parte ausente y multipart mal formado) |
+| Formato inválido (PDF, `.txt` renombrado) → 400, sin llamar a la visión | `IdentificacionApiTest`: `pdfResponde400`, `txtRenombradoAJpgResponde400AunqueDigaImageJpeg`; `ValidadorFotoTest` (por los primeros bytes) |
+| Más de 5 MB → 400, no 500 | `IdentificacionApiTest.fotoDeMasDe5MbResponde400NoUn500`; `ManejoMultipartTest.subidaMasGrandeQueElLimiteDa400` (corte de Tomcat) |
+| No hay Pokémon o confianza < 0,6 → 422 | `IdentificacionApiTest`: `sinPokemonEnLaFotoResponde422`, `confianzaDe05Responde422`; el borde 0,6 sí pasa (`confianzaExactamenteEnElUmbralSeAcepta`) |
+| Slug que no está en la base → 422 | `IdentificacionApiTest.slugQueNoExisteEnLaBaseResponde422`; con mayúsculas y tildes sí se encuentra (`elSlugSeBuscaSinImportarMayusculasNiTildes`) |
+| Falla externa → 502 genérico | `IdentificacionApiTest.siLaVisionFallaResponde502ConMensajeGenerico`; el cliente de Gemini (timeouts, clave, respuesta cruda fuera del mensaje), en `ServicioVisionGeminiTest` |
+| Abuso: la petición 11 → 429, sin llamar a la visión | `IdentificacionApiTest.laPeticion11DeLaMismaIpResponde429YNoLlamaALaVision` (la visión se llamó 10 veces, no 11) y `elLimiteEsPorIpYOtraIpSigueFuncionando`; la ventana, en `LimiteIdentificacionesTest` |
+| Sin rastro (foto no guardada, log sin imagen) | Por diseño: el servicio solo lee los bytes en memoria y registra slug, confianza y tiempo. Sin prueba automática; revisar el log a mano |
+
 Los criterios "solo a mano" se comprueban con `curl.exe` como dice cada spec (ver `CLAUDE.md`).
