@@ -5,6 +5,7 @@ import com.pokedex.entity.Pokemon;
 import com.pokedex.entity.Ruta;
 import com.pokedex.entity.Tipo;
 import com.pokedex.entity.Usuario;
+import com.pokedex.service.SimilaresService;
 import com.pokedex.repository.EvolucionRepository;
 import com.pokedex.repository.MovimientoRepository;
 import com.pokedex.repository.PokemonRepository;
@@ -374,6 +375,148 @@ class ApiConPostgresTest {
         mvc.perform(get("/api/pokemons/155")).andExpect(status().isNotFound());
         mvc.perform(get("/api/pokemons/tipo/fire")).andExpect(jsonPath("$.content[*].idPokedex", contains(4)));
         org.assertj.core.api.Assertions.assertThat(pokemonExcluidoRepository.existsById(155)).isTrue();
+    }
+
+    // ---------- F20 · similares ----------
+
+    @Autowired
+    private SimilaresService similaresService;
+
+    /** Pokémon con las 6 estadísticas: cinco de 50 y PS para que la suma dé `total`. */
+    private void conTotal(int id, String nombre, int generacion, int total, Tipo... tipos) {
+        Pokemon p = new Pokemon();
+        p.setIdPokedex(id);
+        p.setNombre(nombre);
+        p.setNombreEs(nombre);
+        p.setGeneracion(generacion);
+        p.setPs(total - 250);
+        p.setAtaque(50);
+        p.setDefensa(50);
+        p.setAtaqueEspecial(50);
+        p.setDefensaEspecial(50);
+        p.setVelocidad(50);
+        p.setTipos(List.of(tipos));
+        p.setRutas(List.of());
+        pokemonRepository.save(p);
+    }
+
+    private Tipo tipo(String nombre) {
+        Tipo t = tipoRepository.findByNombre(nombre);
+        return t != null ? t : tipoRepository.save(new Tipo(nombre));
+    }
+
+    private List<Integer> ids(List<SimilaresService.Similar> similares) {
+        return similares.stream().map(s -> s.pokemon().getIdPokedex()).toList();
+    }
+
+    @Test
+    void charmanderTiene3SimilaresConTipoCompartidoOrdenadosPorDiferenciaDeTotal() {
+        pokemonRepository.deleteAll();
+        Tipo fire = tipo("fire");
+        Tipo water = tipo("water");
+        conTotal(4, "charmander", 1, 309, fire);
+        conTotal(37, "vulpix", 1, 400, fire);          // diferencia 91
+        conTotal(255, "torchic", 3, 320, fire);        // 11
+        conTotal(390, "chimchar", 4, 310, fire);       // 1
+        conTotal(155, "cyndaquil", 2, 309, fire);      // 0
+        conTotal(7, "squirtle", 1, 309, water);        // diferencia 0, pero otro tipo: no entra
+
+        List<SimilaresService.Similar> similares = similaresService.similaresDe(4);
+
+        org.assertj.core.api.Assertions.assertThat(ids(similares)).containsExactly(155, 390, 255);
+        org.assertj.core.api.Assertions.assertThat(similares)
+                .allSatisfy(s -> org.assertj.core.api.Assertions.assertThat(s.pokemon().getTipos())
+                        .extracting(Tipo::getNombre).contains("fire"));
+        org.assertj.core.api.Assertions.assertThat(similares.stream().map(SimilaresService.Similar::motivo))
+                .containsExactly("Comparte el tipo Fuego y tiene el mismo total",
+                        "Comparte el tipo Fuego y su total difiere en 1",
+                        "Comparte el tipo Fuego y su total difiere en 11");
+    }
+
+    @Test
+    void conMenosDe3ConTipoCompartidoSeCompletaConElTotalMasCercano() {
+        pokemonRepository.deleteAll();
+        Tipo fire = tipo("fire");
+        Tipo water = tipo("water");
+        Tipo grass = tipo("grass");
+        conTotal(4, "charmander", 1, 309, fire);
+        conTotal(37, "vulpix", 1, 359, fire);          // único con fuego (diferencia 50)
+        conTotal(7, "squirtle", 1, 314, water);        // 5
+        conTotal(1, "bulbasaur", 1, 329, grass);       // 20
+        conTotal(2, "ivysaur", 1, 409, grass);         // 100: no entra
+        conTotal(3, "venusaur", 1, 509, grass);        // 200: no entra
+
+        List<SimilaresService.Similar> similares = similaresService.similaresDe(4);
+
+        // El de tipo compartido va primero aunque esté más lejos; luego los de total más cercano
+        org.assertj.core.api.Assertions.assertThat(ids(similares)).containsExactly(37, 7, 1);
+        org.assertj.core.api.Assertions.assertThat(ids(similares)).doesNotHaveDuplicates().doesNotContain(4);
+        org.assertj.core.api.Assertions.assertThat(similares.get(0).motivo()).isEqualTo("Comparte el tipo Fuego y su total difiere en 50");
+        org.assertj.core.api.Assertions.assertThat(similares.get(1).motivo()).isEqualTo("No comparte tipo, pero su total difiere en 5");
+        org.assertj.core.api.Assertions.assertThat(similares.get(2).motivo()).isEqualTo("No comparte tipo, pero su total difiere en 20");
+    }
+
+    @Test
+    void sinNingunoConTipoCompartidoDevuelveIgualLos3MasCercanos() {
+        pokemonRepository.deleteAll();
+        Tipo fire = tipo("fire");
+        Tipo water = tipo("water");
+        conTotal(4, "charmander", 1, 309, fire);
+        conTotal(7, "squirtle", 1, 309, water);
+        conTotal(8, "wartortle", 1, 330, water);
+        conTotal(9, "blastoise", 1, 300, water);
+        conTotal(54, "psyduck", 1, 500, water);
+
+        org.assertj.core.api.Assertions.assertThat(ids(similaresService.similaresDe(4))).containsExactly(7, 9, 8);
+    }
+
+    @Test
+    void elEmpateDeTotalSeDesempataPorMismaGeneracionYLuegoPorIdPokedex() {
+        pokemonRepository.deleteAll();
+        Tipo fire = tipo("fire");
+        conTotal(4, "charmander", 1, 309, fire);
+        // Todos a diferencia 10 (299 o 319): la generación 1 va primero, y dentro, por idPokedex
+        conTotal(500, "gen2-a", 2, 319, fire);
+        conTotal(300, "gen2-b", 2, 299, fire);
+        conTotal(200, "gen1-b", 1, 319, fire);
+        conTotal(100, "gen1-a", 1, 299, fire);
+
+        org.assertj.core.api.Assertions.assertThat(ids(similaresService.similaresDe(4))).containsExactly(100, 200, 300);
+    }
+
+    @Test
+    void unPokemonConDosTiposCompartidosSaleUnaSolaVezYElMotivoNombraLosDos() {
+        pokemonRepository.deleteAll();
+        Tipo fire = tipo("fire");
+        Tipo flying = tipo("flying");
+        conTotal(6, "charizard", 1, 534, fire, flying);
+        conTotal(146, "moltres", 1, 580, fire, flying);   // 46
+        conTotal(663, "talonflame", 6, 499, fire, flying); // 35
+        conTotal(16, "pidgey", 1, 251, flying);           // 283, pero comparte volador
+        conTotal(4, "charmander", 1, 309, fire);          // 225
+
+        List<SimilaresService.Similar> similares = similaresService.similaresDe(6);
+
+        org.assertj.core.api.Assertions.assertThat(ids(similares)).containsExactly(663, 146, 4);
+        org.assertj.core.api.Assertions.assertThat(similares.get(0).motivo())
+                .isEqualTo("Comparte los tipos Fuego y Volador y su total difiere en 35");
+    }
+
+    @Test
+    void losPokemonConEstadisticasIncompletasNoSonSimilares() {
+        // @BeforeEach deja a Pikachu, Cyndaquil y Flabébé sin PS, ataque, etc.
+        conTotal(5, "charmeleon", 1, 405, tipo("fire"));
+        conTotal(37, "vulpix", 1, 300, tipo("fire"));
+        Pokemon charmander = pokemonRepository.findById(4).orElseThrow();
+        charmander.setPs(39);
+        charmander.setAtaque(52);
+        charmander.setDefensa(43);
+        charmander.setAtaqueEspecial(60);
+        charmander.setDefensaEspecial(50);
+        charmander.setVelocidad(65); // 309
+        pokemonRepository.save(charmander);
+
+        org.assertj.core.api.Assertions.assertThat(ids(similaresService.similaresDe(4))).containsExactly(37, 5);
     }
 
     // ---------- F5 · rutas ----------

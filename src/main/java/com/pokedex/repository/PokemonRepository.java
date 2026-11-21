@@ -8,6 +8,9 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
+import java.util.List;
+
 // JpaSpecificationExecutor: permite los filtros combinados de GET /pokemons (ver PokemonFiltros)
 public interface PokemonRepository extends JpaRepository<Pokemon, Integer>, JpaSpecificationExecutor<Pokemon> {
 
@@ -41,6 +44,34 @@ public interface PokemonRepository extends JpaRepository<Pokemon, Integer>, JpaS
               + "WHERE LOWER(p.region) = LOWER(:region) OR LOWER(r.region) = LOWER(:region)"
     )
     Page<Pokemon> buscarPorRegion(@Param("region") String region, Pageable pageable);
+
+    // F20: similares que comparten al menos un tipo (EXISTS, sin JOIN: no duplica a quien comparte dos).
+    // totalEstadisticas no es columna: se calcula aquí. Orden: menor diferencia de total, misma
+    // generación primero, idPokedex. Los que tienen alguna estadística null no cuentan.
+    @Query("SELECT p FROM Pokemon p "
+         + "WHERE p.idPokedex <> :idExcluido "
+         + "AND p.ps IS NOT NULL AND p.ataque IS NOT NULL AND p.defensa IS NOT NULL "
+         + "AND p.ataqueEspecial IS NOT NULL AND p.defensaEspecial IS NOT NULL AND p.velocidad IS NOT NULL "
+         + "AND EXISTS (SELECT 1 FROM p.tipos t WHERE t.id IN :idsTipos) "
+         + "ORDER BY ABS((p.ps + p.ataque + p.defensa + p.ataqueEspecial + p.defensaEspecial + p.velocidad) - :total), "
+         + "CASE WHEN p.generacion = :generacion THEN 0 ELSE 1 END, p.idPokedex")
+    List<Pokemon> similaresConTipoCompartido(@Param("idExcluido") Integer idExcluido,
+                                             @Param("idsTipos") Collection<Long> idsTipos,
+                                             @Param("total") int total,
+                                             @Param("generacion") Integer generacion,
+                                             Pageable pageable);
+
+    // F20: relleno cuando no alcanzan los de tipo compartido: el total más cercano, sin importar el tipo
+    @Query("SELECT p FROM Pokemon p "
+         + "WHERE p.idPokedex NOT IN :idsExcluidos "
+         + "AND p.ps IS NOT NULL AND p.ataque IS NOT NULL AND p.defensa IS NOT NULL "
+         + "AND p.ataqueEspecial IS NOT NULL AND p.defensaEspecial IS NOT NULL AND p.velocidad IS NOT NULL "
+         + "ORDER BY ABS((p.ps + p.ataque + p.defensa + p.ataqueEspecial + p.defensaEspecial + p.velocidad) - :total), "
+         + "CASE WHEN p.generacion = :generacion THEN 0 ELSE 1 END, p.idPokedex")
+    List<Pokemon> similaresPorTotal(@Param("idsExcluidos") Collection<Integer> idsExcluidos,
+                                    @Param("total") int total,
+                                    @Param("generacion") Integer generacion,
+                                    Pageable pageable);
 
     @Query(
         value = "SELECT DISTINCT p FROM Pokemon p JOIN p.rutas r WHERE r.idRuta = :idRuta",
