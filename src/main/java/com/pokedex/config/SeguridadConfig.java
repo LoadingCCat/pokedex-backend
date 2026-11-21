@@ -33,7 +33,7 @@ import java.util.List;
  * "Authorization: Bearer <token>", firmado con HS256 y el secreto JWT_SECRETO.
  *
  * - Todos los GET son públicos (el frontend de consulta no cambia), salvo las importaciones.
- * - POST /api/auth/login es público.
+ * - POST /api/auth/login y POST /api/pokemons/identificar (F20) son públicos.
  * - POST, PUT, DELETE y la importación exigen el rol ADMIN: 401 sin token o con uno
  *   inválido o vencido, 403 si el token no tiene el rol (ErroresSeguridad, con el formato de
  *   error de siempre).
@@ -60,6 +60,8 @@ public class SeguridadConfig {
                         .requestMatchers("/api/pokemons/importar-rango", "/api/pokemons/importar-todo")
                                 .hasRole(Usuario.ROL_ADMIN)
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        // F20: excepción pública declarada a propósito; se protege con límite de uso por IP
+                        .requestMatchers(HttpMethod.POST, "/api/pokemons/identificar").permitAll()
                         .requestMatchers(HttpMethod.GET, "/**").permitAll()
                         .anyRequest().hasRole(Usuario.ROL_ADMIN))
                 .oauth2ResourceServer(o -> o
