@@ -159,11 +159,11 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [ ] B.55 `docs/operacion/despliegue.md`, "Arquitectura desplegada" en `arquitectura.md`, README con la URL de producción y métricas del módulo en `BITACORA_IA.md`
 
 **Frontend (repo `pokedex-frontend`)**
-- [ ] FE.49 F20 · Capa de datos: tipos, `identificar()`, server action o route handler hacia `API_URL`, espera de 70 s en las lecturas ("despertando el servidor…") y mock "no disponible"
+- [x] FE.49 F20 · Capa de datos: tipos, `identificar()`, route handler `/api/identificar` hacia `API_URL` (tope de 2 MB; las server actions topan en 1 MB), espera de 70 s en las lecturas y en las escrituras del panel, y mock "no disponible" (503). El mensaje "despertando el servidor…" queda para FE.50. Frontend: 97 pruebas (+29 de contrato con `API_URL`)
 - [ ] FE.50 F20 · Pantalla `/identificar`: `SelectorFoto`, reducción a 1024 px en JPEG, estado de carga, tarjeta del identificado y 3 similares, mensajes 400/422/429/502, aviso "la foto no se guarda" y enlace en la cabecera; pruebas en Vitest
 - [ ] FE.51 Playwright: `playwright.config.ts`, script `test:e2e` y suites `catalogo`, `ficha`, `identificar`, `admin` y `responsive` (credenciales en `.env.test`, fuera de Git)
 - [ ] FE.52 CI del frontend (Node 22, `npm ci`, `lint`, `test`, `build`) y protección de `main`
-- [ ] FE.53 Vercel: `API_URL` en Production (API de prod) y en Preview (API de dev)
+- [ ] FE.53 Vercel: `API_URL` en Production (API de prod) y en Preview (API de dev). Verificar también la duración máxima de la función de `/api/identificar` (`maxDuration`): con Render dormido la llamada puede tardar cerca de 70 s y el límite del plan de Vercel podría cortarla antes
 - [ ] FE.54 Simulacro de despliegue roto e Instant Rollback en Vercel
 - [ ] FE.55 README del frontend con la URL de producción
 
