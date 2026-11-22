@@ -57,3 +57,26 @@ La visión va simulada (`ServicioVisionMock`, perfil `e2e`): las pruebas no sale
 | Sin rastro (foto no guardada, log sin imagen) | Por diseño: el servicio solo lee los bytes en memoria y registra slug, confianza y tiempo. Sin prueba automática; revisar el log a mano |
 
 Los criterios "solo a mano" se comprueban con `curl.exe` como dice cada spec (ver `CLAUDE.md`).
+
+## E2E con Playwright (FE.51)
+
+Las pruebas de extremo a extremo viven en el frontend (`pokedex-frontend/e2e/`, archivos `*.e2e.ts`) y recorren el sitio real en Chromium contra este backend. **No** se ejecutan con `.\mvnw.cmd test` ni con `npm run test` (Vitest); se lanzan con `npm run test:e2e`.
+
+**Levantar el backend para las E2E** (en la terminal de la app, no desde el Bash del agente), con el perfil `e2e`, que reemplaza a Gemini por `ServicioVisionMock`: no sale a internet ni gasta cuota, y siempre identifica a **Charmander** (confianza 0,93):
+
+```powershell
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=e2e"   # http://localhost:8080
+```
+
+Necesita la BD local con los Pokémon importados (Charmander y al menos 3 similares) y `JWT_SECRETO`, `ADMIN_USERNAME` y `ADMIN_PASSWORD` en `application-local.properties`. El front lo levanta Playwright (`webServer`, con `API_URL=http://localhost:8080/api`) o reutiliza el que ya corra con esa variable. Las credenciales del admin para la prueba de login correcto van en `pokedex-frontend/.env.test` (`E2E_ADMIN_USUARIO`, `E2E_ADMIN_CONTRASENA`; fuera de Git); sin ellas, esa prueba se salta.
+
+El límite de 10 fotos por minuto por IP (F20) también aplica: una corrida envía 3 fotos; repetirla varias veces seguidas puede dar 429 (esperar un minuto).
+
+| Recorrido | Archivo | Criterio que cubre |
+|---|---|---|
+| Buscar "charmander" en el catálogo y abrir su ficha (`/pokemon/4`) | `catalogo.e2e.ts` | Catálogo P1: buscador por nombre; tarjeta → ficha |
+| Identificar, camino feliz: foto pequeña → Charmander + 3 similares que enlazan a su ficha | `identificar.e2e.ts` | F20 front: 200 con el identificado y 3 tarjetas, cada una lleva a su ficha |
+| Identificar con error: un `.txt` da «No pudimos leer esta foto…» y «Probar con otra foto» | `identificar.e2e.ts` | F20 front: errores sin textos técnicos, con reintento |
+| Identificar con foto grande (> 5 MB, generada en la prueba): la petición pesa < 1,5 MB | `identificar.e2e.ts` | F20 front: la foto se reduce en el navegador |
+| 360 px: `/identificar` y `/` sin scroll horizontal | `responsive.e2e.ts` | F20 front y RNF-03 |
+| Login con credenciales malas → «Usuario o contraseña incorrectos.»; con las buenas (si hay `.env.test`) → `/admin` | `admin.e2e.ts` | F15: login |
