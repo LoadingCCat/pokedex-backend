@@ -130,7 +130,7 @@ El proyecto `pokedex-frontend` se despliega solo desde `master`. Sin `API_URL` c
 
 1. **Salud.** `GET https://pokedex-backend-5bcq.onrender.com/api/health` (prod) y `https://pokedex-backend-dev.onrender.com/api/health` (dev) → `{"estado":"ok"}`. La primera llamada tras una pausa puede tardar ~1 min.
 2. **Datos.** `GET /api/pokemons?size=1` → 200 con `totalElements` = 1025, y una búsqueda sin tildes (`/api/pokemons?nombre=pikachu`) para confirmar `unaccent`.
-3. **IP real y límite (pendiente desde la decisión del 2026-11-21).** El límite de 10 fotos por minuto por IP usa `request.getRemoteAddr()` con `forward-headers-strategy=native` (Tomcat lee `X-Forwarded-For` de derecha a izquierda y se detiene en el primer proxy no interno). Hay que comprobar que los proxies de Render caen en `internal-proxies`:
+3. **IP real y límite (verificado en producción el 2026-11-21: la cabecera falsa se ignora; falta la prueba desde otra red).** El límite de 10 fotos por minuto por IP usa `request.getRemoteAddr()` con `forward-headers-strategy=native` (Tomcat lee `X-Forwarded-For` de derecha a izquierda y se detiene en el primer proxy no interno). Hay que comprobar que los proxies de Render caen en `internal-proxies`:
    - Manda **11** `POST /api/pokemons/identificar` (con una foto pequeña) cambiando cada vez un `X-Forwarded-For` falso (`1.1.1.1`, `1.1.1.2`, …). **Esperado:** la 11.ª responde **429**. Si nunca llega a 429, el servidor se deja engañar por la cabecera: ajusta `server.tomcat.remoteip.internal-proxies`.
    - Desde otra red (por ejemplo el celular con datos), 3 envíos seguidos deben responder 200: el cupo es por cliente y no compartido. Si todos comparten cupo, `getRemoteAddr()` está viendo la IP del proxy: ajusta lo mismo.
 4. **Identificación real.** En `https://pokedex-frontend-seven.vercel.app/identificar` sube la foto de un Pokémon: debe mostrar el identificado y 3 similares (usa `GEMINI_API_KEY` real). Con Render dormido verás «Despertando el servidor…» a los 5 s.
@@ -163,4 +163,4 @@ Con el bypass de administrador, tus pushes directos no esperan al CI: el ruleset
 - **Render:** servicio → **Events/Deploys** → el último despliegue bueno → **Rollback**. Es instantáneo (reutiliza la imagen anterior). Desactiva el Auto-Deploy si no quieres que el siguiente push vuelva a desplegar lo roto.
 - **Vercel:** proyecto → **Deployments** → el despliegue bueno → **Instant Rollback** (o **Promote to Production**).
 - **Base de datos:** el rollback de la app **no** revierte la base. Antes de un cambio de entidades, respaldo con `pg_dump` o una *branch* de Neon; si hace falta, restaurar desde ahí.
-- Simulacros pendientes: B.54 (Render) y FE.54 (Vercel) en `docs/tareas.md`.
+- Simulacros hechos: Vercel (Production: Instant Rollback y Promote to Production) y Render (servicio dev: Rollback y Deploy latest commit). Resultado en `docs/tareas.md` (B.54 y FE.54).
