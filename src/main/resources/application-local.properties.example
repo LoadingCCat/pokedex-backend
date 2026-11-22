@@ -12,3 +12,9 @@ JWT_SECRETO=cambia_esto_por_un_secreto_largo_de_al_menos_32_caracteres
 # Usuario administrador que se crea al arrancar si no existe
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=cambia_esta_contraseña
+
+# Identificar un Pokémon por foto (F20). Clave gratuita de Google AI Studio.
+# Sin ella el servidor arranca, pero /api/pokemons/identificar responde 502.
+GEMINI_API_KEY=pega_aqui_tu_clave_de_gemini
+# Opcional: modelo de visión (si lo quitas, usa el de application.properties)
+GEMINI_MODELO=gemini-3.5-flash-lite

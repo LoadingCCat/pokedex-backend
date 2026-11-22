@@ -1,0 +1,15 @@
+# Fuera de la imagen: credenciales locales, compilados y archivos que el build no usa.
+src/main/resources/application-local.properties
+**/application-local.properties
+target
+.git
+.gitignore
+.gitattributes
+.claude
+.idea
+.vscode
+docs
+*.md
+HELP.md
+Dockerfile
+.dockerignore
