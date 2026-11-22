@@ -119,10 +119,11 @@ El plan gratuito de Render da ~0,1 CPU y 512 MB: la JVM tarda minutos en arranca
 | I. H + SerialGC | 83,0 s | 92 s | Sin mejora |
 | J. H + `ddl-auto=none` (solo informativo) | 81,4 s | 91 s | Sin mejora: no es Hibernate quien tarda; se mantiene `update` |
 | **Final (Dockerfile): B + CDS** | **65,1 s** | **72 s** | **−64 % frente a A** (`Started`) y −65 % hasta responder; la primera petición real baja de 3,2 s a 1,0 s |
+| **Render producción (medición real)** | **47,9 s** | — | **−61 %** frente a los 122 s anteriores |
 
 - **Adoptado:** `-XX:TieredStopAtLevel=1` (a cambio, menos rendimiento sostenido: irrelevante con este tráfico) y el archivo CDS (`app.jsa`, +40 MB; la imagen pasa de 403 a 454 MB). Se genera en el build con una corrida de entrenamiento sin base de datos que falla al conectar pero ya cargó Spring, Tomcat y Security. El build falla si no se genera el archivo; si no coincidiera con la JVM, la JVM lo ignora y arranca igual.
 - **Descartado por la medición:** `UseSerialGC`, `lazy-initialization`, `BytecodeVerificationRemote`, `ddl-auto=none`.
-- **Sin verificar en Render:** el Render real es más rápido que este banco (122 s frente a 202 s con la imagen anterior), así que se espera algo en el orden de 40–80 s, pero hay que medirlo tras el despliegue (los logs de Render muestran `Started … in X s`). Mientras tanto, los topes del frontend y el aviso («hasta 2–3 minutos la primera vez») cubren el caso anterior.
+- **Medido en Render producción tras el despliegue:** `Started PokedexBackendApplication in 47.893 seconds`, frente a 122 s antes (**−61 %**). En el banco local (0,1 CPU) la mejora fue de −64 %, así que el banco predijo bien la proporción. Los topes del frontend (180 s y 270 s) y el aviso («hasta 2–3 minutos la primera vez») siguen cubriendo con margen, porque a ese arranque se suman el despertar de Neon y, al identificar, Gemini. Dev se puede medir igual en sus logs (antes: 116 y 134 s).
 - Banco de pruebas (para repetirlo): `docker run --network <red> --cpus=0.1 --memory=512m` contra un PostgreSQL de `postgres:17-alpine` con `unaccent`, con variables de relleno; se mide `Started PokedexBackendApplication in X seconds` y el tiempo hasta que `/api/health` responde.
 
 ## 5. Variables de entorno (solo nombres)
