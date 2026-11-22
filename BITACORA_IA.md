@@ -352,3 +352,75 @@ Continuación de la sesión anterior, con el mismo método por fases (docs → p
 | El `awk` que quitó la clase auxiliar de roles de `SeguridadConfig` se llevó también la llave de cierre de la clase | Revisando el final del archivo antes de compilar | Se repuso la llave |
 | `next start` en el puerto 3100 falló (`EADDRINUSE`): lo ocupaba otro proceso, y Playwright cargó esa página | La notificación del proceso en segundo plano | Se usó el 3217; el proceso ajeno no se tocó |
 | No hay Python en el equipo, y un heredoc de Bash con comillas y acentos graves falló | Errores de la terminal | Se editó con Edit y con scripts de Node en archivo |
+
+---
+
+## 2026-11-21 · Claude Code (F20 y Fase 5: identificación por foto y despliegue) · Métricas del módulo
+
+Cierre de B.55. Todo lo que sigue sale de `git log`, de los informes de pruebas y de mediciones hechas con `next build`; lo que solo conoce el equipo queda como **[completar]**. Los dos repos se trabajaron el mismo día (2026-11-21).
+
+### Commits y tiempos (de `git log`)
+| | Backend (`main`) | Frontend (`master`) |
+|---|---|---|
+| Primer commit de F20 | `993d3b2` · 12:16 (spec, contrato y decisiones) | `c3b22d0` · 14:16 (capa de datos) |
+| Último commit de la Fase 5 | `228880b` · 22:05 (X-Forwarded-For verificado) | `a63f7b9` · 21:40 (URLs de producción) |
+| Commits desde F20 hasta hoy | 21 (+1 de esta entrada) | 10 |
+| Cambio acumulado | 51 archivos, +3 045 / −16 líneas | 49 archivos, +1 941 / −132 líneas |
+
+- Por tramos: F20 backend de 12:16 a 15:32 (B.40–B.47); F20 frontend de 14:16 a 15:35 (FE.49–FE.50); pruebas E2E a las 19:53 (FE.51); Fase 5 de 20:15 a 22:05 (Docker, CI, configuración de producción, imágenes, `generateStaticParams`, documentación y cierre).
+- Tiempo entre el primer y el último commit: unas 10 h de reloj. **Tiempo real de trabajo del equipo y número de sesiones: [completar]**.
+
+### Tareas cerradas
+- 20 tareas `[x]` en el plan de F20 y entrega, tras cerrar B.55: B.40–B.47 (8, F20 en el backend), B.51–B.55 (5, Docker, CI, entornos, rollback y documentación) y FE.49–FE.55 (7, F20 en el frontend, E2E, CI y despliegue).
+- Pendientes del plan (no son de la Fase 5): B.48–B.50 (interventoría).
+
+### Pruebas, antes y después
+| Suite | Partida (antes de F20) | Ahora | Cambio |
+|---|---|---|---|
+| Backend (`mvnw test`, JUnit) | 129 | **210** (0 fallos, informes de Surefire del 2026-11-21) | +81 |
+| Frontend unitarias (Vitest, sin `API_URL`) | 77 | **141** | +64 |
+| Frontend de contrato (Vitest con `API_URL`) | 29 | 29 (se saltan sin `API_URL`) | 0 |
+| E2E (Playwright, Chromium) | 0 | **8** en 4 archivos (`admin`, `catalogo`, `identificar`, `responsive`) | +8 |
+
+- Los E2E no corren en el CI (necesitan el backend con perfil `e2e` y la base con los 1025 Pokémon); se lanzan a mano con `npm run test:e2e`.
+- El `CLAUDE.md` del backend todavía dice «107 pruebas»: se actualiza en B.39 (cierre).
+
+### Despliegue y peso
+| Medida | Antes | Después |
+|---|---|---|
+| `.next/server/app/pokemon` (build en modo mock) | **843 MB**, 1025 fichas prerenderizadas | **151 MB**, solo las 151 de Kanto (el resto, en la primera visita) |
+| Mismo directorio con `API_URL` (build contra la API) | no compilaba | 7 MB (solo esqueletos) |
+| Transformaciones de imagen en Vercel | 1,4 K de 5 K al mes (dato del panel) | tope teórico ≈ 3 100 (1025 artworks × 3 anchos × 1 formato) |
+| Almacenamiento de despliegues en Vercel | 7,51 de 10 GB (dato del panel) | **[completar]** (medir tras limpiar despliegues viejos) |
+| Imagen Docker del backend | no existía | 403 MB (JAR de 56,8 MB), usuario sin privilegios |
+| CI | ninguno | GitHub Actions: backend (`test` + `docker`), frontend (`build`); rulesets activos |
+| Funciones de identificación | sin límite declarado | `maxDuration` 120 s, fetch a 110 s |
+
+- Entornos: Vercel (iad1), Render prod y dev (Virginia) y Neon `production` y `dev` (us-east-1), todos en US East.
+- Identificación real con Gemini verificada en producción desde el celular. **Cuota de Gemini consumida en las pruebas, tiempo medido del arranque en frío de Render y latencia de una identificación: [completar]**.
+
+### Incidentes encontrados y corregidos
+| Incidente | Cómo se detectó | Corrección |
+|---|---|---|
+| **Hidratación en el celular:** al abrir `npm run dev` desde la IP del ordenador, la página se veía pero los botones no hacían nada | Next 16 bloquea `/_next/*` (JS y HMR) desde cualquier host que no sea `localhost` (en el log, `Blocked cross-origin request to Next.js dev resource`) | Variable `DEV_ORIGINS` → `allowedDevOrigins` (solo desarrollo) y `SelectorFoto` con `<label htmlFor>` a un input file enfocable, para que también abra el selector en iOS Safari. Front `c04ad3c` |
+| **`next build` con `API_URL` fallaba** en `/creditos` y `/regiones`: el `fetch` a la API estaba fuera de `<Suspense>` | Al medir la tarea 5.4b contra el backend local: falla aunque la API esté arriba. No se había notado porque Vercel corría con el mock | Datos dentro de `<Suspense>` con esqueleto; compila con el backend arriba y contra un puerto cerrado, así que el build no depende de Render. Regla nueva en `CLAUDE.md`. Front `7c5816d` |
+| **Contraseña del administrador:** el `pg_dump` trajo a Neon el admin local con la contraseña local | Al revisar `AdministradorInicial` (nunca pisa a un admin existente) frente al dump | Se documentó borrar la fila antes del primer arranque en producción y dejar que el servicio la cree con `ADMIN_USERNAME` y `ADMIN_PASSWORD` de Render (`docs/despliegue.md` §2). Sin cambiar código: un `ADMIN_RESTABLECER` se descartó. **Confirmar que el `DELETE` se ejecutó en Neon production antes del primer arranque: [completar]** |
+| **Pool de Neon:** el pool propuesto dejaba 1 conexión mínima abierta, con lo que Neon no suspendería el cómputo y se gastarían las horas gratuitas | Observación del usuario al revisar el diff | `DB_POOL_MIN` por defecto en 0, con `idle-timeout` de 2 min y `max-lifetime` de 4 min (`e3949e4`) |
+| **Almacenamiento de Vercel** (7,51 GB): 1025 fichas prerenderizadas, unos 820 KB cada una, en cada despliegue | Medición del output de `next build` | `generateStaticParams` con las 151 de Kanto (`7fa154b`). Falta limpiar despliegues viejos en el panel |
+| **IP del límite de identificaciones:** duda de si Render deja el `X-Forwarded-For` falsificable o hace compartir cupo | Decisión pendiente desde F20 (2.3) | Verificado en producción: 10 envíos con cabecera falsa dieron 400, el 11.º 429; con la PC bloqueada, el celular con datos móviles identificó con 200 (`228880b`) |
+
+### Errores del agente y cómo se corrigieron
+| Problema | Cómo se detectó | Corrección |
+|---|---|---|
+| Propuse un `.vercelignore` para bajar el almacenamiento; solo aplica a despliegues por CLI y el proyecto usa Git | Al repasar la documentación antes de commitear | Se quitó antes del commit y se explicó la causa real (las fichas prerenderizadas) |
+| Un `sed` con un patrón que no coincidía dejó `DB_POOL_MIN=1` en `CLAUDE.md` tras pasar a 0 | `grep` del resultado (0 coincidencias de `DB_POOL_MIN=0`) | Corregido y añadido al mismo commit local, aún sin push |
+| Los dos commits de CI no se hicieron: los archivos nuevos estaban solo como `git add -N` (intent-to-add) | La salida de `git commit` («no changes added to commit») | `git add` y commit de nuevo |
+| Marqué `[x]` B.52, FE.52 y B.55, cuyo texto incluía el ruleset y la URL de producción, que dependían de paneles del usuario | Al releer `tareas.md` antes de mostrar el diff | Se dejaron `[ ]` con su nota, y se cerraron cuando el usuario los hizo |
+| Di por «verificado» el límite por IP con una sola red, que no distingue entre la IP real y la del proxy | Razonando sobre el resultado del usuario | Se marcó parcial (`[~]`) hasta la prueba desde otra red; después, `[x]` |
+
+### Prompts clave
+- *"Lee PLAN_CLAUDE_CODE.md (Fase 5)… una tarea por commit, mostrando el diff de cada una y esperando mi aprobación. Sin push."* → plan en modo plan y tareas 5.1–5.5.
+- *"Sobre generateStaticParams: sí, como tarea 5.4b… que el build no dependa de que Render esté despierto"* → de 843 a 151 MB y el hallazgo del build con `API_URL`.
+- *"Opción 1. Arregla /creditos y TODAS las páginas que fallen en next build con API_URL… contra el backend local encendido y también contra un puerto muerto"* → `<Suspense>` en `/creditos` y `/regiones`.
+- *"Nunca me pidas los secretos ni los escribas en archivos"* → las variables van solo por nombre en `docs/despliegue.md`; los valores, en los paneles de Render y Vercel.
+- **Número de prompts de la sesión y uso de tokens: [completar]**.
