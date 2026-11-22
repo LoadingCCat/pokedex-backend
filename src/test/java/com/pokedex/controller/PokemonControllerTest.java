@@ -158,6 +158,15 @@ class PokemonControllerTest {
                 .andExpect(jsonPath("$.mensaje").value(containsString("'id'")));
     }
 
+    // T-08 · F7: «GET /api/pokemons/abc/evoluciones responde 400»
+    @Test
+    void idNoNumericoEnEvolucionesResponde400() throws Exception {
+        mvc.perform(get("/api/pokemons/abc/evoluciones"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value(containsString("'id'")));
+        org.mockito.Mockito.verifyNoInteractions(evolucionService);
+    }
+
     @Test
     void urlInexistenteResponde404() throws Exception {
         mvc.perform(get("/api/no-existe"))

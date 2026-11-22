@@ -544,4 +544,106 @@ class ApiConPostgresTest {
         mvc.perform(get("/api/rutas/region/kanto"))
                 .andExpect(jsonPath("$.content[*].nombre", contains("Bosque Verde", "Ruta 1")));
     }
+
+    // ---------- Grupo 5 de la 4.2: criterios de las specs sin prueba (T-01, T-02, T-04, T-05) ----------
+
+    // T-01 · F1: «GET /api/pokemons?sort=nombre,asc» devuelve los Pokémon en orden alfabético
+    @Test
+    void sortPorNombreAscendenteDevuelveElOrdenAlfabetico() throws Exception {
+        // Alfabético: charmander(4), cyndaquil(155), flabebe(669), pikachu(25); por id sería 4, 25, 155, 669
+        mvc.perform(get("/api/pokemons?sort=nombre,asc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[*].nombre", contains("charmander", "cyndaquil", "flabebe", "pikachu")));
+    }
+
+    // T-02 · F2: obtencion/inicial incluye bulbasaur, charmander, squirtle y pikachu
+    @Test
+    void obtencionInicialIncluyeALosCuatroIniciales() throws Exception {
+        Tipo grass = tipo("grass");
+        Tipo water = tipo("water");
+        pokemon(1, "bulbasaur", "Bulbasaur", 1, "Kanto", "Inicial", 45, List.of(grass), List.of());
+        pokemon(7, "squirtle", "Squirtle", 1, "Kanto", "Inicial", 43, List.of(water), List.of());
+        pokemon(138, "omanyte", "Omanyte", 1, "Kanto", "Fósil", 35, List.of(water), List.of());
+
+        mvc.perform(get("/api/pokemons/obtencion/inicial"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[*].nombre",
+                        org.hamcrest.Matchers.hasItems("bulbasaur", "charmander", "squirtle", "pikachu")))
+                .andExpect(jsonPath("$.content[*].nombre", org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.hasItem("omanyte"))));
+    }
+
+    // T-02 · F2: obtencion/fosil devuelve lo mismo que obtencion/Fósil
+    @Test
+    void obtencionFosilSinTildeDevuelveLoMismoQueConTilde() throws Exception {
+        pokemon(138, "omanyte", "Omanyte", 1, "Kanto", "Fósil", 35, List.of(tipo("water")), List.of());
+
+        String sinTilde = mvc.perform(get("/api/pokemons/obtencion/fosil")).andReturn().getResponse().getContentAsString();
+        String conTilde = mvc.perform(get("/api/pokemons/obtencion/Fósil")).andReturn().getResponse().getContentAsString();
+
+        org.assertj.core.api.Assertions.assertThat(sinTilde).isEqualTo(conTilde);
+        mvc.perform(get("/api/pokemons/obtencion/fosil"))
+                .andExpect(jsonPath("$.content[*].nombre", contains("omanyte")));
+    }
+
+    // T-04 · F4: sort=foo también en /movimientos/buscar
+    @Test
+    void buscarMovimientosConSortInvalidoResponde400() throws Exception {
+        mvc.perform(get("/api/movimientos/buscar?nombre=a&sort=foo"))
+                .andExpect(status().isBadRequest());
+    }
+
+    // T-04 · F4: /pokemons/25/movimientos en orden alfabético e incluye thunderbolt
+    @Test
+    void losMovimientosDePikachuVanEnOrdenAlfabeticoEIncluyenThunderbolt() throws Exception {
+        List<Movimiento> aprendidos = List.of(
+                guardarMovimiento("thunderbolt", "Rayo", "Especial", 90),
+                guardarMovimiento("quick-attack", "Ataque Rápido", "Físico", 40),
+                guardarMovimiento("agility", "Agilidad", "Estado", null));
+        Pokemon pikachu = pokemonRepository.findById(25).orElseThrow();
+        pikachu.setMovimientos(aprendidos);
+        pokemonRepository.save(pikachu);
+
+        mvc.perform(get("/api/pokemons/25/movimientos"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].nombre", contains("agility", "quick-attack", "thunderbolt")));
+    }
+
+    private Movimiento guardarMovimiento(String nombre, String nombreEs, String categoria, Integer potencia) {
+        Movimiento m = new Movimiento();
+        m.setNombre(nombre);
+        m.setNombreEs(nombreEs);
+        m.setCategoria(categoria);
+        m.setPotencia(potencia);
+        m.setEsCompetitivo(potencia != null && potencia > 80);
+        return movimientoRepository.save(m);
+    }
+
+    // T-05 · F5: /rutas/regiones devuelve exactamente las 9 regiones
+    @Test
+    void regionesSonExactamenteLasNueve() throws Exception {
+        mvc.perform(get("/api/rutas/regiones"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", contains("Kanto", "Johto", "Hoenn", "Sinnoh", "Teselia",
+                        "Kalos", "Alola", "Galar", "Paldea")));
+    }
+
+    // T-05 · F5: region/KANTO devuelve lo mismo que region/kanto, ordenado alfabéticamente
+    @Test
+    void rutasDeUnaRegionNoDistinguenMayusculasYVanPorNombre() throws Exception {
+        String mayusculas = mvc.perform(get("/api/rutas/region/KANTO")).andReturn().getResponse().getContentAsString();
+        String minusculas = mvc.perform(get("/api/rutas/region/kanto")).andReturn().getResponse().getContentAsString();
+
+        org.assertj.core.api.Assertions.assertThat(mayusculas).isEqualTo(minusculas);
+        mvc.perform(get("/api/rutas/region/KANTO"))
+                .andExpect(jsonPath("$.content[*].nombre", contains("Bosque Verde", "Ruta 1")));
+    }
+
+    // T-05 · F5: GET /api/tipos incluye electric después de importar a Pikachu
+    @Test
+    void tiposIncluyeElectricDespuesDeImportarAPikachu() throws Exception {
+        mvc.perform(get("/api/tipos"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].nombre", org.hamcrest.Matchers.hasItem("electric")));
+    }
 }

@@ -79,6 +79,18 @@ class MovimientoControllerTest {
         assertThat(pagina.getValue().getSort()).isEqualTo(Sort.by("nombre"));
     }
 
+    // T-04 · F4: «?size=500 devuelve como máximo 200»
+    @Test
+    void elTamanoDePaginaSeLimitaA200() throws Exception {
+        when(movimientoRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+
+        mvc.perform(get("/api/movimientos?size=500")).andExpect(status().isOk());
+
+        ArgumentCaptor<Pageable> pagina = ArgumentCaptor.forClass(Pageable.class);
+        verify(movimientoRepository).findAll(pagina.capture());
+        assertThat(pagina.getValue().getPageSize()).isEqualTo(200);
+    }
+
     @Test
     void movimientoInexistenteResponde404() throws Exception {
         when(movimientoRepository.findById(9999)).thenReturn(Optional.empty());

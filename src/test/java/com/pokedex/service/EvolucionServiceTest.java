@@ -121,6 +121,24 @@ class EvolucionServiceTest {
         assertThat(base.evoluciones().get(0).evoluciones().get(0).condicion()).isEqualTo("Nivel 32");
     }
 
+    // T-08 · F7: pedir a Pikachu (25) devuelve una cadena que empieza en Pichu (172)
+    @Test
+    void alPedirAPikachuLaCadenaEmpiezaEnPichu() {
+        List<Evolucion> etapas = List.of(etapa(172, "pichu", null, null),
+                etapa(25, "pikachu", 172, "Subiendo de nivel, con amistad alta"),
+                etapa(26, "raichu", 25, "Usando Piedra Trueno"));
+        etapas.forEach(e -> when(evolucionRepository.findById(e.getIdPokedex())).thenReturn(Optional.of(e)));
+        when(evolucionRepository.findByIdCadena(67)).thenReturn(etapas);
+        when(pokemonRepository.findById(25)).thenReturn(Optional.of(pokemon(25, "Pikachu")));
+        when(pokemonRepository.findAllById(any())).thenReturn(List.of());
+
+        EtapaEvolucion raiz = servicio.obtenerCadena(25);
+
+        assertThat(raiz.idPokedex()).isEqualTo(172);
+        assertThat(raiz.evoluciones()).extracting(EtapaEvolucion::idPokedex).containsExactly(25);
+        assertThat(raiz.evoluciones().get(0).evoluciones()).extracting(EtapaEvolucion::idPokedex).containsExactly(26);
+    }
+
     @Test
     void unPokemonSinCadenaGuardadaDevuelveUnaSolaEtapa() {
         when(pokemonRepository.findById(128)).thenReturn(Optional.of(pokemon(128, "Tauros")));

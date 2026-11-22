@@ -1,6 +1,6 @@
 # F19 · Debilidades, resistencias y naturalezas
 
-**Estado:** Implementada (solo frontend: FE.46–FE.48)
+**Estado:** Implementada (solo frontend: FE.46–FE.48) · criterios con pruebas automáticas (el de 360 px, en E2E; ver `docs/pruebas.md`)
 
 ## Historia
 Como jugador, quiero ver en la ficha a qué tipos es débil o resistente un Pokémon y consultar qué hace cada naturaleza, para armar mi equipo sin salir de la Pokédex.

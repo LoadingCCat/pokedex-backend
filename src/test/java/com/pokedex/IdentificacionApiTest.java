@@ -162,6 +162,29 @@ class IdentificacionApiTest {
                 .andExpect(jsonPath("$.similares[2].motivo").value("Comparte el tipo Fuego y su total difiere en 1"));
     }
 
+    // T-14 · F20 «Sin rastro»: el log no contiene la imagen (ni sus bytes ni su Base64), ni en éxito ni en error.
+    // Límite: MockMvc no pasa por Tomcat, así que no ve el archivo temporal de la subida multipart.
+    @Test
+    @org.junit.jupiter.api.extension.ExtendWith(org.springframework.boot.test.system.OutputCaptureExtension.class)
+    void elLogNoContieneLaFotoNiEnExitoNiEnError(org.springframework.boot.test.system.CapturedOutput salida) throws Exception {
+        String marca = "MARCA-UNICA-DE-LA-FOTO-0123456789-ABCDEFGHIJ";
+        byte[] bytes = new byte[8 + marca.length()];
+        System.arraycopy(new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 1, 2, 3, 4}, 0, bytes, 0, 8);
+        System.arraycopy(marca.getBytes(StandardCharsets.US_ASCII), 0, bytes, 8, marca.length());
+        MockMultipartFile foto = conBytes("foto.jpg", "image/jpeg", bytes);
+
+        mvc.perform(multipart(RUTA).file(foto).with(ip)).andExpect(status().isOk());
+        vision.fallar();
+        mvc.perform(multipart(RUTA).file(foto).with(ip)).andExpect(status().isBadGateway());
+        vision.responder(new ResultadoVision(false, null, 0.0));
+        mvc.perform(multipart(RUTA).file(foto).with(ip)).andExpect(status().isUnprocessableEntity());
+
+        String registro = salida.getAll();
+        assertThat(registro).doesNotContain(marca);
+        assertThat(registro).doesNotContain(java.util.Base64.getEncoder().encodeToString(bytes));
+        assertThat(registro).doesNotContain(java.util.Base64.getEncoder().encodeToString(marca.getBytes(StandardCharsets.US_ASCII)));
+    }
+
     @Test
     void sinTokenResponde200() throws Exception {
         // Ni cabecera Authorization ni usuario autenticado

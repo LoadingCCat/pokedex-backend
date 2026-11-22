@@ -187,6 +187,33 @@ class PokemonServiceTest {
         assertThat(guardado().getRutas()).containsExactly(bosque);
     }
 
+    // T-03 · F3/F10: importar N Pokémon termina con importados = N y fallidos = 0
+    // (el total real de 1025 contra la PokeAPI se comprueba a mano; aquí, con la PokeAPI simulada)
+    @Test
+    void importar10TerminaConLos10ImportadosYSinFallidos() {
+        for (int id = 1; id <= 10; id++) {
+            pokemon(id, "pokemon-" + id, "Pokémon " + id, "normal");
+        }
+
+        ResultadoImportacion resultado = servicio(new SyncTaskExecutor()).importarPokemonsMasivo(10);
+
+        assertThat(resultado.importados()).isEqualTo(10);
+        assertThat(resultado.fallidos()).isZero();
+        verify(pokemonRepository, org.mockito.Mockito.times(10)).save(any(Pokemon.class));
+    }
+
+    @Test
+    void importar1025TerminaConLos1025ImportadosYSinFallidos() {
+        for (int id = 1; id <= 1025; id++) {
+            pokemon(id, "pokemon-" + id, "Pokémon " + id, "normal");
+        }
+
+        ResultadoImportacion resultado = servicio(new SyncTaskExecutor()).importarPokemonsMasivo(1025);
+
+        assertThat(resultado.importados()).isEqualTo(1025);
+        assertThat(resultado.fallidos()).isZero();
+    }
+
     // ---------- B.28 · nombres de lugares en español ----------
 
     /** Bulbasaur aparece en un área del lugar 155 (Viridian Forest), con los nombres que se pasen. */

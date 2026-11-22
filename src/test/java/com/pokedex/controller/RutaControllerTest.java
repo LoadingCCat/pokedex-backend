@@ -123,6 +123,35 @@ class RutaControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    // T-05 · F5: «region/kanto?size=200» cabe en una sola página (se acepta tamaño 200)
+    @Test
+    void rutasDeUnaRegionAceptanPaginasDe200() throws Exception {
+        when(rutaRepository.findByRegionIgnoreCase(anyString(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+
+        mvc.perform(get("/api/rutas/region/kanto?size=200")).andExpect(status().isOk());
+
+        ArgumentCaptor<Pageable> pagina = ArgumentCaptor.forClass(Pageable.class);
+        verify(rutaRepository).findByRegionIgnoreCase(anyString(), pagina.capture());
+        assertThat(pagina.getValue().getPageSize()).isEqualTo(200);
+    }
+
+    // T-05 · F5: «PUT /api/rutas/{id} cambia nombre, región y descripción, y no toca idPokeapi»
+    @Test
+    void actualizarCambiaNombreRegionYDescripcionSinTocarIdPokeapi() throws Exception {
+        Ruta existente = rutaGuardada(3, 321);
+        when(rutaRepository.findById(3)).thenReturn(Optional.of(existente));
+        when(rutaRepository.save(any(Ruta.class))).thenAnswer(i -> i.getArgument(0));
+
+        // El cuerpo intenta colar un idPokeapi distinto: debe ignorarse
+        mvc.perform(put("/api/rutas/3").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombre\":\"Bosque Nuevo\",\"region\":\"Johto\",\"descripcion\":\"Otra\",\"idPokeapi\":999}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombre").value("Bosque Nuevo"))
+                .andExpect(jsonPath("$.region").value("Johto"))
+                .andExpect(jsonPath("$.descripcion").value("Otra"))
+                .andExpect(jsonPath("$.idPokeapi").value(321));
+    }
+
     // ---------- F15 · borrar rutas ----------
 
     private static Ruta rutaGuardada(int id, Integer idPokeapi) {
