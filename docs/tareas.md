@@ -147,7 +147,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] B.47 `IdentificacionService`, `POST /api/pokemons/identificar` y 422, 429 y 502 en `GlobalExceptionHandler`; una prueba de integración por criterio de F20
 
 **Fase 4 · Interventoría (U5)**
-- [ ] B.48 Auditoría en sesión limpia, sin modificar archivos → `docs/calidad/interventoria.md` (hallazgo | archivo:línea | severidad | cómo comprobarlo | corrección)
+- [x] B.48 Auditoría en sesión limpia, sin modificar archivos → `docs/calidad/interventoria.md` (hallazgo | archivo:línea | severidad | cómo comprobarlo | corrección)
 - [ ] B.49 Corrección de los hallazgos: causa raíz, prueba de regresión y commit `fix: … (closes #n)`; pendientes justificados (incl. `ddl-auto=update` frente a Flyway)
 - [ ] B.50 Interventoría cruzada: hallazgos del otro equipo como issues con `.github/ISSUE_TEMPLATE/interventoria.md`
 
