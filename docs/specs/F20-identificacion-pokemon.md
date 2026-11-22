@@ -1,6 +1,6 @@
 # F20 · Identificar un Pokémon por foto y ver similares
 
-**Estado:** Pendiente
+**Estado:** Implementada (backend B.43–B.47, frontend FE.49–FE.51) · todos los criterios con prueba automática salvo «sin rastro» (manual por diseño: ver T-14 de `docs/calidad/interventoria.md`)
 
 ## Historia
 Como jugador o fan, quiero subir o tomar una foto de un Pokémon (una carta, una pantalla, un peluche, una figura) para saber cuál es y ver otros 3 parecidos, sin tener que adivinar su nombre para buscarlo.

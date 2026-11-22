@@ -385,6 +385,7 @@ Cierre de B.55. Todo lo que sigue sale de `git log`, de los informes de pruebas 
 
 - Los E2E no corren en el CI (necesitan el backend con perfil `e2e` y la base con los 1025 Pokémon); se lanzan a mano con `npm run test:e2e`.
 - El `CLAUDE.md` del backend todavía dice «107 pruebas»: se actualiza en B.39 (cierre).
+- Corrección del 2026-11-22 (tarea 4.2): `mvnw test` sobre el commit `6dd6154` (antes de las correcciones) dio **204** pruebas, 0 fallos, no 210; no se pudo reproducir la cifra anterior. Tras la tarea 4.2 son **244**. `CLAUDE.md` ya dice 244.
 
 ### Despliegue y peso
 | Medida | Antes | Después |

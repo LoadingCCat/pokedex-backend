@@ -1,6 +1,6 @@
 # F14 · Filtro por dos tipos
 
-**Estado:** Implementada (B.29, FE.33) · criterios con pruebas automáticas (ver `docs/pruebas.md`)
+**Estado:** Implementada (B.29, FE.33) · criterios con pruebas automáticas parciales (falta el criterio del selector del front: ver T-11 de `docs/calidad/interventoria.md`; ver `docs/pruebas.md`)
 
 ## Historia
 Como fan de Pokémon, quiero filtrar por dos tipos a la vez (por ejemplo, Fuego/Volador) para encontrar los Pokémon que tienen esa combinación (RF-08 de la entrevista).

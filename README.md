@@ -9,17 +9,25 @@ API REST de la Pokedex+ hecha con Java 21, Spring Boot 4.1.2, Maven y PostgreSQL
 ## Cómo correrlo
 
 1. Crea la base de datos `pokedex_db` en PostgreSQL.
-2. Copia `src/main/resources/application-local.properties.example` como `application-local.properties` en la misma carpeta y pon tu usuario y contraseña. Ese archivo no se sube a git.
+2. Copia `src/main/resources/application-local.properties.example` como `application-local.properties` en la misma carpeta y completa:
+   - `DB_USERNAME` y `DB_PASSWORD` (la contraseña de la base **no tiene valor por defecto**: sin ella el servidor no arranca);
+   - `JWT_SECRETO`: un secreto propio y al azar de al menos 32 caracteres. Sin él el servidor no arranca, y rechaza el valor de ejemplo de la plantilla;
+   - `ADMIN_USERNAME` y `ADMIN_PASSWORD`: el administrador que se crea al arrancar si no existe.
+   Ese archivo no se sube a git. Las mismas variables se pueden pasar como variables de entorno.
 3. Ejecuta:
    ```
-   .\mvnw.cmd spring-boot:run
+   .mvnw.cmd spring-boot:run
    ```
-4. Llena la base de datos (tarda unos minutos porque consulta la PokeAPI):
+4. Llena la base de datos. La importación **exige el token del administrador** (sin él responde 401). En PowerShell:
    ```
-   http://localhost:8080/api/pokemons/importar-rango?total=151&movimientos=100
+   $cuerpo = @{ usuario = $env:ADMIN_USERNAME; contrasena = $env:ADMIN_PASSWORD } | ConvertTo-Json
+   $token = (Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/auth/login -ContentType "application/json" -Body $cuerpo).token
+   curl.exe -X POST "http://localhost:8080/api/pokemons/importar-rango?total=151&movimientos=100" -H "Authorization: Bearer $token"
    ```
-   Para todos los Pokémon usa `total=1025`. Se puede ejecutar varias veces: actualiza lo que ya existe y no duplica nada.
+   (antes, `$env:ADMIN_USERNAME` y `$env:ADMIN_PASSWORD` deben tener los mismos valores que pusiste en el paso 2; el token no se guarda en ningún archivo).
+   Responde 202 al instante y la importación sigue en segundo plano; el avance se ve en `GET /api/pokemons/importacion`. Para todos los Pokémon usa `total=1025`. Se puede ejecutar varias veces: actualiza lo que ya existe y no duplica nada.
    La primera vez tarda más (unos minutos para 151) porque también descarga los lugares donde aparece cada Pokémon y los movimientos que aprende.
+   Tras 5 intentos de login fallidos en un minuto desde la misma IP, el login responde 429 hasta que pase el minuto.
 
 ## API
 

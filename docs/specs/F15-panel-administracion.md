@@ -1,6 +1,6 @@
 # F15 · Panel de administración y autenticación
 
-**Estado:** En progreso (backend hecho: B.30–B.32; falta el frontend, FE.34–FE.37)
+**Estado:** Implementada (backend B.30–B.32, frontend FE.34–FE.37) · pruebas automáticas parciales (faltan el E2E de la redirección y las pruebas del front: ver T-12 y T-15 de `docs/calidad/interventoria.md`)
 
 ## Historia
 Como administrador, quiero iniciar sesión y gestionar Pokémon, movimientos y rutas desde un panel, sin que nadie más pueda modificar los datos (RF-11, RF-12 y RNF-05 de la entrevista).

@@ -1,6 +1,6 @@
 # F5 · Rutas y regiones
 
-**Estado:** Implementada · criterios con pruebas automáticas (ver `docs/pruebas.md`)
+**Estado:** Implementada · criterios con pruebas automáticas parciales (faltan: ver T-05 de `docs/calidad/interventoria.md`; ver `docs/pruebas.md`)
 
 ## Historia
 Como fan de Pokémon, quiero explorar las regiones y los lugares de los juegos para saber qué Pokémon aparecen en cada uno.
@@ -22,8 +22,8 @@ Como fan de Pokémon, quiero explorar las regiones y los lugares de los juegos p
 - [ ] `POST` sin nombre o sin región responde 400.
 - [ ] `POST` repetido con el mismo nombre y región (sin importar mayúsculas) responde 400.
 - [ ] `PUT /api/rutas/{id}` cambia nombre, región y descripción, y no toca `idPokeapi`.
-- [ ] `DELETE /api/rutas/{id}` responde 405 (no se permite borrar rutas).
+- [ ] `DELETE /api/rutas/{id}` con token ADMIN responde 204 y la ruta deja de existir (404 si no existe; 401 sin token). Desde B.31 (F15) se puede borrar; el 405 original ya no aplica (ver `docs/decisiones.md`, 2026-11-22).
 - [ ] `GET /api/tipos` incluye `electric` después de importar a Pikachu.
 
 ## Fuera de alcance
-Borrar rutas. Mapas o coordenadas de los lugares. Nombres en español de los lugares que la PokeAPI solo tiene en inglés.
+Mapas o coordenadas de los lugares. Nombres en español de los lugares que la PokeAPI solo tiene en inglés.

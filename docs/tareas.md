@@ -45,7 +45,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.3 Docs del front: `CLAUDE.md` y `docs/pantallas.md` (P1 Catálogo, P2 Ficha, P3 Movimientos, P4 Regiones, P5 Ruta)
 - [x] FE.4 Base: tokens y fuentes de la identidad, `lang="es"`, imágenes remotas, cabecera y pie, `lib/formato.ts`, `lib/tipos-pokemon.ts`
 - [x] FE.5 Volcado mock (`scripts/generar-mock.mjs` → `datos/mock/`) desde el backend local: 1025 Pokémon, 797 movimientos, 620 rutas, 540 cadenas evolutivas (unos 3,3 MB)
-- [x] FE.6 Capa `lib/api`: tipos del contrato, mock en memoria que reproduce `api.md`, cliente HTTP con `API_URL`; 23 pruebas del mock (F1, F2, F4, F5, F7, F8, F9) y 26 que lo comparan con la API real
+- [x] FE.6 Capa `lib/api`: tipos del contrato, mock en memoria que reproduce `api.md`, cliente HTTP con `API_URL`; 27 pruebas del mock (23 al cerrar FE.6; F1, F2, F4, F5, F7, F8, F9) y 29 que lo comparan con la API real (conteo del 2026-11-22)
 - [x] FE.7 Componentes base (`components/ui`, `InsigniaTipo`, `TarjetaPokemon`, `ImagenPokemon`)
 - [x] FE.8 P1 Catálogo con buscador, filtros combinados, orden y paginación en la URL
 - [x] FE.9 P2 Ficha: datos, estadísticas, obtención y rutas, cadena evolutiva, 404 propio
@@ -123,7 +123,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.45 Playwright a 360, 768 y 1080 px (catálogo, ficha, regiones, `/login`, `/admin`): sin scroll horizontal; correcciones; `pokedex-frontend/docs/mediciones.md` → 55 de 55 sin scroll (también 375 y 1280); se corrigió la navegación, que se salía a 360 px con «Naturalezas». Falta `/admin` con datos (necesita el backend)
 
 **Fase 6 · Cierre**
-- [ ] B.39 `producto.md`, `arquitectura.md`, `pruebas.md` (totales), README y CLAUDE.md de los dos repos y `BITACORA_IA.md`; total de pruebas de las dos suites
+- [ ] B.39 `producto.md`, `arquitectura.md`, `pruebas.md` (totales), README y CLAUDE.md de los dos repos y `BITACORA_IA.md`; total de pruebas de las dos suites. Totales medidos el 2026-11-22 (tarea 4.2): backend 244 (`mvnw test`), frontend 157 de Vitest + 29 de contrato con `API_URL`, 12 E2E. Sigue abierto por el resto de los docs
 
 ## Siguiente fase · F11–F13 y F16–F18
 <!-- Quedan como "siguiente fase" (después de la sustentación): no se tocan mientras dure el plan de abajo.
@@ -161,8 +161,8 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 
 **Frontend (repo `pokedex-frontend`)**
 - [x] FE.49 F20 · Capa de datos: tipos, `identificar()`, route handler `/api/identificar` hacia `API_URL` (tope de 2 MB; las server actions topan en 1 MB), espera de 70 s en las lecturas y en las escrituras del panel, y mock "no disponible" (503). El mensaje "despertando el servidor…" queda para FE.50. Frontend: 97 pruebas (+29 de contrato con `API_URL`)
-- [x] FE.50 F20 · Pantalla `/identificar`: `SelectorFoto`, reducción a 1024 px en JPEG, estado de carga, tarjeta del identificado y 3 similares, mensajes 400/422/429/502, aviso "la foto no se guarda" y enlace en la cabecera; pruebas en Vitest. Reducción en el navegador con canvas (1024 px, JPEG, < 1,5 MB, orientación EXIF), mensaje «Despertando el servidor…» a los 5 s, cancelación al salir de la pantalla y `apiDisponible()`. Frontend: 140 pruebas (97 anteriores + 43; +29 de contrato con `API_URL`)
-- [x] FE.51 Playwright: `playwright.config.ts`, script `test:e2e` y recorridos `catalogo`, `identificar`, `admin` y `responsive` en `e2e/*.e2e.ts` (8 pruebas; credenciales en `.env.test`, fuera de Git; backend con el perfil `e2e`). La suite `ficha` queda fuera: no estaba entre los recorridos pedidos. Ver `docs/pruebas.md`
+- [x] FE.50 F20 · Pantalla `/identificar`: `SelectorFoto`, reducción a 1024 px en JPEG, estado de carga, tarjeta del identificado y 3 similares, mensajes 400/422/429/502, aviso "la foto no se guarda" y enlace en la cabecera; pruebas en Vitest. Reducción en el navegador con canvas (1024 px, JPEG, < 1,5 MB, orientación EXIF), mensaje «Despertando el servidor…» a los 5 s, cancelación al salir de la pantalla y `apiDisponible()`. Frontend: 140 pruebas al cerrar FE.50 (97 anteriores + 43; +29 de contrato con `API_URL`); medidas con `npm run test` el 2026-11-22, tras la tarea 4.2: 157 (+29 de contrato)
+- [x] FE.51 Playwright: `playwright.config.ts`, script `test:e2e` y recorridos `catalogo`, `identificar`, `admin` y `responsive` en `e2e/*.e2e.ts` (8 pruebas al cerrar; el 2026-11-22 son 12 en 4 archivos, `npx playwright test --list`; credenciales en `.env.test`, fuera de Git; backend con el perfil `e2e`). La suite `ficha` queda fuera: no estaba entre los recorridos pedidos. Ver `docs/pruebas.md`
 - [x] FE.52 CI del frontend (Node 22, `npm ci`, `lint`, `test`, `build`) y protección de `main` → `.github/workflows/ci.yml` (job `build`; sin E2E). ruleset activo en `master` (bypass de Repository admin; check `build`; sin exigir PR)
 - [x] FE.53 Vercel: `API_URL` en Production (API de prod) y en Preview (API de dev). Verificar también la duración máxima de la función de `/api/identificar` (`maxDuration`): con Render dormido la llamada puede tardar cerca de 70 s y el límite del plan de Vercel podría cortarla antes — hecho: `maxDuration` 120 s, timeout 110 s, imágenes, 151 fichas y build con `API_URL`; `API_URL` en Production y Preview; identificación real con Gemini verificada en producción desde el celular
 - [x] FE.54 Simulacro de despliegue roto e Instant Rollback en Vercel — hecho en Production: Instant Rollback y Promote to Production. No se provocó un despliegue roto a propósito
