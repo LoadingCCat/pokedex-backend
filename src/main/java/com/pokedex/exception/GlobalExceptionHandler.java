@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -108,7 +110,7 @@ public class GlobalExceptionHandler {
         return construir(HttpStatus.UNPROCESSABLE_ENTITY, "No se pudo procesar", ex.getMessage(), request);
     }
 
-    // 429 (F20): más de 10 fotos por minuto desde la misma IP
+    // 429: más de 10 fotos (F20) o 5 logins fallidos (S-01) por minuto desde la misma IP
     @ExceptionHandler(LimiteExcedidoException.class)
     public ResponseEntity<Map<String, Object>> manejarLimiteExcedido(LimiteExcedidoException ex,
                                                                      HttpServletRequest request) {
@@ -123,6 +125,22 @@ public class GlobalExceptionHandler {
         log.warn("Servicio de visión no disponible en {}: {}", request.getRequestURI(), ex.getMessage());
         return construir(HttpStatus.BAD_GATEWAY, "Servicio externo no disponible",
                 "El reconocimiento no está disponible en este momento", request);
+    }
+
+    // 415 (S-04): el Content-Type del cuerpo no es uno que la ruta acepte (ej. text/plain en un login JSON)
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<Map<String, Object>> manejarTipoDeContenidoNoSoportado(
+            HttpMediaTypeNotSupportedException ex, HttpServletRequest request) {
+        return construir(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Tipo de contenido no soportado",
+                "El tipo de contenido de la petición no es compatible con esta ruta. Usa application/json", request);
+    }
+
+    // 406 (S-04): el cliente pide en Accept un formato que la API no produce
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
+    public ResponseEntity<Map<String, Object>> manejarTipoDeRespuestaNoAceptable(
+            HttpMediaTypeNotAcceptableException ex, HttpServletRequest request) {
+        return construir(HttpStatus.NOT_ACCEPTABLE, "Formato no aceptable",
+                "La API solo responde en application/json", request);
     }
 
     // 405: método HTTP no permitido (ej. DELETE sobre un endpoint que solo acepta GET)
@@ -155,22 +173,28 @@ public class GlobalExceptionHandler {
         // para no depender del paquete de esa clase, que cambia entre versiones de Spring Data.
         Throwable ordenInvalido = buscarCausa(ex, "PropertyReferenceException");
         if (ordenInvalido != null) {
-            return construir(HttpStatus.BAD_REQUEST, "Petición inválida",
-                    "El parámetro 'sort' no es válido: " + ordenInvalido.getMessage(), request);
+            // S-03: no se usa su mensaje (trae el nombre de la clase y del campo internos)
+            return construir(HttpStatus.BAD_REQUEST, "Petición inválida", mensajeSortInvalido(request), request);
         }
         // En las consultas con @Query el orden se agrega al JPQL y quien falla es Hibernate
         // (UnknownPathException). Solo se trata como 400 si la petición traía ?sort=; sin él
         // sería un error real de la consulta. No se usa su mensaje porque incluye el JPQL.
         if (request.getParameter("sort") != null && buscarCausa(ex, "UnknownPathException") != null) {
-            return construir(HttpStatus.BAD_REQUEST, "Petición inválida",
-                    "El parámetro 'sort' no es válido: el campo '" + request.getParameter("sort").split(",")[0]
-                            + "' no existe", request);
+            return construir(HttpStatus.BAD_REQUEST, "Petición inválida", mensajeSortInvalido(request), request);
         }
 
         // El detalle real (que puede incluir SQL o datos internos) solo va al log del servidor
         log.error("Error no controlado en {}", request.getRequestURI(), ex);
         return construir(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor",
                 "Ocurrió un error inesperado. Revisa el log del servidor para más detalles.", request);
+    }
+
+    /** Mensaje fijo: solo repite el campo que el propio cliente envió en ?sort=, nunca nombres internos. */
+    private static String mensajeSortInvalido(HttpServletRequest request) {
+        String base = "El parámetro 'sort' no es válido";
+        String sort = request.getParameter("sort");
+        String campo = sort == null ? "" : sort.split(",")[0].trim();
+        return campo.isEmpty() ? base : base + ": el campo '" + campo + "' no existe";
     }
 
     /** Recorre la cadena de causas buscando una excepción por su nombre de clase. */

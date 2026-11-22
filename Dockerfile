@@ -29,9 +29,9 @@ USER pokedex
 # verificadas en un archivo CDS (app.jsa), que la JVM carga al arrancar en vez de leer y verificar miles de
 # clases con casi nada de CPU. La corrida no tiene base de datos: falla al conectar, pero para entonces ya
 # cargó Spring, Tomcat y Security, y la JVM guarda lo cargado igualmente (con 0,1 CPU: 102 s -> 76 s;
-# docs/despliegue.md). Los valores de relleno son solo de esta corrida: no quedan en la imagen. Se entrena
+# docs/despliegue.md). Los valores de relleno son solo de esta corrida: no quedan en la imagen (y el secreto no puede contener las frases de ejemplo que SeguridadConfig rechaza, S-09). Se entrena
 # con el mismo JRE que ejecuta; si el archivo no se genera, el build falla en vez de desplegar lento.
-RUN ( JWT_SECRETO=entrenamiento-sin-valor-real-0123456789abcdef       SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:1/x SPRING_DATASOURCE_USERNAME=x SPRING_DATASOURCE_PASSWORD=x       SPRING_JPA_HIBERNATE_DDL_AUTO=none SPRING_SQL_INIT_MODE=never       SPRING_DATASOURCE_HIKARI_INITIALIZATION_FAIL_TIMEOUT=-1 SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT=1000       java -XX:ArchiveClassesAtExit=/app/ex/app.jsa -Dspring.context.exit=onRefresh -jar /app/ex/app.jar       > /tmp/entrenamiento.log 2>&1 || true )     && test -s /app/ex/app.jsa
+RUN ( JWT_SECRETO=relleno-solo-para-la-corrida-del-build-0123456789abcdef       SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:1/x SPRING_DATASOURCE_USERNAME=x SPRING_DATASOURCE_PASSWORD=x       SPRING_JPA_HIBERNATE_DDL_AUTO=none SPRING_SQL_INIT_MODE=never       SPRING_DATASOURCE_HIKARI_INITIALIZATION_FAIL_TIMEOUT=-1 SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT=1000       java -XX:ArchiveClassesAtExit=/app/ex/app.jsa -Dspring.context.exit=onRefresh -jar /app/ex/app.jar       > /tmp/entrenamiento.log 2>&1 || true )     && test -s /app/ex/app.jsa
 
 # Render pone PORT; Spring lo lee en server.port=${PORT:8080}.
 ENV PORT=8080

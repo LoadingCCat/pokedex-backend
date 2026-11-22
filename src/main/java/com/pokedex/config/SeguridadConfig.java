@@ -45,6 +45,9 @@ public class SeguridadConfig {
     /** Largo mínimo del secreto: HS256 necesita una clave de al menos 256 bits. */
     static final int MINIMO_BYTES_SECRETO = 32;
 
+    /** Frases de los secretos de ejemplo publicados (plantilla local y relleno del build): se rechazan al arrancar. */
+    private static final List<String> SECRETOS_DE_EJEMPLO = List.of("cambia_esto", "entrenamiento-sin-valor-real");
+
     @Bean
     public SecurityFilterChain cadenaDeSeguridad(HttpSecurity http, ErroresSeguridad errores,
                                                  JwtAuthenticationConverter conversorRol) throws Exception {
@@ -95,6 +98,13 @@ public class SeguridadConfig {
         if (bytes.length < MINIMO_BYTES_SECRETO) {
             throw new IllegalStateException("Falta el secreto del token: define JWT_SECRETO (al menos "
                     + MINIMO_BYTES_SECRETO + " caracteres) en application-local.properties o como variable de entorno");
+        }
+        // S-09: el largo no basta; el valor de la plantilla (.example) es público y no puede firmar tokens
+        for (String ejemplo : SECRETOS_DE_EJEMPLO) {
+            if (secreto.contains(ejemplo)) {
+                throw new IllegalStateException("JWT_SECRETO es un valor de ejemplo, que es público: "
+                        + "genera uno propio y al azar (ver application-local.properties.example)");
+            }
         }
         return new SecretKeySpec(bytes, "HmacSHA256");
     }

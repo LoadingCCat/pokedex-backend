@@ -6,6 +6,7 @@ import com.pokedex.entity.Movimiento;
 import com.pokedex.entity.Usuario;
 import com.pokedex.repository.MovimientoRepository;
 import com.pokedex.repository.UsuarioRepository;
+import com.pokedex.service.LimiteLogin;
 import com.pokedex.service.ServicioToken;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /** Criterios de F15 sobre el login, los 401/403 y los GET públicos, con las reglas reales. */
 @WebMvcTest(controllers = {AuthController.class, MovimientoController.class})
 @ConSeguridad
-@Import(ServicioToken.class)
+@Import({ServicioToken.class, LimiteLogin.class})
 class SeguridadControllerTest {
 
     private static final String MOVIMIENTO = """

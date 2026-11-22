@@ -153,6 +153,20 @@ class ApiConPostgresTest {
         mvc.perform(get("/api/movimientos?sort=foo")).andExpect(status().isBadRequest());
     }
 
+    // S-03 (interventoría): el 400 de sort no revela nombres de clase ni de tipo internos
+    @Test
+    void sortInvalidoNoRevelaNombresInternos() throws Exception {
+        for (String url : new String[]{"/api/pokemons?sort=foo", "/api/pokemons/buscar?nombre=pika&sort=foo",
+                "/api/movimientos?sort=foo", "/api/rutas?sort=foo"}) {
+            mvc.perform(get(url))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.mensaje").value(containsString("'sort'")))
+                    .andExpect(jsonPath("$.mensaje").value(org.hamcrest.Matchers.not(containsString("No property"))))
+                    .andExpect(jsonPath("$.mensaje").value(org.hamcrest.Matchers.not(containsString("type"))))
+                    .andExpect(jsonPath("$.mensaje").value(org.hamcrest.Matchers.not(containsString("Pokemon"))));
+        }
+    }
+
     // ---------- F2 · filtros de un solo valor ----------
 
     @Test

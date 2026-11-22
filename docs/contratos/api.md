@@ -144,6 +144,8 @@ Ejemplo de movimiento:
 
 `esCompetitivo` lo calcula el servidor: es `true` si la potencia es mayor a 80.
 
+En `POST` y `PUT`, `nombre` y `nombreEs` pueden tener hasta 100 caracteres (más es 400 con `campos`). El cuerpo solo admite `nombre`, `nombreEs`, `tipo`, `categoria` y `potencia`; `idMovimiento` y `esCompetitivo` se ignoran.
+
 ## Rutas — `/rutas`
 `/rutas` y `/rutas/region/{nombre}` son paginadas (`{ content, page }`, `?page=0&size=20&sort=nombre,asc`, máximo 200 por página). Si no se envía `sort`, se ordenan por `nombre`. Para llenar un desplegable con todas las rutas de una región, pide `size=200` y revisa `page.totalPages` por si la región tiene más (Kanto tiene 88).
 
@@ -156,6 +158,8 @@ Ejemplo de movimiento:
 | POST | `/rutas` | **ADMIN.** Crear (`nombre`, `region`, `descripcion`) |
 | PUT | `/rutas/{id}` | **ADMIN.** Actualizar |
 | DELETE | `/rutas/{id}` | **ADMIN.** Eliminar (204; 404 si no existe). La quita de los Pokémon que aparecían en ella. Si era un lugar importado (`idPokeapi`), la reimportación no lo vuelve a crear |
+
+En `POST` y `PUT`, `nombre` admite hasta 100 caracteres, `region` hasta 50 y `descripcion` hasta 2000 (más es 400 con `campos`). `idRuta` e `idPokeapi` del cuerpo se ignoran.
 
 El `nombre` de las rutas importadas está en español cuando se pudo verificar (de la PokeAPI o del artículo de WikiDex: "Bosque Verde", "Calle Victoria"); unos 90 lugares sin artículo verificado siguen en inglés. El campo no cambia de forma: solo su valor, tras reimportar.
 
@@ -203,7 +207,7 @@ En `resultados`, `importados` son los registros creados, `omitidos` los que ya e
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| POST | `/auth/login` | `{ "usuario", "contrasena" }` → 200 `{ "token", "expiraEn", "usuario", "rol" }`. Credenciales incorrectas → 401 ("Usuario o contraseña incorrectos", sin decir cuál falló). Campo vacío o sin cuerpo → 400 |
+| POST | `/auth/login` | `{ "usuario", "contrasena" }` → 200 `{ "token", "expiraEn", "usuario", "rol" }`. Credenciales incorrectas → 401 ("Usuario o contraseña incorrectos", sin decir cuál falló). Campo vacío o sin cuerpo → 400; `usuario` de más de 100 o `contrasena` de más de 128 caracteres → 400 con `campos`. Al quinto intento fallido en un minuto desde la misma IP, los siguientes responden 429 hasta que pase el minuto (aunque la contraseña sea correcta); los logins correctos no cuentan |
 
 ```json
 { "token": "eyJhbGciOiJIUzI1NiJ9...", "expiraEn": "2026-11-17T18:30:00Z", "usuario": "admin", "rol": "ADMIN" }
@@ -290,9 +294,11 @@ Todos los errores devuelven el mismo formato:
 | 403 | El token es válido, pero sin el rol ADMIN (F15) |
 | 404 | La URL no existe o el ID no existe |
 | 405 | Método HTTP no permitido en esa ruta |
+| 406 | El `Accept` pide un formato que la API no produce (solo `application/json`) |
 | 409 | Se pidió una importación mientras otra sigue en curso, o se creó un Pokémon con un número ocupado |
+| 415 | El `Content-Type` del cuerpo no es JSON (p. ej. `text/plain` en `POST /auth/login`) |
 | 422 | La petición es válida, pero no se pudo procesar: p. ej., no hay un Pokémon en la foto (F20) |
-| 429 | Demasiadas peticiones: más de 10 fotos por minuto desde la misma IP (F20) |
+| 429 | Demasiadas peticiones desde la misma IP: más de 10 fotos por minuto (F20) o 5 intentos de login fallidos por minuto |
 | 500 | Error inesperado del servidor (el detalle solo queda en el log, no en la respuesta) |
 | 502 | Falló un servicio externo: el servicio de visión no respondió, falló o no está configurado (F20) |
 

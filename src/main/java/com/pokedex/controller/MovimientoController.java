@@ -5,6 +5,7 @@ import com.pokedex.exception.BadRequestException;
 import com.pokedex.exception.CamposInvalidosException;
 import com.pokedex.exception.ResourceNotFoundException;
 import com.pokedex.repository.MovimientoRepository;
+import com.pokedex.service.DatosMovimiento;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.SortDefault;
@@ -68,30 +69,37 @@ public class MovimientoController {
 
     // POST /api/movimientos
     @PostMapping
-    public ResponseEntity<Movimiento> guardarMovimiento(@RequestBody Movimiento movimiento) {
-        validar(movimiento);
-        if (movimientoRepository.existsByNombreIgnoreCase(movimiento.getNombre().trim())) {
-            throw CamposInvalidosException.de("nombre", "Ya existe un movimiento llamado '" + movimiento.getNombre() + "'");
+    public ResponseEntity<Movimiento> guardarMovimiento(@RequestBody DatosMovimiento datos) {
+        validar(datos);
+        String nombre = datos.nombre().trim();
+        if (movimientoRepository.existsByNombreIgnoreCase(nombre)) {
+            throw CamposInvalidosException.de("nombre", "Ya existe un movimiento llamado '" + datos.nombre() + "'");
         }
-        movimiento.setIdMovimiento(null); // evita sobrescribir uno existente enviando un id
+        // Se copian solo los campos permitidos: el id y esCompetitivo los asigna el servidor
+        Movimiento movimiento = new Movimiento();
+        movimiento.setNombre(datos.nombre());
+        movimiento.setNombreEs(datos.nombreEs());
+        movimiento.setTipo(datos.tipo());
+        movimiento.setCategoria(datos.categoria());
+        movimiento.setPotencia(datos.potencia());
         prepararCampos(movimiento);
         return ResponseEntity.status(HttpStatus.CREATED).body(movimientoRepository.save(movimiento));
     }
 
     // PUT /api/movimientos/{id}
     @PutMapping("/{id}")
-    public Movimiento actualizarMovimiento(@PathVariable Integer id, @RequestBody Movimiento datos) {
+    public Movimiento actualizarMovimiento(@PathVariable Integer id, @RequestBody DatosMovimiento datos) {
         Movimiento existente = buscar(id);
         validar(datos);
-        existente.setNombre(datos.getNombre());
-        existente.setCategoria(datos.getCategoria());
-        existente.setPotencia(datos.getPotencia());
+        existente.setNombre(datos.nombre());
+        existente.setCategoria(datos.categoria());
+        existente.setPotencia(datos.potencia());
         // nombreEs y tipo son opcionales: si no vienen, se conserva el que ya tenía
-        if (datos.getNombreEs() != null) {
-            existente.setNombreEs(datos.getNombreEs());
+        if (datos.nombreEs() != null) {
+            existente.setNombreEs(datos.nombreEs());
         }
-        if (datos.getTipo() != null) {
-            existente.setTipo(datos.getTipo());
+        if (datos.tipo() != null) {
+            existente.setTipo(datos.tipo());
         }
         prepararCampos(existente);
         return movimientoRepository.save(existente);
@@ -112,21 +120,29 @@ public class MovimientoController {
                 .orElseThrow(() -> new ResourceNotFoundException("Movimiento", id));
     }
 
-    private void validar(Movimiento movimiento) {
+    private void validar(DatosMovimiento movimiento) {
         // CamposInvalidosException es un 400 con el mismo mensaje y, además, "campos" (F15)
-        if (movimiento.getNombre() == null || movimiento.getNombre().isBlank()) {
+        if (movimiento.nombre() == null || movimiento.nombre().isBlank()) {
             throw CamposInvalidosException.de("nombre", "El nombre del movimiento es obligatorio");
         }
-        if (movimiento.getCategoria() == null || CATEGORIAS.stream()
-                .noneMatch(c -> c.equalsIgnoreCase(movimiento.getCategoria().trim()))) {
+        if (movimiento.nombre().trim().length() > DatosMovimiento.MAX_NOMBRE) {
+            throw CamposInvalidosException.de("nombre",
+                    "El nombre no puede pasar de " + DatosMovimiento.MAX_NOMBRE + " caracteres");
+        }
+        if (movimiento.categoria() == null || CATEGORIAS.stream()
+                .noneMatch(c -> c.equalsIgnoreCase(movimiento.categoria().trim()))) {
             throw CamposInvalidosException.de("categoria", "La categoría debe ser una de: Físico, Especial, Estado");
         }
-        if (movimiento.getPotencia() != null && movimiento.getPotencia() < 0) {
+        if (movimiento.potencia() != null && movimiento.potencia() < 0) {
             throw CamposInvalidosException.de("potencia", "La potencia no puede ser negativa");
         }
-        String tipo = movimiento.getTipo();
+        String tipo = movimiento.tipo();
         if (tipo != null && !tipo.isBlank() && !TIPOS.contains(tipo.trim().toLowerCase())) {
             throw CamposInvalidosException.de("tipo", "El tipo debe ser uno de: " + String.join(", ", TIPOS));
+        }
+        if (movimiento.nombreEs() != null && movimiento.nombreEs().trim().length() > DatosMovimiento.MAX_NOMBRE_ES) {
+            throw CamposInvalidosException.de("nombreEs",
+                    "El nombre en español no puede pasar de " + DatosMovimiento.MAX_NOMBRE_ES + " caracteres");
         }
     }
 

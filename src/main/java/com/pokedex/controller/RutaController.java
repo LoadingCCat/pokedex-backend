@@ -6,6 +6,7 @@ import com.pokedex.exception.CamposInvalidosException;
 import com.pokedex.exception.ResourceNotFoundException;
 import com.pokedex.repository.RutaExcluidaRepository;
 import com.pokedex.repository.RutaRepository;
+import com.pokedex.service.DatosRuta;
 import com.pokedex.service.PokemonService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -58,26 +59,29 @@ public class RutaController {
 
     // POST /api/rutas
     @PostMapping
-    public ResponseEntity<Ruta> guardarRuta(@RequestBody Ruta ruta) {
-        validar(ruta);
-        if (rutaRepository.existsByNombreIgnoreCaseAndRegionIgnoreCase(ruta.getNombre().trim(), ruta.getRegion().trim())) {
-            throw CamposInvalidosException.de("nombre", "Ya existe la ruta '" + ruta.getNombre() + "' en " + ruta.getRegion());
+    public ResponseEntity<Ruta> guardarRuta(@RequestBody DatosRuta datos) {
+        validar(datos);
+        String nombre = datos.nombre().trim();
+        String region = datos.region().trim();
+        if (rutaRepository.existsByNombreIgnoreCaseAndRegionIgnoreCase(nombre, region)) {
+            throw CamposInvalidosException.de("nombre", "Ya existe la ruta '" + datos.nombre() + "' en " + datos.region());
         }
-        ruta.setIdRuta(null); // evita sobrescribir una ruta existente enviando un id
-        ruta.setIdPokeapi(null); // solo el importador asigna idPokeapi (marca las rutas reales de la PokeAPI)
-        ruta.setNombre(ruta.getNombre().trim());
-        ruta.setRegion(ruta.getRegion().trim());
+        // Se copian solo los campos permitidos: idRuta e idPokeapi (marca las rutas reales de la PokeAPI) los asigna el servidor
+        Ruta ruta = new Ruta();
+        ruta.setNombre(nombre);
+        ruta.setRegion(region);
+        ruta.setDescripcion(datos.descripcion());
         return ResponseEntity.status(HttpStatus.CREATED).body(rutaRepository.save(ruta));
     }
 
     // PUT /api/rutas/{id}
     @PutMapping("/{id}")
-    public Ruta actualizarRuta(@PathVariable Integer id, @RequestBody Ruta datos) {
+    public Ruta actualizarRuta(@PathVariable Integer id, @RequestBody DatosRuta datos) {
         Ruta existente = buscar(id);
         validar(datos);
-        existente.setNombre(datos.getNombre().trim());
-        existente.setRegion(datos.getRegion().trim());
-        existente.setDescripcion(datos.getDescripcion());
+        existente.setNombre(datos.nombre().trim());
+        existente.setRegion(datos.region().trim());
+        existente.setDescripcion(datos.descripcion());
         return rutaRepository.save(existente);
     }
 
@@ -101,13 +105,25 @@ public class RutaController {
                 .orElseThrow(() -> new ResourceNotFoundException("Ruta", id));
     }
 
-    private void validar(Ruta ruta) {
+    private void validar(DatosRuta ruta) {
         // CamposInvalidosException es un 400 con el mismo mensaje y, además, "campos" (F15)
-        if (ruta.getNombre() == null || ruta.getNombre().isBlank()) {
+        if (ruta.nombre() == null || ruta.nombre().isBlank()) {
             throw CamposInvalidosException.de("nombre", "El nombre de la ruta es obligatorio");
         }
-        if (ruta.getRegion() == null || ruta.getRegion().isBlank()) {
+        if (ruta.nombre().trim().length() > DatosRuta.MAX_NOMBRE) {
+            throw CamposInvalidosException.de("nombre",
+                    "El nombre no puede pasar de " + DatosRuta.MAX_NOMBRE + " caracteres");
+        }
+        if (ruta.region() == null || ruta.region().isBlank()) {
             throw CamposInvalidosException.de("region", "La región de la ruta es obligatoria");
+        }
+        if (ruta.region().trim().length() > DatosRuta.MAX_REGION) {
+            throw CamposInvalidosException.de("region",
+                    "La región no puede pasar de " + DatosRuta.MAX_REGION + " caracteres");
+        }
+        if (ruta.descripcion() != null && ruta.descripcion().length() > DatosRuta.MAX_DESCRIPCION) {
+            throw CamposInvalidosException.de("descripcion",
+                    "La descripción no puede pasar de " + DatosRuta.MAX_DESCRIPCION + " caracteres");
         }
     }
 }

@@ -114,7 +114,7 @@ En "Nulo": **no** = `NOT NULL` en la BD; **sí** = acepta `null` en la BD. La co
 | `id_ruta` | integer, PK, identity | no | El servidor ignora cualquier `idRuta` del cuerpo |
 | `nombre` | varchar(100) | no | Obligatorio y no vacío (servidor) |
 | `region` | varchar(50) | sí | En POST/PUT es obligatoria (servidor); la BD acepta `null` |
-| `descripcion` | text | sí | Opcional |
+| `descripcion` | text | sí | Opcional; el servidor la limita a 2000 caracteres (S-02), la BD no tiene tope |
 | `id_pokeapi` | integer, UNIQUE | sí | Solo el importador lo asigna; `POST /rutas` lo fuerza a `null`; `PUT` no lo toca |
 
 ### `movimiento` (entidad `Movimiento`)
@@ -192,6 +192,7 @@ En "Nulo": **no** = `NOT NULL` en la BD; **sí** = acepta `null` en la BD. La co
 | El usuario no se repite | **Ambas** | `UNIQUE` y `AdministradorInicial` (`existsByUsuario`) |
 | Un movimiento no repite nombre (sin distinguir mayúsculas) | **Servidor** | `MovimientoController` (`existsByNombreIgnoreCase`); sin `UNIQUE` |
 | Una ruta no repite nombre + región | **Servidor** | `RutaController` (`existsByNombreIgnoreCaseAndRegionIgnoreCase`); sin `UNIQUE` |
+| Largo de `nombre` (100), `region` (50) y `descripcion` (2000) de una ruta, y de `nombre` y `nombreEs` (100) de un movimiento | **Servidor** (+ BD en los que tienen `length`) | `DatosRuta` y `DatosMovimiento`, validados en los controllers: 400 con `campos`, no 500 (S-02) |
 | Estadísticas enteras de 1 a 255; altura y peso ≥ 0; generación 1–9 | **Servidor** | `DatosPokemon` |
 | `nombre` en formato slug; `imagenUrl` con `https://` | **Servidor** | `DatosPokemon` |
 | `tipoObtencion` es uno de los 9 valores | **Servidor** | `DatosPokemon` / `FormasObtencion` |
