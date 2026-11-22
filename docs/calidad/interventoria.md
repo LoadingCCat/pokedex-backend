@@ -198,3 +198,72 @@ Revisión de código de las pantallas principales (catálogo, ficha, movimientos
 7. Documentación (**D-02** a **D-13**) y los hallazgos Bajo restantes, en un solo commit de documentación.
 
 Cada corrección con su causa raíz, su prueba de regresión y su commit `fix: … (closes #n)`, sin tocar una prueba para que pase.
+
+## 11. Auditoría cruzada (4.3)
+
+**Tarea:** 4.3 del plan (B.50) · **Fecha:** 2026-11-22 · **Tipo:** auditoría de solo lectura, sin cambios de código. La hizo Claude, no otro equipo ni Daniel; no se abrieron issues de GitHub (la plantilla `.github/ISSUE_TEMPLATE/interventoria.md` que cita el plan **no existe** en el repo).
+**Alcance:** lo marcado «Corregido» en las secciones 3 a 8 (grupos 1 a 5 de la 4.2 y S-17), contra el código y las pruebas de los dos repos en su estado actual (backend `c00a4b9`, frontend `865b3cf`), y problemas nuevos que esas correcciones pudieron introducir.
+**Ejecutado ahora:** `.\mvnw.cmd -B test` (backend), `npm run test`, `npm audit` y `npx playwright test --list` (frontend). **No se ejecutaron** los E2E, `contrato.test.ts`, Docker ni nada contra Render o Vercel.
+
+### 11.1 Resumen
+
+| Resultado | Cantidad |
+|---|---|
+| Marcas «Corregido» comprobadas en código y pruebas | 39 de 39 |
+| Marcas que no cuadran del todo con la realidad | 5 (11.3) |
+| Hallazgos nuevos | 7: 1 Alto, 2 Medio, 4 Bajo (11.4) |
+
+- **No se encontró ninguna corrección falsa:** en cada hallazgo marcado «Corregido» el cambio existe en el código y la prueba citada existe, hace la aserción que dice y no está omitida.
+- **Lo más importante:** el límite de login (S-01) se rompe en producción por cómo llega la petición, porque la IP que ve el backend es la del servidor de Vercel y no la del usuario (N-01).
+- El total de la sección 1 (78 hallazgos, 2 Altos) cuenta lo encontrado en la 4.1 y no se ha tocado. Se suman los 7 nuevos de esta sección.
+
+### 11.2 Verificado (la corrección existe y la prueba la cubre)
+
+| Hallazgo | Evidencia en el código | Evidencia en las pruebas |
+|---|---|---|
+| S-01 | `LimiteLogin.java` (ventana de 60 s, 5 fallos, `verificar` antes de BCrypt en `AuthController.java:59`); topes 100/128 en `AuthController.java:31-32,65-71`; 429 en `GlobalExceptionHandler.java:114` | `LimiteLoginTest` (7), `LoginConLimiteTest` (9) |
+| S-02 | `MovimientoController.java:72,91` y `RutaController.java` reciben `DatosMovimiento`/`DatosRuta`; largos en los `record` y en `validar` | `MovimientoValidacionTest` (6), `RutaValidacionTest` (6) |
+| S-03 | `GlobalExceptionHandler.java:176,192-198`: ya no usa `getMessage()` de la excepción | `ApiConPostgresTest.sortInvalidoNoRevelaNombresInternos` |
+| S-04, C-03 | Handlers 415 y 406 en `GlobalExceptionHandler.java:130-144`; filas en `api.md:299` | `ManejoErroresPeticionTest` (5) |
+| S-08 | `application.properties:30`: `${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD}}`, sin valor por defecto. Todas las pruebas con contexto completo fijan su contraseña (`PostgresEmbebido.java:44`, `ArranqueDobleTest.java:28`), así que el CI, que no tiene `application-local.properties`, no se rompe | `SecretosPorDefectoTest` |
+| S-09 | `SeguridadConfig.java:49,103-108`; el relleno del `Dockerfile:34` ya no contiene las frases rechazadas | `SecretosPorDefectoTest` (6) |
+| S-06, S-07 | `app/api/sesion/route.ts:47-53` (JSON inválido → 502); `lib/api/admin.ts` con el helper de `http.ts` | `route.test.ts` (4), `admin.test.ts` (4) |
+| A-01, A-02, Q-11 | Sin `min-h-8`, `min-h-9` ni `sm:min-h-9` en `app/` ni `components/`; sin `<span aria-label>` | `lib/accesibilidad.test.ts` (3) |
+| D-09, D-01, T-06, T-16, T-17, D-04, D-12 | Comentario de `http.ts`; README con login, token y `JWT_SECRETO`; criterio de F5 en 204/404; cabeceras `**Estado:**` de las specs | (documentación) |
+| S-17 | `package.json`: `vitest ^4.1.12` y `vite ^7.3.8`; `npm audit` → **0 vulnerabilidades** (ejecutado ahora); CI con `npm audit --omit=dev --audit-level=high` | `npm run test` verde |
+| T-01 a T-05, T-07 a T-09, T-11 a T-15, T-18 | Las 17 pruebas y archivos citados existen (comprobado por nombre); ningún `@Disabled`, `assume*` ni `it.skip` en `src/test` ni en los `*.test.ts(x)`; T-18: `PokemonService.java:153-160,293,303-314,854-858,1107-1113` (se anotan las etapas con slug y se vuelven a describir al terminar) | `ArranqueDobleTest` (arranca dos veces sobre el mismo PostgreSQL y cuenta una sola `unaccent`); `elLogNoContieneLaFotoNiEnExitoNiEnError` (captura el log y busca la marca y el Base64); las demás citadas |
+| Ejecución | Backend: **273** pruebas, 0 fallos, 0 omitidas, `BUILD SUCCESS`. Frontend: **222** de Vitest pasan, 29 omitidas (contrato), 0 fallos; 19 E2E listados en 4 archivos | |
+
+### 11.3 Lo que no cuadra (marca o documento frente a la realidad)
+
+| ID | Qué no cuadra | Dónde | Sev. | Cómo comprobarlo | Corrección propuesta (sin aplicar) |
+|---|---|---|---|---|---|
+| X-01 | **Los conteos de pruebas quedaron viejos tras el grupo 5.** Hay 273 pruebas en el backend, 222 de Vitest y 19 E2E; `CLAUDE.md:45`, `BITACORA_IA.md:388` y `tareas.md` B.39 dicen 244, 157 y 12. | `CLAUDE.md:45` · `docs/tareas.md:126` · `BITACORA_IA.md:388` | Bajo | `grep -r "@Test" src/test` (273) · `npm run test` · `npx playwright test --list` | Poner los totales medidos y fechar la medición. B.39 sigue abierta, como corresponde. |
+| X-02 | **`resumen-4.2.md` ya es falso en dos puntos:** dice que el grupo 5 y S-17 «no se tocaron» (sección 4) y da 244/157 como totales finales. No está fechado como «anterior al grupo 5». | `docs/calidad/resumen-4.2.md:51-52,22-24` | Bajo | Comparar con 11.2. | Añadir una línea al principio: «Estado a la fecha de la 4.2; el grupo 5 y S-17 se hicieron después (ver interventoria.md)». |
+| X-03 | **T-14 se marcó «corregido en parte» pero la prueba es más débil de lo que parece:** `IdentificacionApiTest` usa un servicio de visión falso, así que el único código que habla con Gemini y podría registrar la respuesta (`ServicioVisionGemini`) no se ejecuta en esa prueba. `ServicioVisionGeminiTest` (17 pruebas) tampoco captura el log. Solo demuestra que el controlador y `IdentificacionService` no registran la foto. | `IdentificacionApiTest.java:169-186` | Bajo | Leer qué bean sustituye a `ServicioVision`. | Una prueba de `ServicioVisionGemini` con un servidor HTTP simulado que verifique el log, o rebajar la marca a «el log del controlador». |
+| X-04 | **F3 dice «criterios con pruebas automáticas» pero T-03 se cerró «en parte»:** la importación real de los 1025 con 0 fallidos sigue siendo manual. F7 tiene la misma redacción con B.26 abierto. | `specs/F3-importacion.md:3` · `specs/F7-cadena-evolutiva.md:3` | Bajo | Leer la nota de T-03 y de T-08. | Ponerlo como en F15 y F20: «…salvo la importación real de 1025 (manual)». |
+| X-05 | **La 4.3 del plan pide otra cosa:** una interventoría cruzada con otro equipo o con Daniel, con sus hallazgos como issues con la plantilla del repo. Esta auditoría la hizo la misma herramienta que corrigió, así que no tiene independencia. Además B.49 sigue abierta y no hay commits `fix: … (closes #n)` (no se abrió ningún issue). | `PLAN_CLAUDE_CODE.md` (Fase 4) · `docs/tareas.md:151-152` | Medio | Comparar el plan con `git log` y con `.github/`. | Pedir la revisión humana de la 4.3 antes de darla por cerrada, y crear la plantilla de issue. |
+
+### 11.4 Hallazgos nuevos
+
+| ID | Hallazgo | Archivo:línea | Sev. | Cómo comprobarlo | Corrección propuesta (sin aplicar) |
+|---|---|---|---|---|---|
+| N-01 | **El límite de login bloquea a todos a la vez y no frena a un atacante concreto.** El login no sale del navegador al backend: lo hace el Route Handler de Next (`fetch` de servidor a servidor), sin reenviar la IP del cliente (no hay `X-Forwarded-For` en el frontend). Para el backend todos los intentos vienen de la IP de salida de Vercel. Cinco contraseñas malas desde cualquier lugar, a través de `/login`, dejan el login del administrador en 429 durante un minuto, y se puede repetir cada minuto. Las pruebas no lo ven porque usan IP simulada. (F20 no tiene el problema: la foto la envía el navegador directo al backend.) | `pokedex-frontend/app/api/sesion/route.ts:35-40` · `AuthController.java:57` | **Alto** | Con `API_URL` apuntando al backend, enviar 5 logins malos a `/api/sesion` desde un cliente y probar el correcto desde otro: responde 502 (ver N-02). **No se probó en producción**: está comprobado por lectura del código. | Reenviar al backend la IP real (`x-forwarded-for` de la petición entrante) y que el backend solo la acepte de un proxy de confianza; o limitar además por usuario y por cuenta, y no solo por IP. Añadir una prueba con dos «clientes» distintos. |
+| N-02 | **El 429 del login se muestra como un error de servidor.** `route.ts:45` convierte cualquier respuesta no OK que no sea 401 en un 502 «No se pudo iniciar sesión. Vuelve a intentarlo». El administrador bloqueado no sabe que debe esperar y reintentar solo lo mantiene bloqueado. | `pokedex-frontend/app/api/sesion/route.ts:44-45` | Medio | Hacer que el backend devuelva 429 y mirar el mensaje del formulario. | Traducir el 429 a un mensaje «Demasiados intentos, espera un minuto» (y pasar `Retry-After`, ver N-03). Prueba en `route.casos.test.ts`. |
+| N-03 | **El 429 no lleva `Retry-After`** (ni el de login ni el de identificar), así que ningún cliente sabe cuánto esperar. | `GlobalExceptionHandler.java:114-118` | Bajo | `curl.exe -i` tras 6 logins fallidos. | Añadir `Retry-After: 60` y documentarlo en `api.md`. |
+| N-04 | **La comprobación de secretos de ejemplo distingue mayúsculas.** `secreto.contains("cambia_esto")` deja pasar `CAMBIA_ESTO…` o `Cambia_Esto…`. Es una protección contra un descuido, no contra un ataque, pero la regla dice más de lo que hace. | `SeguridadConfig.java:103-108` | Bajo | Arrancar con `JWT_SECRETO=CAMBIA_ESTO_por_algo_de_32_caracteres_o_mas`. | Comparar con `toLowerCase()` y añadir el caso a `SecretosPorDefectoTest`. |
+| N-05 | **El mensaje de `sort` repite sin límite lo que envía el cliente** (`el campo '<texto>' no existe`). Va en JSON y no se interpreta, pero un valor de varios KB sale entero en la respuesta, y si se muestra en una pantalla sin escapar sería una inyección. | `GlobalExceptionHandler.java:192-198` | Bajo | `GET /api/pokemons?sort=<500 caracteres>`. | Cortar a ~50 caracteres o no repetirlo; el contrato no define esa parte del mensaje. |
+| N-06 | **La corrección de T-18 es incompleta en el caso de un movimiento sin `nombreEs`.** `nombreDeMovimiento` usa `.map(Movimiento::getNombreEs)`: si el movimiento existe pero su `nombreEs` es nulo, el `Optional` queda vacío, se marca la etapa como pendiente y la segunda pasada vuelve a dar el slug. No falla, pero hace trabajo inútil y deja el slug sin avisar. La condición también se pierde si la importación se interrumpe antes de `PokemonService.java:293`. | `PokemonService.java:1107-1113,293` | Bajo | Importar con un movimiento de `nombreEs` nulo en la BD. | Si el movimiento existe, usar su nombre aunque sea el inglés y no marcarlo como pendiente. |
+| N-07 | **`descripcion` de ruta a 2000 caracteres es una decisión nueva sin ruta de salida:** las rutas importadas con una descripción más larga siguen legibles, pero editarlas desde el panel con ese texto da 400 sin que el formulario avise del tope. No se comprobó si existe alguna. | `DatosRuta.java:13` · `RutaController.java:124` | Bajo | `SELECT count(*) FROM ruta WHERE length(descripcion) > 2000`. | Medirlo en Neon; si hay, subir el tope o recortar al importar. Mostrar el tope en el formulario. |
+
+### 11.5 Revisado y sin hallazgo
+- **CI y S-08:** ninguna prueba con contexto completo depende de `DB_PASSWORD` ni de `application-local.properties`; el `Dockerfile` pasa `SPRING_DATASOURCE_PASSWORD` y un secreto que no choca con S-09.
+- **S-02:** pasar a `record` no cambia el comportamiento del `PUT`: `descripcion` nula ya se guardaba como nula antes (`git show bd5d06b`).
+- **`.dockerignore`** excluye `application-local.properties`, `docs` y `*.md` de la imagen.
+- **Frontend:** `npm audit` en 0, `lint` sin errores nuevos, sin `NEXT_PUBLIC_*`.
+
+### 11.6 Orden de corrección sugerido
+1. **N-01** y **N-02** juntos (login a través de Vercel y mensaje del 429), antes de desplegar el límite a producción.
+2. **X-05** (revisión humana y plantilla de issue).
+3. **X-01** y **X-02** con el cierre de B.39.
+4. El resto (**N-03** a **N-07**, **X-03**, **X-04**) en un commit de bajo riesgo.

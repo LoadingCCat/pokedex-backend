@@ -149,7 +149,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 **Fase 4 · Interventoría (U5)**
 - [x] B.48 Auditoría en sesión limpia, sin modificar archivos → `docs/calidad/interventoria.md` (hallazgo | archivo:línea | severidad | cómo comprobarlo | corrección)
 - [ ] B.49 Corrección de los hallazgos: causa raíz, prueba de regresión y commit `fix: … (closes #n)`; pendientes justificados (incl. `ddl-auto=update` frente a Flyway)
-- [ ] B.50 Interventoría cruzada: hallazgos del otro equipo como issues con `.github/ISSUE_TEMPLATE/interventoria.md`
+- [x] B.50 Interventoría cruzada: hallazgos del otro equipo como issues con `.github/ISSUE_TEMPLATE/interventoria.md` → sección 11 de `docs/calidad/interventoria.md` (2026-11-22). Hecha por Claude, no por otro equipo ni por Daniel: falta la revisión humana (X-05); no se abrieron issues y la plantilla de issue no existe. 5 puntos que no cuadran y 7 hallazgos nuevos (el más grave, N-01: el límite de login ve la IP de Vercel)
 
 **Fase 5 · Entrega de llaves (U6)**
 - [x] B.51 Docker: `Dockerfile` multi-stage (JDK 21 → JRE 21, usuario sin privilegios, `chmod +x mvnw`) y `.dockerignore`
