@@ -90,7 +90,7 @@ Se crean **dos Web Services** con la misma configuración y distintas variables.
 - **Auto-Deploy «After CI Checks Pass»**: Render espera a que el CI de GitHub Actions termine en verde antes de desplegar. Un push con el CI en rojo no se despliega. (El CI debe haber corrido al menos una vez.)
 - No pongas `PORT`: Render lo define y la app lo lee (`server.port=${PORT:8080}`).
 - **No pongas `SPRING_PROFILES_ACTIVE=e2e`** nunca: ese perfil simula la visión y siempre responde Charmander.
-- Plan gratuito: el servicio se duerme tras 15 min sin peticiones y tarda hasta un minuto en despertar; el frontend lo tolera (esperas de 70 s y 110 s para identificar). No uses un cron que lo mantenga despierto: Render lo considera abuso del plan gratuito.
+- Plan gratuito: el servicio se duerme tras 15 min sin peticiones y tarda en despertar (medido: 116–134 s con la imagen anterior; ver «Arranque en frío» abajo); el frontend lo tolera (esperas de 180 s en las lecturas y 270 s para identificar). No uses un cron que lo mantenga despierto: Render lo considera abuso del plan gratuito.
 
 ## 4. Vercel (frontend)
 
@@ -100,8 +100,30 @@ El proyecto `pokedex-frontend` se despliega solo desde `master`. Sin `API_URL` c
 - **Preview**: `API_URL` = `https://pokedex-backend-dev.onrender.com/api`
 - Tras cambiar una variable hay que **redesplegar**: las variables se leen al compilar y arrancar la función.
 - Con `API_URL`, el build **no** llama a la API (los datos van dentro de `<Suspense>`), así que compila aunque Render esté dormido. Solo se prerenderizan las 151 fichas de Kanto; el resto se genera en la primera visita.
-- Funciones: `maxDuration = 120` en `/api/identificar` (Hobby con Fluid Compute); el fetch a la API se corta a los 110 s y el usuario recibe un mensaje claro.
+- Funciones: `maxDuration = 300` en `/api/identificar` (el máximo de Hobby con Fluid Compute); el fetch a la API se corta a los 270 s y el usuario recibe un mensaje claro. Las lecturas esperan hasta 180 s.
 - Uso del plan Hobby: vigila **Settings → Usage** (almacenamiento de despliegues e Image Optimization). Para bajar el almacenamiento, borra despliegues antiguos y reduce la retención (**Settings → Security → Deployment Retention**).
+
+### Arranque en frío del backend (Render, 0,1 CPU)
+
+El plan gratuito de Render da ~0,1 CPU y 512 MB: la JVM tarda minutos en arrancar Spring. Medido en los logs de Render con la imagen anterior: **116 y 134 s en dev y 122 s en prod**. Para reproducirlo y mejorarlo se midió en local, con el contenedor limitado a `--cpus=0.1 --memory=512m` y una base PostgreSQL desechable (tiempo `Started … in X s` de Spring; las variantes corridas en paralelo tienen ±8 s de ruido):
+
+| Variante | `Started` | Hasta responder `/api/health` | Qué se concluye |
+|---|---|---|---|
+| A. Imagen anterior (`MaxRAMPercentage=75`) | 180,5 s y 187,8 s | 202 s y 214 s | Reproduce el problema (Render real: 116–134 s) |
+| B. `-XX:TieredStopAtLevel=1` | **102,2 s** | 117 s | **Lo que más ayuda** (−43 %): con 0,1 CPU, el compilador C2 le quita CPU al arranque |
+| C. `-XX:+UseSerialGC` | 198,8 s | 221 s | Sin mejora; no se adopta |
+| D. B + C | 105,1 s | 120 s | Igual que B |
+| E. B + `spring.main.lazy-initialization=true` | 106,5 s | 128 s | Sin mejora sobre B; **no se adopta** (así tampoco hay riesgo para el admin inicial ni para las pruebas) |
+| F. B + `-XX:-BytecodeVerificationRemote` | no corrió | — | Mi comando estaba mal (es una opción diagnóstica); además está obsoleta y quita una comprobación de seguridad: descartada sin medir |
+| H. B + **CDS** (archivo de clases generado en el build, entrenado sin base de datos) | **75,8 s** (83,5 s en paralelo) | 85 s | Baja otros ~26 s (−26 % sobre B) |
+| I. H + SerialGC | 83,0 s | 92 s | Sin mejora |
+| J. H + `ddl-auto=none` (solo informativo) | 81,4 s | 91 s | Sin mejora: no es Hibernate quien tarda; se mantiene `update` |
+| **Final (Dockerfile): B + CDS** | **65,1 s** | **72 s** | **−64 % frente a A** (`Started`) y −65 % hasta responder; la primera petición real baja de 3,2 s a 1,0 s |
+
+- **Adoptado:** `-XX:TieredStopAtLevel=1` (a cambio, menos rendimiento sostenido: irrelevante con este tráfico) y el archivo CDS (`app.jsa`, +40 MB; la imagen pasa de 403 a 454 MB). Se genera en el build con una corrida de entrenamiento sin base de datos que falla al conectar pero ya cargó Spring, Tomcat y Security. El build falla si no se genera el archivo; si no coincidiera con la JVM, la JVM lo ignora y arranca igual.
+- **Descartado por la medición:** `UseSerialGC`, `lazy-initialization`, `BytecodeVerificationRemote`, `ddl-auto=none`.
+- **Sin verificar en Render:** el Render real es más rápido que este banco (122 s frente a 202 s con la imagen anterior), así que se espera algo en el orden de 40–80 s, pero hay que medirlo tras el despliegue (los logs de Render muestran `Started … in X s`). Mientras tanto, los topes del frontend y el aviso («hasta 2–3 minutos la primera vez») cubren el caso anterior.
+- Banco de pruebas (para repetirlo): `docker run --network <red> --cpus=0.1 --memory=512m` contra un PostgreSQL de `postgres:17-alpine` con `unaccent`, con variables de relleno; se mide `Started PokedexBackendApplication in X seconds` y el tiempo hasta que `/api/health` responde.
 
 ## 5. Variables de entorno (solo nombres)
 
@@ -128,7 +150,7 @@ El proyecto `pokedex-frontend` se despliega solo desde `master`. Sin `API_URL` c
 
 ## 6. Verificación
 
-1. **Salud.** `GET https://pokedex-backend-5bcq.onrender.com/api/health` (prod) y `https://pokedex-backend-dev.onrender.com/api/health` (dev) → `{"estado":"ok"}`. La primera llamada tras una pausa puede tardar ~1 min.
+1. **Salud.** `GET https://pokedex-backend-5bcq.onrender.com/api/health` (prod) y `https://pokedex-backend-dev.onrender.com/api/health` (dev) → `{"estado":"ok"}`. La primera llamada tras una pausa puede tardar entre 1 y 2–3 minutos (ver «Arranque en frío»).
 2. **Datos.** `GET /api/pokemons?size=1` → 200 con `totalElements` = 1025, y una búsqueda sin tildes (`/api/pokemons?nombre=pikachu`) para confirmar `unaccent`.
 3. **IP real y límite (verificado en producción: la cabecera falsa se ignora y el cupo es por cliente).** El límite de 10 fotos por minuto por IP usa `request.getRemoteAddr()` con `forward-headers-strategy=native` (Tomcat lee `X-Forwarded-For` de derecha a izquierda y se detiene en el primer proxy no interno). Hay que comprobar que los proxies de Render caen en `internal-proxies`:
    - Manda **11** `POST /api/pokemons/identificar` (con una foto pequeña) cambiando cada vez un `X-Forwarded-For` falso (`1.1.1.1`, `1.1.1.2`, …). **Esperado:** la 11.ª responde **429**. Si nunca llega a 429, el servidor se deja engañar por la cabecera: ajusta `server.tomcat.remoteip.internal-proxies`.

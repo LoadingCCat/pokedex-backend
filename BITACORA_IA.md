@@ -368,8 +368,7 @@ Cierre de B.55. Todo lo que sigue sale de `git log`, de los informes de pruebas 
 | Cambio acumulado | 51 archivos, +3 045 / −16 líneas | 49 archivos, +1 941 / −132 líneas |
 
 - Por tramos: F20 backend de 12:16 a 15:32 (B.40–B.47); F20 frontend de 14:16 a 15:35 (FE.49–FE.50); pruebas E2E a las 19:53 (FE.51); Fase 5 de 20:15 a 22:05 (Docker, CI, configuración de producción, imágenes, `generateStaticParams`, documentación y cierre).
-- Tiempo entre el primer y el último commit: unas 10 h de reloj (`git log` registra el primer commit de F20 a las 12:16).
-- **Tiempo de trabajo (dato del usuario):** unas 8 h el 2026-11-21 (de 2:20 p. m. a 10 p. m.) en unas 10 sesiones de Claude Code.
+- Tiempo entre el primer y el último commit: unas 10 h de reloj. **Jornada real (dato del usuario):** de mediodía a las 10 p. m., unas 10 h; el commit de las 12:16 es de la mañana y corresponde a las tareas del backend de F20. Unas 10 sesiones de Claude Code.
 - **Sesión de la Fase 5 (la de esta entrada):** 2 h 12 min de reloj, 14 min 42 s de API, 116 peticiones, 443 líneas cambiadas y un costo equivalente de 5,03 USD (Sonnet 5.5).
 
 ### Tareas cerradas
@@ -430,5 +429,8 @@ Cierre de B.55. Todo lo que sigue sale de `git log`, de los informes de pruebas 
 - *"Nunca me pidas los secretos ni los escribas en archivos"* → las variables van solo por nombre en `docs/despliegue.md`; los valores, en los paneles de Render y Vercel.
 - **Uso (dato del usuario):** unos 40 prompts (conteo aproximado) y 24 % del límite semanal de Claude (que se reinició el mismo día).
 
-### Hallazgo abierto
-- El arranque en frío medido (116–134 s) supera el «hasta un minuto» escrito en `despliegue.md`, `CLAUDE.md` y el aviso «puede tardar más de un minuto…», y también el tope de 110 s del fetch de `/api/identificar` y los 70 s de las lecturas: una primera visita con Render dormido puede dar 504 antes de que el servicio despierte. Pendiente de decidir: subir los topes (la función de Vercel admite hasta 300 s) o avisar de un arranque de hasta unos 2 minutos.
+### Arranque en frío (hallazgo y corrección, misma jornada)
+- Los logs dieron 116–134 s de arranque en Render, más que el «hasta un minuto» escrito en los docs y que los topes del front (70 s y 110 s): una primera visita con el servidor dormido podía dar 504.
+- **Backend:** con el contenedor a 0,1 CPU y 512 MB, `Started` pasó de 180–188 s a **65 s** (−64 %): `-XX:TieredStopAtLevel=1` (−43 %) y un archivo CDS generado en el build (−26 % más); `UseSerialGC`, `lazy-initialization` y `ddl-auto=none` no mejoraron nada medible. Detalle en `docs/despliegue.md`. **Falta medirlo en Render real tras el despliegue.**
+- **Frontend:** topes de 180 s (lecturas) y 270 s (identificar, con `maxDuration` 300) y aviso «La primera vez puede tardar hasta 2–3 minutos…».
+- Error mío: la primera prueba de `-XX:-BytecodeVerificationRemote` falló por falta de `-XX:+UnlockDiagnosticVMOptions`; se descartó sin repetirla (opción obsoleta y que quita una comprobación de seguridad). Mi primer `Dockerfile` con CDS dejó la imagen en 562 MB por capas duplicadas (`chown -R` y el JAR); se reorganizó y quedó en 454 MB.
