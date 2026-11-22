@@ -357,7 +357,7 @@ Continuación de la sesión anterior, con el mismo método por fases (docs → p
 
 ## 2026-11-21 · Claude Code (F20 y Fase 5: identificación por foto y despliegue) · Métricas del módulo
 
-Cierre de B.55. Todo lo que sigue sale de `git log`, de los informes de pruebas y de mediciones hechas con `next build`; lo que solo conoce el equipo queda como **[completar]**. Los dos repos se trabajaron el mismo día (2026-11-21).
+Cierre de B.55. Todo lo que sigue sale de `git log`, de los informes de pruebas y de mediciones hechas con `next build`; los datos que solo tiene el equipo (tiempos, uso, Gemini y arranque en frío) los aportó el usuario. Los dos repos se trabajaron el mismo día (2026-11-21).
 
 ### Commits y tiempos (de `git log`)
 | | Backend (`main`) | Frontend (`master`) |
@@ -368,7 +368,9 @@ Cierre de B.55. Todo lo que sigue sale de `git log`, de los informes de pruebas 
 | Cambio acumulado | 51 archivos, +3 045 / −16 líneas | 49 archivos, +1 941 / −132 líneas |
 
 - Por tramos: F20 backend de 12:16 a 15:32 (B.40–B.47); F20 frontend de 14:16 a 15:35 (FE.49–FE.50); pruebas E2E a las 19:53 (FE.51); Fase 5 de 20:15 a 22:05 (Docker, CI, configuración de producción, imágenes, `generateStaticParams`, documentación y cierre).
-- Tiempo entre el primer y el último commit: unas 10 h de reloj. **Tiempo real de trabajo del equipo y número de sesiones: [completar]**.
+- Tiempo entre el primer y el último commit: unas 10 h de reloj (`git log` registra el primer commit de F20 a las 12:16).
+- **Tiempo de trabajo (dato del usuario):** unas 8 h el 2026-11-21 (de 2:20 p. m. a 10 p. m.) en unas 10 sesiones de Claude Code.
+- **Sesión de la Fase 5 (la de esta entrada):** 2 h 12 min de reloj, 14 min 42 s de API, 116 peticiones, 443 líneas cambiadas y un costo equivalente de 5,03 USD (Sonnet 5.5).
 
 ### Tareas cerradas
 - 20 tareas `[x]` en el plan de F20 y entrega, tras cerrar B.55: B.40–B.47 (8, F20 en el backend), B.51–B.55 (5, Docker, CI, entornos, rollback y documentación) y FE.49–FE.55 (7, F20 en el frontend, E2E, CI y despliegue).
@@ -391,20 +393,23 @@ Cierre de B.55. Todo lo que sigue sale de `git log`, de los informes de pruebas 
 | `.next/server/app/pokemon` (build en modo mock) | **843 MB**, 1025 fichas prerenderizadas | **151 MB**, solo las 151 de Kanto (el resto, en la primera visita) |
 | Mismo directorio con `API_URL` (build contra la API) | no compilaba | 7 MB (solo esqueletos) |
 | Transformaciones de imagen en Vercel | 1,4 K de 5 K al mes (dato del panel) | tope teórico ≈ 3 100 (1025 artworks × 3 anchos × 1 formato) |
-| Almacenamiento de despliegues en Vercel | 7,51 de 10 GB (dato del panel) | **[completar]** (medir tras limpiar despliegues viejos) |
+| Almacenamiento de despliegues en Vercel | 7,51 de 10 GB (dato del panel) | no medido tras la limpieza de despliegues viejos |
 | Imagen Docker del backend | no existía | 403 MB (JAR de 56,8 MB), usuario sin privilegios |
 | CI | ninguno | GitHub Actions: backend (`test` + `docker`), frontend (`build`); rulesets activos |
 | Funciones de identificación | sin límite declarado | `maxDuration` 120 s, fetch a 110 s |
 
 - Entornos: Vercel (iad1), Render prod y dev (Virginia) y Neon `production` y `dev` (us-east-1), todos en US East.
-- Identificación real con Gemini verificada en producción desde el celular. **Cuota de Gemini consumida en las pruebas, tiempo medido del arranque en frío de Render y latencia de una identificación: [completar]**.
+- Identificación real con Gemini verificada en producción desde el celular. 
+- **Gemini** (Google AI Studio, nivel gratuito, últimos 28 días): unas 12 solicitudes, 100 % exitosas y 0 errores, ≈ 15 K tokens de entrada y ≈ 370 de salida, modelo Gemini 3.5 Flash Lite: la cuota gratuita sobra.
+- **Arranque en frío de Render (según los logs):** 116 y 134 s en dev, 122 s en prod; **más que el «hasta un minuto» de los docs y que el tope de 110 s del fetch de identificación** (ver «Hallazgo abierto» abajo).
+- **Latencia de una identificación:** no se midió con cronómetro; con el servidor despierto, unos segundos.
 
 ### Incidentes encontrados y corregidos
 | Incidente | Cómo se detectó | Corrección |
 |---|---|---|
 | **Hidratación en el celular:** al abrir `npm run dev` desde la IP del ordenador, la página se veía pero los botones no hacían nada | Next 16 bloquea `/_next/*` (JS y HMR) desde cualquier host que no sea `localhost` (en el log, `Blocked cross-origin request to Next.js dev resource`) | Variable `DEV_ORIGINS` → `allowedDevOrigins` (solo desarrollo) y `SelectorFoto` con `<label htmlFor>` a un input file enfocable, para que también abra el selector en iOS Safari. Front `c04ad3c` |
 | **`next build` con `API_URL` fallaba** en `/creditos` y `/regiones`: el `fetch` a la API estaba fuera de `<Suspense>` | Al medir la tarea 5.4b contra el backend local: falla aunque la API esté arriba. No se había notado porque Vercel corría con el mock | Datos dentro de `<Suspense>` con esqueleto; compila con el backend arriba y contra un puerto cerrado, así que el build no depende de Render. Regla nueva en `CLAUDE.md`. Front `7c5816d` |
-| **Contraseña del administrador:** el `pg_dump` trajo a Neon el admin local con la contraseña local | Al revisar `AdministradorInicial` (nunca pisa a un admin existente) frente al dump | Se documentó borrar la fila antes del primer arranque en producción y dejar que el servicio la cree con `ADMIN_USERNAME` y `ADMIN_PASSWORD` de Render (`docs/despliegue.md` §2). Sin cambiar código: un `ADMIN_RESTABLECER` se descartó. **Confirmar que el `DELETE` se ejecutó en Neon production antes del primer arranque: [completar]** |
+| **Contraseña del administrador:** el `pg_dump` trajo a Neon el admin local con la contraseña local | Al revisar `AdministradorInicial` (nunca pisa a un admin existente) frente al dump | Se documentó borrar la fila antes del primer arranque en producción y dejar que el servicio la cree con `ADMIN_USERNAME` y `ADMIN_PASSWORD` de Render (`docs/despliegue.md` §2). Sin cambiar código: un `ADMIN_RESTABLECER` se descartó. **Ejecutado:** el `DELETE` se hizo en production a las 9:10 p. m., antes del primer arranque a las 9:12, y en dev antes de crear su servicio; los dos logs dicen «Administrador inicial admin creado» |
 | **Pool de Neon:** el pool propuesto dejaba 1 conexión mínima abierta, con lo que Neon no suspendería el cómputo y se gastarían las horas gratuitas | Observación del usuario al revisar el diff | `DB_POOL_MIN` por defecto en 0, con `idle-timeout` de 2 min y `max-lifetime` de 4 min (`e3949e4`) |
 | **Almacenamiento de Vercel** (7,51 GB): 1025 fichas prerenderizadas, unos 820 KB cada una, en cada despliegue | Medición del output de `next build` | `generateStaticParams` con las 151 de Kanto (`7fa154b`). Falta limpiar despliegues viejos en el panel |
 | **IP del límite de identificaciones:** duda de si Render deja el `X-Forwarded-For` falsificable o hace compartir cupo | Decisión pendiente desde F20 (2.3) | Verificado en producción: 10 envíos con cabecera falsa dieron 400, el 11.º 429; con la PC bloqueada, el celular con datos móviles identificó con 200 (`228880b`) |
@@ -423,4 +428,7 @@ Cierre de B.55. Todo lo que sigue sale de `git log`, de los informes de pruebas 
 - *"Sobre generateStaticParams: sí, como tarea 5.4b… que el build no dependa de que Render esté despierto"* → de 843 a 151 MB y el hallazgo del build con `API_URL`.
 - *"Opción 1. Arregla /creditos y TODAS las páginas que fallen en next build con API_URL… contra el backend local encendido y también contra un puerto muerto"* → `<Suspense>` en `/creditos` y `/regiones`.
 - *"Nunca me pidas los secretos ni los escribas en archivos"* → las variables van solo por nombre en `docs/despliegue.md`; los valores, en los paneles de Render y Vercel.
-- **Número de prompts de la sesión y uso de tokens: [completar]**.
+- **Uso (dato del usuario):** unos 40 prompts (conteo aproximado) y 24 % del límite semanal de Claude (que se reinició el mismo día).
+
+### Hallazgo abierto
+- El arranque en frío medido (116–134 s) supera el «hasta un minuto» escrito en `despliegue.md`, `CLAUDE.md` y el aviso «puede tardar más de un minuto…», y también el tope de 110 s del fetch de `/api/identificar` y los 70 s de las lecturas: una primera visita con Render dormido puede dar 504 antes de que el servicio despierte. Pendiente de decidir: subir los topes (la función de Vercel admite hasta 300 s) o avisar de un arranque de hasta unos 2 minutos.

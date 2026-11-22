@@ -42,7 +42,7 @@ El proyecto sigue Spec-Driven Development (SDD): primero el documento, después 
   `POST http://localhost:8080/api/pokemons/importar-rango?total=151&movimientos=0` (todos: `total=1025`, unos 20 min). Responde 202 al instante; el avance, en `GET http://localhost:8080/api/pokemons/importacion`
 - Docker: `docker build -t pokedex-backend .` (el JAR no incluye `application-local.properties`; `.dockerignore` lo excluye). Para probarlo contra la base local, pasa las credenciales con `-e` desde variables de tu terminal, nunca escritas en archivos. El CI (`.github/workflows/ci.yml`) corre `./mvnw -B verify` y el build de la imagen.
 - Probar endpoints con `curl.exe "http://localhost:8080/api/..."`.
-- Tests: `.\mvnw.cmd test` (107 pruebas, F1–F15). Los `@WebMvcTest` llevan `@ConSeguridad` (reglas reales + secreto de prueba) y, los de escritura, `@WithMockUser(roles = "ADMIN")`. No necesitan el PostgreSQL local ni la PokeAPI: los controllers y servicios usan simulaciones, y las consultas SQL corren contra un PostgreSQL embebido (zonky). Se lanzan desde la terminal de la app, no desde el Bash del agente. Detalle en `docs/pruebas.md`.
+- Tests: `.\mvnw.cmd test` (210 pruebas, F1–F20). Los `@WebMvcTest` llevan `@ConSeguridad` (reglas reales + secreto de prueba) y, los de escritura, `@WithMockUser(roles = "ADMIN")`. No necesitan el PostgreSQL local ni la PokeAPI: los controllers y servicios usan simulaciones, y las consultas SQL corren contra un PostgreSQL embebido (zonky). Se lanzan desde la terminal de la app, no desde el Bash del agente. Detalle en `docs/pruebas.md`.
 
 ## Configuración y credenciales
 
