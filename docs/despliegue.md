@@ -171,6 +171,7 @@ Cualquier orden intermedio es seguro: un front con secreto frente a un backend s
 5. **Panel.** Inicia sesión en `/login` con el `ADMIN_USERNAME` / `ADMIN_PASSWORD` **de producción** (no con la contraseña local: confirma que el `DELETE` del paso 3 de §2 funcionó).
 6. **E2E.** Las pruebas Playwright no corren en el CI (necesitan el backend con perfil `e2e` y la base con los 1025). Se lanzan a mano: `npm run test:e2e` contra local, o contra el sitio desplegado cambiando `baseURL`/`API_URL` (no uses el perfil `e2e` en Render).
 7. **Límite por cliente tras `PROXY_SECRETO` (N-01).** En `/login`, con una red, falla 5 veces la contraseña: el sexto intento debe mostrar «Demasiados intentos. Espera un minuto». Desde otra red (por ejemplo el celular con datos), el login correcto debe entrar en ese mismo minuto. Lo mismo con `/identificar`: 11 fotos seguidas desde una red dan 429 y otra red sigue pudiendo. Si las dos redes se bloquean entre sí, el backend no está recibiendo el secreto: revisa que el valor sea idéntico en el par.
+   **Estado (2026-11-22):** verificado en **producción** (Render prod + Vercel Production): el PC quedó bloqueado tras 5 logins malos y, en el mismo minuto, el celular con datos móviles entró con la contraseña correcta. **Dev sin `PROXY_SECRETO` por ahora** (Render dev y Vercel Preview): allí el límite sigue contando la IP de Vercel. La parte de `/identificar` (11 fotos) no se comprobó a mano.
 
 ## 7. Orden del primer despliegue
 
