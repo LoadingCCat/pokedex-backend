@@ -4,6 +4,14 @@ Frontend en **Vercel**, backend Spring Boot en **Render** (Docker, plan gratuito
 
 > **Regla de oro:** los valores de las variables (contraseñas, claves, secretos) solo viven en los paneles de Render y Vercel y en tu `application-local.properties`. En los documentos y en Git va únicamente el **nombre**.
 
+## URLs de producción
+
+| Pieza | URL |
+|---|---|
+| Frontend (Vercel, Production) | <https://pokedex-frontend-seven.vercel.app> |
+| API de producción (Render prod → Neon `production`) | <https://pokedex-backend-5bcq.onrender.com/api> · salud: `/api/health` |
+| API de desarrollo (Render dev → Neon `dev`; la usan los Preview de Vercel) | <https://pokedex-backend-dev.onrender.com/api> |
+
 ## 1. Arquitectura
 
 ```mermaid
@@ -68,7 +76,7 @@ Proyecto `pokedex`, AWS `us-east-1`, PostgreSQL 18, con dos branches: **producti
 
 Se crean **dos Web Services** con la misma configuración y distintas variables.
 
-| Ajuste | `pokedex-api-prod` | `pokedex-api-dev` |
+| Ajuste | Prod | Dev |
 |---|---|---|
 | Repositorio | `LoadingCCat/pokedex-backend` | el mismo |
 | Rama | `main` | `dev` (créala desde `main`) o `main` si prefieres un solo flujo |
@@ -88,8 +96,8 @@ Se crean **dos Web Services** con la misma configuración y distintas variables.
 
 El proyecto `pokedex-frontend` se despliega solo desde `master`. Sin `API_URL` corre en modo mock (datos de ejemplo; `/identificar` y `/admin` muestran un aviso).
 
-- **Production**: `API_URL` = `https://<servicio-prod>.onrender.com/api`
-- **Preview**: `API_URL` = `https://<servicio-dev>.onrender.com/api`
+- **Production**: `API_URL` = `https://pokedex-backend-5bcq.onrender.com/api`
+- **Preview**: `API_URL` = `https://pokedex-backend-dev.onrender.com/api`
 - Tras cambiar una variable hay que **redesplegar**: las variables se leen al compilar y arrancar la función.
 - Con `API_URL`, el build **no** llama a la API (los datos van dentro de `<Suspense>`), así que compila aunque Render esté dormido. Solo se prerenderizan las 151 fichas de Kanto; el resto se genera en la primera visita.
 - Funciones: `maxDuration = 120` en `/api/identificar` (Hobby con Fluid Compute); el fetch a la API se corta a los 110 s y el usuario recibe un mensaje claro.
@@ -120,12 +128,12 @@ El proyecto `pokedex-frontend` se despliega solo desde `master`. Sin `API_URL` c
 
 ## 6. Verificación
 
-1. **Salud.** `GET https://<servicio>.onrender.com/api/health` → `{"estado":"ok"}`. La primera llamada tras una pausa puede tardar ~1 min.
+1. **Salud.** `GET https://pokedex-backend-5bcq.onrender.com/api/health` (prod) y `https://pokedex-backend-dev.onrender.com/api/health` (dev) → `{"estado":"ok"}`. La primera llamada tras una pausa puede tardar ~1 min.
 2. **Datos.** `GET /api/pokemons?size=1` → 200 con `totalElements` = 1025, y una búsqueda sin tildes (`/api/pokemons?nombre=pikachu`) para confirmar `unaccent`.
 3. **IP real y límite (pendiente desde la decisión del 2026-11-21).** El límite de 10 fotos por minuto por IP usa `request.getRemoteAddr()` con `forward-headers-strategy=native` (Tomcat lee `X-Forwarded-For` de derecha a izquierda y se detiene en el primer proxy no interno). Hay que comprobar que los proxies de Render caen en `internal-proxies`:
    - Manda **11** `POST /api/pokemons/identificar` (con una foto pequeña) cambiando cada vez un `X-Forwarded-For` falso (`1.1.1.1`, `1.1.1.2`, …). **Esperado:** la 11.ª responde **429**. Si nunca llega a 429, el servidor se deja engañar por la cabecera: ajusta `server.tomcat.remoteip.internal-proxies`.
    - Desde otra red (por ejemplo el celular con datos), 3 envíos seguidos deben responder 200: el cupo es por cliente y no compartido. Si todos comparten cupo, `getRemoteAddr()` está viendo la IP del proxy: ajusta lo mismo.
-4. **Identificación real.** En `https://<tu-dominio>/identificar` sube la foto de un Pokémon: debe mostrar el identificado y 3 similares (usa `GEMINI_API_KEY` real). Con Render dormido verás «Despertando el servidor…» a los 5 s.
+4. **Identificación real.** En `https://pokedex-frontend-seven.vercel.app/identificar` sube la foto de un Pokémon: debe mostrar el identificado y 3 similares (usa `GEMINI_API_KEY` real). Con Render dormido verás «Despertando el servidor…» a los 5 s.
 5. **Panel.** Inicia sesión en `/login` con el `ADMIN_USERNAME` / `ADMIN_PASSWORD` **de producción** (no con la contraseña local: confirma que el `DELETE` del paso 3 de §2 funcionó).
 6. **E2E.** Las pruebas Playwright no corren en el CI (necesitan el backend con perfil `e2e` y la base con los 1025). Se lanzan a mano: `npm run test:e2e` contra local, o contra el sitio desplegado cambiando `baseURL`/`API_URL` (no uses el perfil `e2e` en Render).
 

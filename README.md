@@ -2,7 +2,9 @@
 
 API REST de la Pokedex+ hecha con Java 21, Spring Boot 4.1.2, Maven y PostgreSQL. Los datos se importan desde la [PokeAPI](https://pokeapi.co/).
 
-**Frontend publicado:** <https://pokedex-frontend-seven.vercel.app/> (código en [LoadingCCat/pokedex-frontend](https://github.com/LoadingCCat/pokedex-frontend)). La versión publicada usa datos mock con la forma de esta API; para conectarlo a este backend en local, ver su README (`API_URL`).
+**Frontend publicado:** <https://pokedex-frontend-seven.vercel.app/> (código en [LoadingCCat/pokedex-frontend](https://github.com/LoadingCCat/pokedex-frontend)). La versión publicada usa esta API desplegada en Render.
+
+**API en producción:** <https://pokedex-backend-5bcq.onrender.com/api> (comprobación: [`/api/health`](https://pokedex-backend-5bcq.onrender.com/api/health)) · **API de desarrollo:** <https://pokedex-backend-dev.onrender.com/api>. El plan gratuito de Render se duerme tras 15 minutos sin peticiones: la primera llamada puede tardar hasta un minuto. Para conectar el frontend a un backend local, ver su README (`API_URL`).
 
 ## Cómo correrlo
 
