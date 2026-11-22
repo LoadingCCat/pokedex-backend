@@ -114,7 +114,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(LimiteExcedidoException.class)
     public ResponseEntity<Map<String, Object>> manejarLimiteExcedido(LimiteExcedidoException ex,
                                                                      HttpServletRequest request) {
-        return construir(HttpStatus.TOO_MANY_REQUESTS, "Demasiadas peticiones", ex.getMessage(), request);
+        // N-03: las dos ventanas (login e identificar) son de un minuto
+        ResponseEntity<Map<String, Object>> respuesta =
+                construir(HttpStatus.TOO_MANY_REQUESTS, "Demasiadas peticiones", ex.getMessage(), request);
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).header("Retry-After", "60").body(respuesta.getBody());
     }
 
     // 502 (F20): el servicio de visión falló o no está configurado. El mensaje es fijo: nunca la
@@ -189,11 +192,17 @@ public class GlobalExceptionHandler {
                 "Ocurrió un error inesperado. Revisa el log del servidor para más detalles.", request);
     }
 
+    private static final int MAX_CAMPO_SORT_EN_MENSAJE = 40;
+
     /** Mensaje fijo: solo repite el campo que el propio cliente envió en ?sort=, nunca nombres internos. */
     private static String mensajeSortInvalido(HttpServletRequest request) {
         String base = "El parámetro 'sort' no es válido";
         String sort = request.getParameter("sort");
         String campo = sort == null ? "" : sort.split(",")[0].trim();
+        // N-05: se repite solo el principio de lo que envió el cliente
+        if (campo.length() > MAX_CAMPO_SORT_EN_MENSAJE) {
+            campo = campo.substring(0, MAX_CAMPO_SORT_EN_MENSAJE) + "…";
+        }
         return campo.isEmpty() ? base : base + ": el campo '" + campo + "' no existe";
     }
 

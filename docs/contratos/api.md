@@ -220,7 +220,7 @@ En `resultados`, `importados` son los registros creados, `omitidos` los que ya e
 
 ## Identificar por foto — `POST /pokemons/identificar` (F20)
 
-**Quién:** cualquiera, sin token. Límite: 10 peticiones por minuto por IP.
+**Quién:** cualquiera, sin token. Límite: 10 peticiones por minuto por IP. Si el servidor del frontend llama en nombre del navegador, la IP es la que declara en `X-Cliente-IP`, pero solo se acepta con `X-Proxy-Secreto` igual a `PROXY_SECRETO` del backend (el mismo criterio vale para el login); si no, la de la conexión.
 
 **Entrada:** `multipart/form-data` con un único campo:
 
@@ -260,7 +260,7 @@ En `resultados`, `importados` son los registros creados, `omitidos` los que ya e
 | 400 | No es JPEG, PNG ni WEBP | «La foto debe ser JPG, PNG o WEBP» |
 | 400 | Pesa más de 5 MB | «La foto pesa más de 5 MB» |
 | 422 | La IA no reconoce un Pokémon, su confianza es menor que 0,6 o el slug no existe en la base | «No reconocimos un Pokémon en la foto. Prueba con otra más clara» |
-| 429 | Más de 10 peticiones por minuto desde la misma IP | «Demasiadas fotos seguidas. Espera un minuto» |
+| 429 | Más de 10 peticiones por minuto desde la misma IP (con `Retry-After: 60`) | «Demasiadas fotos seguidas. Espera un minuto» |
 | 502 | El servicio de visión no respondió a tiempo, falló o no está configurado | «El reconocimiento no está disponible en este momento» |
 
 Ningún mensaje incluye la clave, la URL del proveedor, la respuesta cruda de la IA ni trazas: eso va solo al log.
@@ -298,7 +298,7 @@ Todos los errores devuelven el mismo formato:
 | 409 | Se pidió una importación mientras otra sigue en curso, o se creó un Pokémon con un número ocupado |
 | 415 | El `Content-Type` del cuerpo no es JSON (p. ej. `text/plain` en `POST /auth/login`) |
 | 422 | La petición es válida, pero no se pudo procesar: p. ej., no hay un Pokémon en la foto (F20) |
-| 429 | Demasiadas peticiones desde la misma IP: más de 10 fotos por minuto (F20) o 5 intentos de login fallidos por minuto |
+| 429 | Demasiadas peticiones desde la misma IP: más de 10 fotos por minuto (F20) o 5 intentos de login fallidos por minuto. Lleva la cabecera `Retry-After: 60` (segundos) |
 | 500 | Error inesperado del servidor (el detalle solo queda en el log, no en la respuesta) |
 | 502 | Falló un servicio externo: el servicio de visión no respondió, falló o no está configurado (F20) |
 

@@ -5,6 +5,7 @@ import com.pokedex.exception.BadRequestException;
 import com.pokedex.exception.CamposInvalidosException;
 import com.pokedex.exception.NoAutorizadoException;
 import com.pokedex.repository.UsuarioRepository;
+import com.pokedex.service.IpCliente;
 import com.pokedex.service.LimiteLogin;
 import com.pokedex.service.ServicioToken;
 import com.pokedex.service.ServicioToken.TokenEmitido;
@@ -38,15 +39,17 @@ public class AuthController {
     private final PasswordEncoder cifrador;
     private final ServicioToken servicioToken;
     private final LimiteLogin limiteLogin;
+    private final IpCliente ipCliente;
     /** Hash para comparar cuando el usuario no existe, para que tarde lo mismo que uno real. */
     private final String hashDeRelleno;
 
     public AuthController(UsuarioRepository usuarioRepository, PasswordEncoder cifrador,
-                          ServicioToken servicioToken, LimiteLogin limiteLogin) {
+                          ServicioToken servicioToken, LimiteLogin limiteLogin, IpCliente ipCliente) {
         this.usuarioRepository = usuarioRepository;
         this.cifrador = cifrador;
         this.servicioToken = servicioToken;
         this.limiteLogin = limiteLogin;
+        this.ipCliente = ipCliente;
         this.hashDeRelleno = cifrador.encode("relleno-para-igualar-tiempos");
     }
 
@@ -54,7 +57,8 @@ public class AuthController {
     @PostMapping("/login")
     public Map<String, Object> login(@RequestBody(required = false) SolicitudLogin solicitud,
                                      HttpServletRequest request) {
-        String ip = request.getRemoteAddr();
+        // N-01: la IP real del cliente si la declara el frontend con el secreto del proxy; si no, la de la conexión
+        String ip = ipCliente.de(request);
         // S-01: con la IP bloqueada se corta antes de consultar la BD y de gastar BCrypt
         limiteLogin.verificar(ip);
 

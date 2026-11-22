@@ -123,7 +123,7 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [x] FE.45 Playwright a 360, 768 y 1080 px (catálogo, ficha, regiones, `/login`, `/admin`): sin scroll horizontal; correcciones; `pokedex-frontend/docs/mediciones.md` → 55 de 55 sin scroll (también 375 y 1280); se corrigió la navegación, que se salía a 360 px con «Naturalezas». Falta `/admin` con datos (necesita el backend)
 
 **Fase 6 · Cierre**
-- [ ] B.39 `producto.md`, `arquitectura.md`, `pruebas.md` (totales), README y CLAUDE.md de los dos repos y `BITACORA_IA.md`; total de pruebas de las dos suites. Totales medidos el 2026-11-22 (tarea 4.2): backend 244 (`mvnw test`), frontend 157 de Vitest + 29 de contrato con `API_URL`, 12 E2E. Sigue abierto por el resto de los docs
+- [ ] B.39 `producto.md`, `arquitectura.md`, `pruebas.md` (totales), README y CLAUDE.md de los dos repos y `BITACORA_IA.md`; total de pruebas de las dos suites. Totales medidos el 2026-11-22 (tras la 4.3): backend 290 (`mvnw test`), frontend 233 de Vitest + 29 de contrato con `API_URL`, 19 E2E (`playwright test --list`). Sigue abierto por el resto de los docs
 
 ## Siguiente fase · F11–F13 y F16–F18
 <!-- Quedan como "siguiente fase" (después de la sustentación): no se tocan mientras dure el plan de abajo.

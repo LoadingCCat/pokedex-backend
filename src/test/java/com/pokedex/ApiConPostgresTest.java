@@ -167,6 +167,18 @@ class ApiConPostgresTest {
         }
     }
 
+    // N-05 (interventoría 4.3): el valor de sort que se repite en el mensaje se recorta
+    @Test
+    void elMensajeDeSortInvalidoRecortaElValorQueRepite() throws Exception {
+        String largo = "x".repeat(500);
+
+        mvc.perform(get("/api/pokemons?sort=" + largo))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value(containsString("'sort'")))
+                .andExpect(jsonPath("$.mensaje").value(org.hamcrest.Matchers.not(containsString("x".repeat(60)))))
+                .andExpect(jsonPath("$.mensaje").value(org.hamcrest.Matchers.hasLength(org.hamcrest.Matchers.lessThan(160))));
+    }
+
     // ---------- F2 · filtros de un solo valor ----------
 
     @Test

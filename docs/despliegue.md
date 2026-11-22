@@ -138,6 +138,7 @@ El plan gratuito de Render da ~0,1 CPU y 512 MB: la JVM tarda minutos en arranca
 | `ADMIN_USERNAME` | ✔ | ✔ | | | ✔ | Admin inicial (se crea si no existe) |
 | `ADMIN_PASSWORD` | ✔ | ✔ | | | ✔ | Contraseña del admin inicial |
 | `CORS_ORIGENES` | ✔ | ✔ | | | opc. | Dominios del front que llaman desde el navegador, separados por comas |
+| `PROXY_SECRETO` | ✔ | ✔ | ✔ | ✔ | opc. | Secreto compartido entre el front y el back (≥ 16 caracteres al azar) para que el límite de login e identificar cuente por la IP real del cliente. **Mismo valor en cada par:** Render prod = Vercel Production y Render dev = Vercel Preview; un valor distinto entre los dos pares |
 | `GEMINI_API_KEY` | ✔ | ✔ | | | ✔ | Clave de visión (sin ella, identificar responde 502) |
 | `GEMINI_MODELO` | opc. | opc. | | | opc. | Modelo de Gemini (por defecto el de `application.properties`) |
 | `DB_POOL_MAX`, `DB_POOL_MIN` | opc. | opc. | | | opc. | Pool de Hikari (por defecto 5 y 0) |
@@ -146,6 +147,16 @@ El plan gratuito de Render da ~0,1 CPU y 512 MB: la JVM tarda minutos en arranca
 | `API_URL` | | | ✔ | ✔ | opc. | URL de la API (con `/api`); sin ella, modo mock |
 | `DEV_ORIGINS` | | | | | opc. | Solo `next dev`: IP para probar en el celular |
 | `E2E_ADMIN_USUARIO`, `E2E_ADMIN_CONTRASENA` | | | | | ✔ | Solo pruebas E2E locales (`.env.test`) |
+
+**`PROXY_SECRETO` (N-01).** El navegador no llama al backend: lo hace el servidor de Next (Vercel) desde `/api/sesion` y `/api/identificar`, así que sin esto el backend vería siempre la IP de Vercel y todos los usuarios compartirían el cupo (5 logins fallidos por minuto, 10 fotos por minuto): cualquiera podría dejar al administrador sin poder entrar. Con el secreto, el front manda la IP real (la de `x-real-ip` o `x-forwarded-for` que pone Vercel) en `X-Cliente-IP` y el secreto en `X-Proxy-Secreto`; el backend usa esa IP solo si el secreto coincide (comparación en tiempo constante) y, si no, la de la conexión, como antes. Sin `PROXY_SECRETO` en el backend todo funciona como antes; si se define y tiene menos de 16 caracteres, el servidor no arranca. El secreto no se sube a Git ni se escribe en los docs.
+
+**Orden de despliegue de `PROXY_SECRETO` (dev primero, y en cada entorno el backend antes que el front):**
+1. Generar dos secretos distintos, de al menos 16 caracteres al azar: uno para dev y otro para prod.
+2. Backend dev: subir el código a `main` (CI verde) y definir `PROXY_SECRETO` en Render dev (cambiar una variable reinicia el servicio). El front viejo no manda cabeceras: el backend usa la IP de la conexión y nada cambia.
+3. Front Preview: definir `PROXY_SECRETO` en Vercel (solo Preview) con el **mismo** valor que Render dev y desplegar el código del front (push a `master`). Una variable nueva en Vercel solo vale en el siguiente despliegue.
+4. Verificar en dev (§6.7). Si falla, quitar la variable de Render dev: el backend vuelve a la IP de la conexión.
+5. Repetir 2 y 3 para prod con el segundo secreto (Render prod y Vercel Production) y verificar.
+Cualquier orden intermedio es seguro: un front con secreto frente a un backend sin él, o al revés, solo deja los límites como estaban.
 
 `CORS_ORIGENES` en prod: el dominio de producción de Vercel (`https://pokedex-frontend-seven.vercel.app`). En dev: déjala vacía o con `http://localhost:3000`. Las páginas de Vercel (incluidos los Preview) llaman a la API desde su servidor, donde CORS no aplica.
 
@@ -159,6 +170,7 @@ El plan gratuito de Render da ~0,1 CPU y 512 MB: la JVM tarda minutos en arranca
 4. **Identificación real.** En `https://pokedex-frontend-seven.vercel.app/identificar` sube la foto de un Pokémon: debe mostrar el identificado y 3 similares (usa `GEMINI_API_KEY` real). Con Render dormido verás «Despertando el servidor…» a los 5 s.
 5. **Panel.** Inicia sesión en `/login` con el `ADMIN_USERNAME` / `ADMIN_PASSWORD` **de producción** (no con la contraseña local: confirma que el `DELETE` del paso 3 de §2 funcionó).
 6. **E2E.** Las pruebas Playwright no corren en el CI (necesitan el backend con perfil `e2e` y la base con los 1025). Se lanzan a mano: `npm run test:e2e` contra local, o contra el sitio desplegado cambiando `baseURL`/`API_URL` (no uses el perfil `e2e` en Render).
+7. **Límite por cliente tras `PROXY_SECRETO` (N-01).** En `/login`, con una red, falla 5 veces la contraseña: el sexto intento debe mostrar «Demasiados intentos. Espera un minuto». Desde otra red (por ejemplo el celular con datos), el login correcto debe entrar en ese mismo minuto. Lo mismo con `/identificar`: 11 fotos seguidas desde una red dan 429 y otra red sigue pudiendo. Si las dos redes se bloquean entre sí, el backend no está recibiendo el secreto: revisa que el valor sea idéntico en el par.
 
 ## 7. Orden del primer despliegue
 

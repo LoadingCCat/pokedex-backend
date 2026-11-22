@@ -101,7 +101,7 @@ public class SeguridadConfig {
         }
         // S-09: el largo no basta; el valor de la plantilla (.example) es público y no puede firmar tokens
         for (String ejemplo : SECRETOS_DE_EJEMPLO) {
-            if (secreto.contains(ejemplo)) {
+            if (secreto.toLowerCase(java.util.Locale.ROOT).contains(ejemplo)) { // N-04: sin distinguir mayúsculas
                 throw new IllegalStateException("JWT_SECRETO es un valor de ejemplo, que es público: "
                         + "genera uno propio y al azar (ver application-local.properties.example)");
             }

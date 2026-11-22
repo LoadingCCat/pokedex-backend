@@ -1,6 +1,8 @@
 # Resumen de la tarea 4.2 (corrección de la interventoría)
 
 **Fecha:** 2026-11-22 · **Hecho sin aprobación intermedia** (el usuario estaba ausente y pidió seguir solo). **Sin `git push`**: todo está en local.
+> **Estado a la fecha de la 4.2 (X-02 de la 4.3).** Este resumen es de ese momento: el grupo 5 (pruebas T-01 a T-15 y T-18) y S-17 se hicieron **después**, y la 4.3 corrigió además N-01 a N-05. Lo que sigue lo dice así: «Fuera del alcance» y «Sin corregir» de la sección 4 ya no son ciertos para esos puntos, y los totales de la sección 2 (244 / 157 / 12) son los de entonces. Los totales actuales (290 / 233 / 19) y el estado de cada hallazgo están en `docs/calidad/interventoria.md`.
+
 Repos: `pokedex-backend` (rama `main`) y `pokedex-frontend` (rama `master`). Hallazgos y su marca «Corregido»: `docs/calidad/interventoria.md`.
 
 ## 1. Commits (en orden de ejecución)

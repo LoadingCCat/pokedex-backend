@@ -3,6 +3,7 @@ package com.pokedex.controller;
 import com.pokedex.ConSeguridad;
 import com.pokedex.entity.Usuario;
 import com.pokedex.repository.UsuarioRepository;
+import com.pokedex.service.IpCliente;
 import com.pokedex.service.LimiteLogin;
 import com.pokedex.service.ServicioToken;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -34,9 +36,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(AuthController.class)
 @ConSeguridad
-@Import({ServicioToken.class, LimiteLogin.class})
+@Import({ServicioToken.class, LimiteLogin.class, IpCliente.class})
+@TestPropertySource(properties = "pokedex.seguridad.proxy-secreto=" + LoginConLimiteTest.PROXY_SECRETO)
 class LoginConLimiteTest {
 
+    static final String PROXY_SECRETO = "secreto-del-proxy-0123456789";
     private static final String MALA = """
             {"usuario": "admin", "contrasena": "incorrecta"}""";
     private static final String BUENA = """
@@ -151,6 +155,56 @@ class LoginConLimiteTest {
 
         login("10.1.0.9", "{\"usuario\": \"" + "u".repeat(100) + "\", \"contrasena\": \"" + "c".repeat(128) + "\"}")
                 .andExpect(status().isUnauthorized());
+    }
+
+    // ---------- N-01 · IP real detrás del proxy de confianza (el servidor de Next) ----------
+
+    /** Como el Route Handler de Next: la conexión es siempre la del proxy y la IP real va en cabeceras. */
+    private ResultActions loginDesdeElProxy(String ipReal, String secreto, String json) throws Exception {
+        return mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(json)
+                .header("X-Cliente-IP", ipReal)
+                .header("X-Proxy-Secreto", secreto)
+                .with(peticion -> {
+                    peticion.setRemoteAddr("10.2.0.1");
+                    return peticion;
+                }));
+    }
+
+    @Test
+    void dosClientesDetrasDelMismoProxyTienenCuposSeparados() throws Exception {
+        existeAdmin();
+        for (int i = 0; i < 5; i++) {
+            loginDesdeElProxy("203.0.113.10", PROXY_SECRETO, MALA).andExpect(status().isUnauthorized());
+        }
+        loginDesdeElProxy("203.0.113.10", PROXY_SECRETO, MALA).andExpect(status().isTooManyRequests());
+
+        // otro cliente detrás del mismo proxy no está bloqueado y puede entrar
+        loginDesdeElProxy("203.0.113.11", PROXY_SECRETO, BUENA).andExpect(status().isOk());
+    }
+
+    @Test
+    void conUnSecretoMaloLaCabeceraSeIgnoraYTodosCompartenLaIpDeLaConexion() throws Exception {
+        existeAdmin();
+        for (int i = 0; i < 5; i++) {
+            // cada intento dice ser otro cliente, pero el secreto no vale: cuenta la IP de la conexión
+            loginDesdeElProxy("198.51.100." + i, "secreto-falso-0123456789", MALA).andExpect(status().isUnauthorized());
+        }
+
+        loginDesdeElProxy("198.51.100.99", "secreto-falso-0123456789", MALA).andExpect(status().isTooManyRequests());
+    }
+
+    // ---------- N-03 · Retry-After ----------
+
+    @Test
+    void el429DelLoginLlevaRetryAfterDeUnMinuto() throws Exception {
+        existeAdmin();
+        for (int i = 0; i < 5; i++) {
+            login("10.1.0.20", MALA).andExpect(status().isUnauthorized());
+        }
+
+        login("10.1.0.20", MALA)
+                .andExpect(status().isTooManyRequests())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Retry-After", "60"));
     }
 
     // ---------- S-04 · Content-Type que no es JSON ----------

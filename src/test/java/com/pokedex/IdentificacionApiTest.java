@@ -44,6 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("e2e")
 class IdentificacionApiTest {
 
+    private static final String PROXY_SECRETO = "secreto-del-proxy-0123456789";
     private static final String RUTA = "/api/pokemons/identificar";
     private static final String MENSAJE_NO_RECONOCIDO = "No reconocimos un Pokémon en la foto. Prueba con otra más clara";
     private static final AtomicInteger SIGUIENTE_IP = new AtomicInteger();
@@ -54,6 +55,7 @@ class IdentificacionApiTest {
         propiedades.add("pokedex.seguridad.jwt-secreto", () -> ConSeguridad.SECRETO_DE_PRUEBA);
         propiedades.add("pokedex.seguridad.admin-usuario", () -> "admin-prueba");
         propiedades.add("pokedex.seguridad.admin-contrasena", () -> "clave-de-prueba");
+        propiedades.add("pokedex.seguridad.proxy-secreto", () -> PROXY_SECRETO);
     }
 
     @Autowired
@@ -326,6 +328,61 @@ class IdentificacionApiTest {
                 .andExpect(jsonPath("$.mensaje").value("El reconocimiento no está disponible en este momento"))
                 .andExpect(jsonPath("$.mensaje", not(containsString("http"))))
                 .andExpect(jsonPath("$.trace").doesNotExist());
+    }
+
+    // ---------- N-01 · IP real detrás del proxy de confianza (el servidor de Next) ----------
+
+    private RequestPostProcessor desdeElProxy(String ipReal, String secreto) {
+        return peticion -> {
+            peticion.setRemoteAddr("10.20.99.1");
+            peticion.addHeader("X-Cliente-IP", ipReal);
+            peticion.addHeader("X-Proxy-Secreto", secreto);
+            return peticion;
+        };
+    }
+
+    @Test
+    void dosClientesDetrasDelMismoProxyTienenCuposSeparados() throws Exception {
+        String a = "203.0.113." + (100 + SIGUIENTE_IP.incrementAndGet());
+        String b = "203.0.113." + (100 + SIGUIENTE_IP.incrementAndGet());
+        for (int i = 0; i < 10; i++) {
+            mvc.perform(multipart(RUTA).file(jpeg()).with(desdeElProxy(a, PROXY_SECRETO))).andExpect(status().isOk());
+        }
+        mvc.perform(multipart(RUTA).file(jpeg()).with(desdeElProxy(a, PROXY_SECRETO)))
+                .andExpect(status().isTooManyRequests());
+
+        mvc.perform(multipart(RUTA).file(jpeg()).with(desdeElProxy(b, PROXY_SECRETO))).andExpect(status().isOk());
+    }
+
+    @Test
+    void conUnSecretoMaloLaCabeceraNoDaCupoNuevo() throws Exception {
+        for (int i = 0; i < 10; i++) {
+            String falsa = "198.51.100." + (100 + SIGUIENTE_IP.incrementAndGet());
+            mvc.perform(multipart(RUTA).file(jpeg()).with(ip).with(peticion -> {
+                peticion.addHeader("X-Cliente-IP", falsa);
+                peticion.addHeader("X-Proxy-Secreto", "secreto-falso-0123456789");
+                return peticion;
+            })).andExpect(status().isOk());
+        }
+
+        // la undécima, con otra IP declarada falsa, sigue contando contra la IP de la conexión
+        mvc.perform(multipart(RUTA).file(jpeg()).with(ip).with(peticion -> {
+            peticion.addHeader("X-Cliente-IP", "198.51.100.250");
+            peticion.addHeader("X-Proxy-Secreto", "secreto-falso-0123456789");
+            return peticion;
+        })).andExpect(status().isTooManyRequests());
+    }
+
+    // N-03: el 429 lleva Retry-After
+    @Test
+    void el429DeIdentificarLlevaRetryAfterDeUnMinuto() throws Exception {
+        for (int i = 0; i < 10; i++) {
+            mvc.perform(multipart(RUTA).file(jpeg()).with(ip)).andExpect(status().isOk());
+        }
+
+        mvc.perform(multipart(RUTA).file(jpeg()).with(ip))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Retry-After", "60"));
     }
 
     // ---------- 429 ----------

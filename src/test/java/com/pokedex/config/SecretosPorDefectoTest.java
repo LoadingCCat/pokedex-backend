@@ -81,6 +81,16 @@ class SecretosPorDefectoTest {
     }
 
     @Test
+    void laComprobacionDeLosSecretosDeEjemploNoDistingueMayusculas() {
+        for (String secreto : new String[]{"CAMBIA_ESTO-" + "x".repeat(30), "Cambia_Esto-" + "x".repeat(30),
+                "Entrenamiento-Sin-Valor-Real-" + "x".repeat(20)}) {
+            assertThatThrownBy(() -> config.claveJwt(secreto))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageNotContaining(secreto);
+        }
+    }
+
+    @Test
     void unSecretoPropioDeLargoSuficienteSeAcepta() {
         SecretKey clave = config.claveJwt("N7vQ2xLp9TzR4mKd8WcY1bHs6JfA3eUg5oXi0CtZ");
 
