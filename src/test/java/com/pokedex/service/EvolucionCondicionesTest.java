@@ -209,8 +209,6 @@ class EvolucionCondicionesTest {
      * aprende (Annihilape, #979). Aquí el Pokémon 1 es la base y el 2 aprende «rage-fist».
      */
     @Test
-    @org.junit.jupiter.api.Disabled("Hallazgo T-18: en una importación en limpio la cadena se guarda antes de crear el "
-            + "movimiento y la condición de Annihilape queda «Usando Rage Fist 20 veces»; solo se corrige al reimportar")
     void annihilapeEsUsandoPunoFuria20VecesTambienEnUnaImportacionEnLimpio() {
         Map<String, Movimiento> baseDeMovimientos = new HashMap<>();
         when(movimientoRepository.findFirstByNombreIgnoreCase(anyString()))

@@ -150,7 +150,14 @@ public class PokemonService {
         final Set<String> cadenasGuardadas = new HashSet<>();        // URL de la cadena
         final Set<String> cadenasFallidas = new HashSet<>();         // URL de la cadena
         final Map<String, String> objetosPorUrl = new HashMap<>();   // URL del objeto -> nombre en español
+        // T-18: etapas cuya condición nombra un movimiento que aún no estaba en la BD (salió el slug en inglés);
+        // se vuelven a describir al terminar los Pokémon, cuando ya se crearon los movimientos que aprenden
+        final List<EtapaPendiente> etapasConMovimientoSinNombre = new ArrayList<>();
+        boolean movimientoSinNombre = false;                          // lo marca nombreDeMovimiento al usar el slug
     }
+
+    /** Una etapa evolutiva con lo necesario para volver a armar su condición (T-18). */
+    private record EtapaPendiente(Evolucion etapa, List<Map<String, Object>> detalles, String nombrePreEvolucion, String nombre) {}
 
     private final PokemonRepository pokemonRepository;
     private final TipoRepository tipoRepository;
@@ -283,8 +290,27 @@ public class PokemonService {
                 log.info("Importando Pokémon... {}/{}", id, total);
             }
         }
+        resolverCondicionesConMovimientos(cache);
         log.info("Pokémon importados: {} (omitidos: {}, fallidos: {})", importados, omitidos, fallidos);
         return new ResultadoImportacion("pokemons", importados, omitidos, fallidos);
+    }
+
+    /**
+     * T-18: la cadena se guarda con el primer Pokémon que la toca y el movimiento que nombra su condición
+     * («Puño Furia» de Annihilape) solo existe cuando se importa quien lo aprende, después. Al terminar los
+     * Pokémon, las condiciones que usaron el slug en inglés se arman otra vez, ya con el nombre en español.
+     */
+    private void resolverCondicionesConMovimientos(CacheImportacion cache) {
+        for (EtapaPendiente pendiente : cache.etapasConMovimientoSinNombre) {
+            try {
+                pendiente.etapa().setCondicion(describirCondicion(pendiente.detalles(),
+                        pendiente.nombrePreEvolucion(), pendiente.nombre(), cache));
+                evolucionRepository.save(pendiente.etapa());
+            } catch (Exception e) {
+                log.warn("No se pudo actualizar la condición de {}: {}", pendiente.nombre(), e.getMessage());
+            }
+        }
+        cache.etapasConMovimientoSinNombre.clear();
     }
 
     /**
@@ -824,10 +850,13 @@ public class PokemonService {
         etapa.setNombre(nombre);
         etapa.setIdCadena(idCadena);
         etapa.setIdPreEvolucion(idPreEvolucion);
-        etapa.setCondicion(idPreEvolucion == null
-                ? null
-                : describirCondicion(lista(nodo.get("evolution_details")), nombrePreEvolucion, nombre, cache));
+        List<Map<String, Object>> detalles = lista(nodo.get("evolution_details"));
+        cache.movimientoSinNombre = false;
+        etapa.setCondicion(idPreEvolucion == null ? null : describirCondicion(detalles, nombrePreEvolucion, nombre, cache));
         evolucionRepository.save(etapa);
+        if (cache.movimientoSinNombre) {
+            cache.etapasConMovimientoSinNombre.add(new EtapaPendiente(etapa, detalles, nombrePreEvolucion, nombre));
+        }
 
         for (Map<String, Object> siguiente : lista(nodo.get("evolves_to"))) {
             guardarEtapa(siguiente, idPokedex, nombre, idCadena, cache);
@@ -953,7 +982,7 @@ public class PokemonService {
                         : metodo.equals("strong-style-move") ? " en estilo fuerte" : "";
                 if (movimientoUsado != null) {
                     Integer veces = entero(detalle.get("min_move_count"));
-                    partes.add("Usando " + nombreDeMovimiento(movimientoUsado)
+                    partes.add("Usando " + nombreDeMovimiento(movimientoUsado, cache)
                             + (veces != null ? " " + veces + " veces" : "") + estilo);
                     movimientoUsado = null; // ya está dicho
                 } else {
@@ -1001,7 +1030,7 @@ public class PokemonService {
         }
         String movimiento = (String) mapa(detalle.get("known_move")).get("name");
         if (movimiento != null) {
-            partes.add("conociendo " + nombreDeMovimiento(movimiento));
+            partes.add("conociendo " + nombreDeMovimiento(movimiento, cache));
         }
         String tipoMovimiento = (String) mapa(detalle.get("known_move_type")).get("name");
         if (tipoMovimiento != null) {
@@ -1009,7 +1038,7 @@ public class PokemonService {
         }
         if (movimientoUsado != null) {
             Integer veces = entero(detalle.get("min_move_count"));
-            partes.add("tras usar " + nombreDeMovimiento(movimientoUsado)
+            partes.add("tras usar " + nombreDeMovimiento(movimientoUsado, cache)
                     + (veces != null ? " " + veces + " veces" : ""));
         }
         Integer pasos = entero(detalle.get("min_steps"));
@@ -1074,11 +1103,14 @@ public class PokemonService {
         return nombre;
     }
 
-    /** nombreEs del movimiento si ya está en la BD; si no, el slug legible. */
-    private String nombreDeMovimiento(String slug) {
+    /** nombreEs del movimiento si ya está en la BD; si no, el slug legible (y se anota para resolverlo luego, T-18). */
+    private String nombreDeMovimiento(String slug, CacheImportacion cache) {
         return movimientoRepository.findFirstByNombreIgnoreCase(slug)
                 .map(Movimiento::getNombreEs)
-                .orElse(capitalizar(slug.replace('-', ' ')));
+                .orElseGet(() -> {
+                    cache.movimientoSinNombre = true;
+                    return capitalizar(slug.replace('-', ' '));
+                });
     }
 
     /** Nombre de la Ruta si el lugar ya está importado; si no, el slug legible. */

@@ -1,6 +1,6 @@
 # F7 · Cadena evolutiva
 
-**Estado:** Implementada · criterios con pruebas automáticas (ver `docs/pruebas.md`), salvo la condición de Annihilape en una importación en limpio: hallazgo T-18 de `docs/calidad/interventoria.md`, prueba desactivada
+**Estado:** Implementada · criterios con pruebas automáticas (ver `docs/pruebas.md`)
 
 ## Historia
 Como fan de Pokémon, quiero ver de qué evoluciona y en qué evoluciona un Pokémon, y cómo, para planear mi equipo.
