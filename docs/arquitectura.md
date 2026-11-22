@@ -41,11 +41,20 @@ Pokemon N──N Movimiento   (pokemon_movimiento)  movimientos que puede aprend
 `docs/contratos/api.md` es la fuente de verdad de endpoints, formatos y errores.
 
 ## Configuración
-- Credenciales en `application-local.properties` (fuera de git) o en las variables `DB_URL`, `DB_USERNAME` y `DB_PASSWORD`.
+- Credenciales en `application-local.properties` (fuera de git) o en variables de entorno: `DB_URL`, `DB_USERNAME` y `DB_PASSWORD` en local; `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` y `SPRING_DATASOURCE_PASSWORD` en la nube. La lista completa, solo con nombres, está en `docs/despliegue.md`.
+- Pool de Hikari pequeño (`DB_POOL_MAX`=5, `DB_POOL_MIN`=0) para el plan gratuito de Neon.
 - Carga por lotes de relaciones (`default_batch_fetch_size=50`) y `open-in-view=true`.
 
 ## Frontend (U3)
-Por definir con el equipo. El stack del diplomado es Next.js + TypeScript + Tailwind. Consumirá `http://localhost:8080/api` en desarrollo.
+Next.js 16 + TypeScript + Tailwind, en el repositorio `pokedex-frontend`. Consume `http://localhost:8080/api` en desarrollo y la API de Render en producción (variable `API_URL`).
 
-## Despliegue (U6)
-Por definir. El stack del diplomado propone AWS para el backend.
+## Arquitectura desplegada (U6)
+Frontend en Vercel, backend en Render (imagen Docker del `Dockerfile`) y PostgreSQL en Neon, todo en US East; con dos entornos (Neon `production` y `dev`). El diagrama (Mermaid), las equivalencias en AWS, el paso a paso, las variables, el rollback y la verificación están en [`despliegue.md`](despliegue.md). El CI (GitHub Actions) corre `mvnw verify` y construye la imagen Docker en cada push.
+
+```mermaid
+flowchart LR
+    U[Usuario] --> V[Vercel · Next.js]
+    V -->|API_URL| R[Render · Spring Boot Docker]
+    R -->|JDBC + SSL| N[(Neon · PostgreSQL)]
+    R --> G[Gemini]
+```

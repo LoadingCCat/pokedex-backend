@@ -152,20 +152,20 @@ Las tareas se piden al agente al empezar cada parte (back, front, nube) y se apr
 - [ ] B.50 Interventoría cruzada: hallazgos del otro equipo como issues con `.github/ISSUE_TEMPLATE/interventoria.md`
 
 **Fase 5 · Entrega de llaves (U6)**
-- [ ] B.51 Docker: `Dockerfile` multi-stage (JDK 21 → JRE 21, usuario sin privilegios, `chmod +x mvnw`) y `.dockerignore`
-- [ ] B.52 CI del backend (`.github/workflows/ci.yml`: Java 21, `./mvnw -B test` y `package`) y protección de `main` (PR + check `ci`)
-- [ ] B.53 Entornos y datos: Neon `dev` y `prod` (`unaccent`, `pg_dump`/`pg_restore`) y dos servicios Render con sus variables (solo nombres en los docs)
-- [ ] B.54 Lanzamiento con rollback: rama → PR → CI → preview → merge → producción; simulacro de "Rollback" en Render
-- [ ] B.55 `docs/operacion/despliegue.md`, "Arquitectura desplegada" en `arquitectura.md`, README con la URL de producción y métricas del módulo en `BITACORA_IA.md`
+- [x] B.51 Docker: `Dockerfile` multi-stage (JDK 21 → JRE 21, usuario sin privilegios, `chmod +x mvnw`) y `.dockerignore`
+- [ ] B.52 CI del backend (`.github/workflows/ci.yml`: Java 21, `./mvnw -B test` y `package`) y protección de `main` (PR + check `ci`) → `.github/workflows/ci.yml` (jobs `test` y `docker`). **Workflow listo; pendiente tuyo:** ruleset de GitHub (`docs/despliegue.md` §8)
+- [ ] B.53 Entornos y datos: Neon `dev` y `prod` (`unaccent`, `pg_dump`/`pg_restore`) y dos servicios Render con sus variables (solo nombres en los docs) — **Código y docs listos** (datasource por variables, pool, `docs/despliegue.md`); **pendiente tuyo:** crear los servicios Render, variables y el `DELETE` del admin en Neon production
+- [ ] B.54 Lanzamiento con rollback: rama → PR → CI → preview → merge → producción; simulacro de "Rollback" en Render — pendiente tuyo (simulacro de Rollback en Render)
+- [ ] B.55 `docs/operacion/despliegue.md`, "Arquitectura desplegada" en `arquitectura.md`, README con la URL de producción y métricas del módulo en `BITACORA_IA.md` → `docs/despliegue.md` y «Arquitectura desplegada». **Docs listos; pendiente:** URL de producción en el README y métricas en `BITACORA_IA.md`
 
 **Frontend (repo `pokedex-frontend`)**
 - [x] FE.49 F20 · Capa de datos: tipos, `identificar()`, route handler `/api/identificar` hacia `API_URL` (tope de 2 MB; las server actions topan en 1 MB), espera de 70 s en las lecturas y en las escrituras del panel, y mock "no disponible" (503). El mensaje "despertando el servidor…" queda para FE.50. Frontend: 97 pruebas (+29 de contrato con `API_URL`)
 - [x] FE.50 F20 · Pantalla `/identificar`: `SelectorFoto`, reducción a 1024 px en JPEG, estado de carga, tarjeta del identificado y 3 similares, mensajes 400/422/429/502, aviso "la foto no se guarda" y enlace en la cabecera; pruebas en Vitest. Reducción en el navegador con canvas (1024 px, JPEG, < 1,5 MB, orientación EXIF), mensaje «Despertando el servidor…» a los 5 s, cancelación al salir de la pantalla y `apiDisponible()`. Frontend: 140 pruebas (97 anteriores + 43; +29 de contrato con `API_URL`)
 - [x] FE.51 Playwright: `playwright.config.ts`, script `test:e2e` y recorridos `catalogo`, `identificar`, `admin` y `responsive` en `e2e/*.e2e.ts` (8 pruebas; credenciales en `.env.test`, fuera de Git; backend con el perfil `e2e`). La suite `ficha` queda fuera: no estaba entre los recorridos pedidos. Ver `docs/pruebas.md`
-- [ ] FE.52 CI del frontend (Node 22, `npm ci`, `lint`, `test`, `build`) y protección de `main`
-- [ ] FE.53 Vercel: `API_URL` en Production (API de prod) y en Preview (API de dev). Verificar también la duración máxima de la función de `/api/identificar` (`maxDuration`): con Render dormido la llamada puede tardar cerca de 70 s y el límite del plan de Vercel podría cortarla antes
-- [ ] FE.54 Simulacro de despliegue roto e Instant Rollback en Vercel
-- [ ] FE.55 README del frontend con la URL de producción
+- [ ] FE.52 CI del frontend (Node 22, `npm ci`, `lint`, `test`, `build`) y protección de `main` → `.github/workflows/ci.yml` (job `build`; sin E2E). **Workflow listo; pendiente tuyo:** ruleset
+- [ ] FE.53 Vercel: `API_URL` en Production (API de prod) y en Preview (API de dev). Verificar también la duración máxima de la función de `/api/identificar` (`maxDuration`): con Render dormido la llamada puede tardar cerca de 70 s y el límite del plan de Vercel podría cortarla antes — **Código listo** (`maxDuration` 120 s, timeout 110 s, imágenes, 151 fichas, build con `API_URL`); **pendiente tuyo:** `API_URL` en Production y Preview
+- [ ] FE.54 Simulacro de despliegue roto e Instant Rollback en Vercel — pendiente tuyo (Instant Rollback)
+- [ ] FE.55 README del frontend con la URL de producción — pendiente: falta la URL de producción del backend
 
 ## Nube (U6)
 <!-- Se detalla al iniciar la U6. El detalle de la entrega está en "Plan Claude Code · Fase 5" (B.51–B.55, FE.52–FE.55). -->

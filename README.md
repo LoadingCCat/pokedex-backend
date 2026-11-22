@@ -25,6 +25,18 @@ Base URL: `http://localhost:8080/api`
 
 Endpoints, formatos de respuesta, paginación y errores: **[docs/contratos/api.md](docs/contratos/api.md)**.
 
+## Docker y CI
+
+```
+docker build -t pokedex-backend .
+```
+
+El `Dockerfile` (multi-etapa, JDK 21 → JRE 21, usuario sin privilegios) escucha en `PORT` (8080 por defecto) y lee la base de `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` y `SPRING_DATASOURCE_PASSWORD` (o `DB_*`). El CI de GitHub Actions (`.github/workflows/ci.yml`) corre `./mvnw verify` y construye la imagen en cada push a `main`.
+
+## Despliegue
+
+Render (backend) + Neon (PostgreSQL) + Vercel (frontend), todo en US East. Paso a paso, variables (solo nombres), rollback y verificación: **[docs/despliegue.md](docs/despliegue.md)**.
+
 ## Documentación del proyecto (SDD)
 
 | Documento | Qué contiene |
@@ -33,6 +45,7 @@ Endpoints, formatos de respuesta, paginación y errores: **[docs/contratos/api.m
 | [docs/arquitectura.md](docs/arquitectura.md) | Stack, capas y modelo de datos |
 | [docs/contratos/api.md](docs/contratos/api.md) | Contrato de la API para el frontend |
 | [docs/specs/](docs/specs/) | Una spec por funcionalidad, con criterios de aceptación |
+| [docs/despliegue.md](docs/despliegue.md) | Render, Neon y Vercel: pasos, variables, rollback y arquitectura |
 | [docs/decisiones.md](docs/decisiones.md) | Decisiones tomadas y por qué |
 | [docs/tareas.md](docs/tareas.md) | Qué está hecho y qué sigue |
 | [BITACORA_IA.md](BITACORA_IA.md) | Prompts clave y errores del agente |
